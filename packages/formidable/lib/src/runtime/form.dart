@@ -14,9 +14,17 @@ import 'submit_result.dart';
 /// A generated Form extends this class, creates its Fields, passes them to
 /// [attach] once and implements [buildOutput]. Everything else, including
 /// `submit()`, lives here.
+///
+/// A Form is also a [FormidableNode], so it can be the child of another Form:
+/// that is a Nested Form. A parent follows a Nested Form through
+/// [addChangeListener], not [addListener], because it must hear about every
+/// change below it, even one that leaves the state of the Nested Form equal.
 abstract class FormidableForm<S>
     with FormidableNotifierMixin
-    implements FormidableObservable<FormidableFormState>, FormidablePipeline {
+    implements
+        FormidableObservable<FormidableFormState>,
+        FormidablePipeline,
+        FormidableNode {
   /// How many times the Form Effects may run for one change before they are
   /// considered to be in a loop.
   static const _maxEffectPasses = 100;
@@ -35,6 +43,9 @@ abstract class FormidableForm<S>
     status: FormidableStatus.valid,
   );
   final List<void Function()> _changeListeners = [];
+  FormidablePipeline? _parent;
+  bool _optional = false;
+  bool _initiallySet = true;
   List<FormidableValidationError> _formErrors = const [];
 
   /// The children of the Form, in Schema declaration order.
@@ -44,11 +55,43 @@ abstract class FormidableForm<S>
   FormidableFormState get state => _state;
 
   /// The Schema instance while the Form is valid and not pending, null
-  /// otherwise. It is computed on every read.
+  /// otherwise (and while an optional Nested Form is Unset). It is computed on
+  /// every read.
   S? get value {
     final state = _state;
-    if (state.status != FormidableStatus.valid || state.pending) return null;
+    if (!isSet || state.status != FormidableStatus.valid || state.pending) {
+      return null;
+    }
     return buildOutput();
+  }
+
+  /// Whether the Form holds a value, as opposed to being an Unset optional
+  /// Nested Form. It is always true for a Form that is not an optional Nested
+  /// Form.
+  ///
+  /// An optional Nested Form (a nullable Schema Field without `@Required()`)
+  /// is Unset until something in it differs from its initial state, unless it
+  /// was created from a Schema instance. It becomes Unset again when it is
+  /// back at its initial state, so reset and patch need no special case.
+  /// While it is Unset it is valid and has no output, whatever its Fields say.
+  bool get isSet =>
+      !_optional || _initiallySet || _nodes.any((node) => node.isDirty);
+
+  /// The Schema instance a parent Form puts in its own output: [buildOutput],
+  /// or null while an optional Nested Form is Unset. Called only when every
+  /// Field of a set Form is valid.
+  S? get outputOrNull => isSet ? buildOutput() : null;
+
+  /// Makes this Form an optional Nested Form. Called by the generated parent
+  /// Form, once, before [attach] of the parent.
+  ///
+  /// [initiallySet] says whether it starts as set (it was created from a
+  /// Schema instance) or Unset.
+  void markOptional({required bool initiallySet}) {
+    assert(_parent == null, 'markOptional must be called before attach.');
+    _optional = true;
+    _initiallySet = initiallySet;
+    _state = _computeState();
   }
 
   /// Calls [listener] after every change of any child, even one that leaves
@@ -65,6 +108,7 @@ abstract class FormidableForm<S>
   /// Restores every Field to its initial value and presence, and forgets that
   /// it was touched. It notifies once and does not run the Form Effects: the
   /// initial state is already consistent.
+  @override
   void reset() => batch(() {
     for (final node in _nodes) {
       node.reset();
@@ -73,9 +117,26 @@ abstract class FormidableForm<S>
 
   /// Makes the current state the new initial state, so the Form and its
   /// Fields are no longer dirty. It notifies once.
+  @override
   void commit() => batch(() {
+    // An optional Nested Form that is set now stays set: presence is part of
+    // the initial state.
+    _initiallySet = isSet;
     for (final node in _nodes) {
       node.commit();
+    }
+  });
+
+  /// Makes every Field Unset, as one change. A Passthrough Field keeps its
+  /// value because it can never be Unset. An optional Nested Form is Unset
+  /// afterwards if it was Unset initially.
+  void clear() => batch(() {
+    for (final node in _nodes) {
+      if (node is FormidableField<Object?>) {
+        node.clear();
+      } else if (node is FormidableForm<Object?>) {
+        node.clear();
+      }
     }
   });
 
@@ -84,6 +145,9 @@ abstract class FormidableForm<S>
   ///
   /// Generated `patch` and `replace` are built on it.
   void batch(void Function() writes) {
+    // A Nested Form writes as part of its parent's change.
+    final parent = _parent;
+    if (parent is FormidableForm<Object?>) return parent.batch(writes);
     if (_batchDepth > 0 || _running) {
       writes();
       return;
@@ -126,13 +190,31 @@ abstract class FormidableForm<S>
     // The initial state is what exists once the creation-time Effects ran.
     commit();
     for (final node in _nodes) {
-      node.addListener(_onNodeChanged);
+      _follow(node);
     }
     _state = _computeState();
   }
 
+  void _follow(FormidableNode node) => node is FormidableForm<Object?>
+      ? node.addChangeListener(_onNodeChanged)
+      : node.addListener(_onNodeChanged);
+
+  void _unfollow(FormidableNode node) => node is FormidableForm<Object?>
+      ? node.removeChangeListener(_onNodeChanged)
+      : node.removeListener(_onNodeChanged);
+
   @override
   void change(FormidableNode node, bool Function() mutate) {
+    // A Nested Form has no pipeline of its own: its parent runs everyone's
+    // Effects, so one change settles the whole tree.
+    final parent = _parent;
+    if (parent != null) {
+      return parent.change(node, () {
+        if (!mutate()) return false;
+        _formErrors = const [];
+        return true;
+      });
+    }
     if (!mutate()) return;
     _formErrors = const [];
     _pending.add(node);
@@ -142,6 +224,8 @@ abstract class FormidableForm<S>
 
   @override
   void settle() {
+    final parent = _parent;
+    if (parent != null) return parent.settle();
     if (_running) return;
     if (_batchDepth > 0) {
       _needsSettle = true;
@@ -167,11 +251,34 @@ abstract class FormidableForm<S>
   /// Form errors. Node notifications are held back and the Form notifies once
   /// afterwards.
   void _settle() {
-    _held++;
+    _holdTree(1);
     try {
       _runFormValidators();
       for (final node in _nodes) {
         node.revalidate();
+      }
+    } finally {
+      _holdTree(-1);
+    }
+    _flushTree();
+  }
+
+  /// Holds back (or releases) the notifications of this Form and of its Nested
+  /// Forms, so the whole tree notifies once per settle.
+  void _holdTree(int delta) {
+    _held += delta;
+    for (final node in _nodes) {
+      if (node is FormidableForm<Object?>) node._holdTree(delta);
+    }
+  }
+
+  /// Publishes the state of the Nested Forms, then of this Form. A parent
+  /// stays held while its children publish, so it publishes only once.
+  void _flushTree() {
+    _held++;
+    try {
+      for (final node in _nodes) {
+        if (node is FormidableForm<Object?>) node._flushTree();
       }
     } finally {
       _held--;
@@ -179,34 +286,66 @@ abstract class FormidableForm<S>
     _flush();
   }
 
-  /// Runs the Form Validators and gives every Field the errors addressed to
-  /// it. Each Field then commits them together with its own errors in
-  /// `revalidate`, so listeners see the final errors in one notification.
+  /// Runs the Form Validators of this Form and of its Nested Forms and gives
+  /// every Field below this Form the errors addressed to it. Each Field then
+  /// commits them together with its own errors in `revalidate`, so listeners
+  /// see the final errors in one notification.
+  ///
+  /// A Form Validator can address any Field below its Form, Nested Forms
+  /// included. An Unset optional Nested Form runs none: it is not validated.
   void _runFormValidators() {
-    if (_formValidators.isEmpty) return;
+    if (!_hasFormValidators) return;
     final addressed =
         <FormidableField<Object?>, List<FormidableValidationError>>{};
-    for (final validator in _formValidators) {
-      // Safe at runtime: attach() only accepts validators typed on this Form.
-      for (final item in validator.validate(this)) {
-        assert(
-          _nodes.contains(item.field),
-          'A Form Validator addressed an error to a Field that is not in '
-          'this Form.',
-        );
-        (addressed[item.field] ??= []).add(item.error);
+    _collectFormErrors(addressed);
+    for (final field in _fieldsBelow()) {
+      field.replaceFormErrors(addressed[field] ?? const []);
+    }
+  }
+
+  bool get _hasFormValidators =>
+      _formValidators.isNotEmpty ||
+      _nodes.any(
+        (node) => node is FormidableForm<Object?> && node._hasFormValidators,
+      );
+
+  void _collectFormErrors(
+    Map<FormidableField<Object?>, List<FormidableValidationError>> into,
+  ) {
+    if (!isSet) return;
+    if (_formValidators.isNotEmpty) {
+      final fields = _fieldsBelow().toSet();
+      for (final validator in _formValidators) {
+        // Safe at runtime: attach() only accepts validators typed on this Form.
+        for (final item in validator.validate(this)) {
+          assert(
+            fields.contains(item.field),
+            'A Form Validator addressed an error to a Field that is not in '
+            'this Form.',
+          );
+          (into[item.field] ??= []).add(item.error);
+        }
       }
     }
     for (final node in _nodes) {
+      if (node is FormidableForm<Object?>) node._collectFormErrors(into);
+    }
+  }
+
+  /// Every Field of this Form and of its Nested Forms, in declaration order.
+  Iterable<FormidableField<Object?>> _fieldsBelow() sync* {
+    for (final node in _nodes) {
       if (node is FormidableField<Object?>) {
-        node.replaceFormErrors(addressed[node] ?? const []);
+        yield node;
+      } else if (node is FormidableForm<Object?>) {
+        yield* node._fieldsBelow();
       }
     }
   }
 
   void _runEffects({required bool initial}) {
     var changed = initial ? <FormidableNode>{} : _takePending();
-    if (_effects.isEmpty) return;
+    if (!_hasEffects) return;
     var passes = 0;
     do {
       if (++passes > _maxEffectPasses) {
@@ -217,12 +356,23 @@ abstract class FormidableForm<S>
         }
         return;
       }
-      final context = FormidableEffectContext(changed);
-      for (final effect in _effects) {
-        effect.apply(this, context);
-      }
+      _applyEffects(FormidableEffectContext(changed));
       changed = _takePending();
     } while (changed.isNotEmpty);
+  }
+
+  bool get _hasEffects =>
+      _effects.isNotEmpty ||
+      _nodes.any((node) => node is FormidableForm<Object?> && node._hasEffects);
+
+  /// Runs the Effects of this Form, then those of its Nested Forms.
+  void _applyEffects(FormidableEffectContext context) {
+    for (final effect in _effects) {
+      effect.apply(this, context);
+    }
+    for (final node in _nodes) {
+      if (node is FormidableForm<Object?>) node._applyEffects(context);
+    }
   }
 
   Set<FormidableNode> _takePending() {
@@ -263,18 +413,10 @@ abstract class FormidableForm<S>
   /// show. When the Form is invalid it moves the focus to the first invalid
   /// Field in Schema declaration order that is enabled and shown by a widget.
   Future<FormidableSubmitResult<S>> submit() async {
-    if (_formErrors.isNotEmpty) {
-      _formErrors = const [];
-      _onNodeChanged();
-    }
-    for (final node in _nodes) {
-      node.markSubmitted();
-    }
+    markSubmitted();
     final errors =
         <FormidableField<Object?>, List<FormidableValidationError>>{};
-    for (final node in _nodes) {
-      node.collectErrors(errors);
-    }
+    collectErrors(errors);
     if (errors.isNotEmpty) {
       errors.keys.where((field) => field.canFocus).firstOrNull?.focus();
       return FormidableSubmitInvalid<S>(Map.unmodifiable(errors));
@@ -282,10 +424,65 @@ abstract class FormidableForm<S>
     return FormidableSubmitValid<S>(buildOutput());
   }
 
+  // FormidableNode, for a Form that is nested in another one.
+
+  @override
+  bool get isValid =>
+      !isSet || (_formErrors.isEmpty && _nodes.every((node) => node.isValid));
+
+  @override
+  bool get isDirty => _nodes.any((node) => node.isDirty);
+
+  @override
+  bool get isPending => isSet && _nodes.any((node) => node.isPending);
+
+  /// Marks every Field of a set Nested Form as touched and submitted, and
+  /// drops its applied Form errors, like `submit()` does for the root Form. An
+  /// Unset optional Nested Form is left alone, so it does not show errors for
+  /// Fields the user never meant to fill in.
+  @override
+  void markSubmitted() {
+    if (!isSet) return;
+    if (_formErrors.isNotEmpty) {
+      _formErrors = const [];
+      _onNodeChanged();
+    }
+    for (final node in _nodes) {
+      node.markSubmitted();
+    }
+  }
+
+  /// Adds the errors of every Field below this Form to [into]. An Unset
+  /// optional Nested Form has none: it is not part of the output.
+  @override
+  void collectErrors(
+    Map<FormidableField<Object?>, List<FormidableValidationError>> into,
+  ) {
+    if (!isSet) return;
+    for (final node in _nodes) {
+      node.collectErrors(into);
+    }
+  }
+
+  /// Makes this Form a Nested Form of the Form that owns [pipeline]: from now
+  /// on its writes run through the parent. Called by the parent's [attach].
+  @override
+  void bindPipeline(FormidablePipeline pipeline) {
+    assert(_parent == null, 'bindPipeline must be called once.');
+    _parent = pipeline;
+  }
+
+  @override
+  void revalidate() {
+    for (final node in _nodes) {
+      node.revalidate();
+    }
+  }
+
   @override
   void dispose() {
     for (final node in _nodes) {
-      node.removeListener(_onNodeChanged);
+      _unfollow(node);
       node.dispose();
     }
     _changeListeners.clear();
@@ -315,11 +512,9 @@ abstract class FormidableForm<S>
   }
 
   FormidableFormState _computeState() => FormidableFormState(
-    status: _formErrors.isEmpty && _nodes.every((node) => node.isValid)
-        ? FormidableStatus.valid
-        : FormidableStatus.invalid,
-    dirty: _nodes.any((node) => node.isDirty),
-    pending: _nodes.any((node) => node.isPending),
+    status: isValid ? FormidableStatus.valid : FormidableStatus.invalid,
+    dirty: isDirty,
+    pending: isPending,
     errors: _formErrors,
   );
 }
