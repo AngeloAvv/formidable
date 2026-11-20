@@ -1,5 +1,6 @@
 import '../validation/validation_error.dart';
 import 'field.dart';
+import 'pipeline.dart';
 
 /// A child of a Form, in Schema declaration order.
 ///
@@ -13,6 +14,14 @@ abstract interface class FormidableNode {
   void collectErrors(
     Map<FormidableField<Object?>, List<FormidableValidationError>> into,
   );
+
+  /// Gives the node the pipeline of its Form. Writes to the node run through
+  /// it. Called once by the Form.
+  void bindPipeline(FormidablePipeline pipeline);
+
+  /// Brings the node's errors up to date with its value and notifies its
+  /// listeners if its state changed. Called by the Form after Effects ran.
+  void revalidate();
 
   /// Calls [listener] whenever anything at or below this node changes.
   void addListener(void Function() listener);

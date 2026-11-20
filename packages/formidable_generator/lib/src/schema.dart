@@ -16,6 +16,14 @@ const _passthroughChecker = TypeChecker.typeNamed(
   Passthrough,
   inPackage: 'formidable',
 );
+const _normalizerChecker = TypeChecker.typeNamed(
+  FormidableNormalizer,
+  inPackage: 'formidable',
+);
+const _effectsChecker = TypeChecker.typeNamed(
+  Effects,
+  inPackage: 'formidable',
+);
 const _validatorChecker = TypeChecker.typeNamed(
   FormidableValidator,
   inPackage: 'formidable',
@@ -30,6 +38,7 @@ final class SchemaModel {
     required this.name,
     required this.fields,
     required this.constructorArguments,
+    this.effects = const [],
     this.warnings = const [],
   });
 
@@ -41,6 +50,9 @@ final class SchemaModel {
 
   /// How the Schema constructor is called, in parameter order.
   final List<ConstructorArgument> constructorArguments;
+
+  /// Const `Effects(...)` expressions of the Schema, in annotation order.
+  final List<String> effects;
 
   /// Problems that do not stop the build, reported by the Form builder only.
   final List<String> warnings;
@@ -55,6 +67,7 @@ final class FieldModel {
     required this.typeSource,
     required this.isNullable,
     required this.validators,
+    required this.normalizers,
     required this.defaultSource,
     required this.isRequired,
     required this.isPassthrough,
@@ -68,6 +81,9 @@ final class FieldModel {
 
   /// Const expressions that rebuild the Validators, in annotation order.
   final List<String> validators;
+
+  /// Const expressions that rebuild the Normalizers, in annotation order.
+  final List<String> normalizers;
 
   /// The constructor default of the Schema field, or null.
   final String? defaultSource;
@@ -170,9 +186,22 @@ SchemaModel readSchema(Element element) {
       for (final p in parameters)
         ConstructorArgument(field: models[p.name]!, isNamed: p.isNamed),
     ],
+    effects: _readEffects(element),
     warnings: warnings,
   );
 }
+
+/// The `@Effects(...)` annotations of [element], rebuilt as const expressions.
+///
+/// The annotation is matched by its constructor, not by its evaluated value:
+/// the Effects name the generated Form, which does not exist yet in the first
+/// build round, so the constant may not evaluate.
+List<String> _readEffects(ClassElement element) => [
+  for (final annotation in element.metadata.annotations)
+    if (annotation.element?.enclosingElement case final owner?)
+      if (_effectsChecker.isExactly(owner))
+        'const ${annotation.toSource().substring(1)}',
+];
 
 /// The final instance fields of [element] and its superclasses, supertypes
 /// first, in declaration order. Getters are not fields.
@@ -195,9 +224,13 @@ List<FieldElement> _finalFields(ClassElement element) {
 
 FieldModel _readField(FieldElement field, String? defaultSource) {
   final validators = <String>[];
+  final normalizers = <String>[];
   for (final annotation in field.metadata.annotations) {
     final type = annotation.computeConstantValue()?.type;
-    if (type != null && _validatorChecker.isAssignableFromType(type)) {
+    if (type == null) continue;
+    if (_normalizerChecker.isAssignableFromType(type)) {
+      normalizers.add('const ${annotation.toSource().substring(1)}');
+    } else if (_validatorChecker.isAssignableFromType(type)) {
       // The part file shares the Schema library's scope, so the annotation
       // source can be reused as a const expression as it is written.
       validators.add('const ${annotation.toSource().substring(1)}');
@@ -208,6 +241,7 @@ FieldModel _readField(FieldElement field, String? defaultSource) {
     typeSource: field.type.getDisplayString(),
     isNullable: field.type.nullabilitySuffix == NullabilitySuffix.question,
     validators: validators,
+    normalizers: normalizers,
     defaultSource: defaultSource,
     isRequired: _requiredChecker.hasAnnotationOf(field),
     isPassthrough: _passthroughChecker.hasAnnotationOf(field),
