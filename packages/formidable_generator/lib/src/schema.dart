@@ -1,3 +1,4 @@
+import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
@@ -26,6 +27,11 @@ const _validatorChecker = TypeChecker.typeNamed(
   inPackage: 'formidable',
 );
 
+const _formValidatorChecker = TypeChecker.typeNamed(
+  FormidableFormValidator,
+  inPackage: 'formidable',
+);
+
 /// Whether [element] is annotated with `@Formidable()`.
 bool isSchema(Element element) => _schemaChecker.hasAnnotationOf(element);
 
@@ -35,6 +41,7 @@ final class SchemaModel {
     required this.name,
     required this.fields,
     required this.constructorArguments,
+    this.formValidators = const [],
     this.effects = const [],
     this.warnings = const [],
   });
@@ -47,6 +54,9 @@ final class SchemaModel {
 
   /// How the Schema constructor is called, in parameter order.
   final List<ConstructorArgument> constructorArguments;
+
+  /// Const expressions that rebuild the Form Validators, in annotation order.
+  final List<String> formValidators;
 
   /// Const `Effects(...)` expressions of the Schema, in annotation order.
   final List<String> effects;
@@ -212,6 +222,11 @@ SchemaModel readSchema(Element element, [List<ClassElement> path = const []]) {
       for (final p in parameters)
         ConstructorArgument(field: models[p.name]!, isNamed: p.isNamed),
     ],
+    formValidators: [
+      for (final annotation in element.metadata.annotations)
+        if (_isFormValidator(annotation))
+          'const ${annotation.toSource().substring(1)}',
+    ],
     effects: _readEffects(element),
     warnings: warnings,
   );
@@ -258,11 +273,13 @@ FieldModel _readField(
   final validators = <String>[];
   final normalizers = <String>[];
   for (final annotation in field.metadata.annotations) {
-    final type = annotation.computeConstantValue()?.type;
+    final value = annotation.computeConstantValue();
+    final type = value?.type;
     if (type == null) continue;
     if (_normalizerChecker.isAssignableFromType(type)) {
       normalizers.add('const ${annotation.toSource().substring(1)}');
     } else if (_validatorChecker.isAssignableFromType(type)) {
+      _checkValidatorFits(field, value!);
       // The part file shares the Schema library's scope, so the annotation
       // source can be reused as a const expression as it is written.
       validators.add('const ${annotation.toSource().substring(1)}');
@@ -346,4 +363,56 @@ NestedModel? _readNested(
     formName: nestedSchema.formName,
     requiresInitial: requiresInitial,
   );
+}
+
+/// Fails the build when the value a Validator [object] accepts cannot be the
+/// value of [field].
+///
+/// A Validator is called only with a chosen non-null value, or with null when
+/// it accepts null, so the check is on the non-null type of the Field: a
+/// `MinLength` (a `String` Validator) fits both `String` and `String?`.
+///
+/// A combinator such as `AnyOf` holds other Validators in its fields. They are
+/// called with the same value, so each of them has to fit too.
+void _checkValidatorFits(FieldElement field, DartObject object) {
+  final validatorType = object.type;
+  if (validatorType is! InterfaceType) return;
+  final accepted = validatorType.allSupertypes
+      .where(
+        (t) =>
+            t.element.name == 'FormidableValidator' &&
+            _validatorChecker.isExactlyType(t),
+      )
+      .map((t) => t.typeArguments.single)
+      .firstOrNull;
+  if (accepted == null) return;
+  final typeSystem = field.library.typeSystem;
+  final fieldType = typeSystem.promoteToNonNull(field.type);
+  if (!typeSystem.isAssignableTo(fieldType, accepted)) {
+    final validator = validatorType.element.name;
+    throw InvalidGenerationSourceError(
+      '@$validator cannot be used on "${field.name}" of '
+      '${field.enclosingElement.name}: it validates '
+      '${accepted.getDisplayString()}, but the Field is '
+      '${field.type.getDisplayString()}. Use a Validator that accepts '
+      '${field.type.getDisplayString()}, or change the Field type.',
+      element: field,
+    );
+  }
+  for (final member in validatorType.element.fields) {
+    if (member.isStatic) continue;
+    for (final nested
+        in object.getField(member.name!)?.toListValue() ?? <DartObject>[]) {
+      final nestedType = nested.type;
+      if (nestedType != null &&
+          _validatorChecker.isAssignableFromType(nestedType)) {
+        _checkValidatorFits(field, nested);
+      }
+    }
+  }
+}
+
+bool _isFormValidator(ElementAnnotation annotation) {
+  final type = annotation.computeConstantValue()?.type;
+  return type != null && _formValidatorChecker.isAssignableFromType(type);
 }

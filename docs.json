@@ -30,6 +30,7 @@
       "group": "Validation",
       "pages": [
         { "title": "Validators", "href": "/validation" },
+        { "title": "Custom Validators", "href": "/validation/custom" },
         { "title": "Normalizers", "href": "/validation/normalizers" },
         { "title": "Messages and localization", "href": "/validation/messages" }
       ]
@@ -44,7 +45,9 @@
     },
     {
       "group": "Widgets",
-      "pages": [{ "title": "Binding Fields to widgets", "href": "/widgets" }]
+      "pages": [{ "title": "Binding Fields to widgets", "href": "/widgets" },
+        { "title": "Codecs", "href": "/widgets/codecs" }
+      ]
     },
     {
       "group": "Guides",

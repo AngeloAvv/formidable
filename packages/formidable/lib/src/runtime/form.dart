@@ -1,3 +1,4 @@
+import '../validation/form_validator.dart';
 import '../validation/validation_error.dart';
 import 'effect.dart';
 import 'field.dart';
@@ -30,6 +31,8 @@ abstract class FormidableForm<S>
 
   List<FormidableNode> _nodes = const [];
   List<FormidableEffect<FormidableForm<Object?>>> _effects = const [];
+  List<FormidableFormValidator<FormidableForm<Object?>>> _formValidators =
+      const [];
   final Set<FormidableNode> _pending = {};
   bool _running = false;
   FormidableFormState _state = FormidableFormState(
@@ -97,17 +100,22 @@ abstract class FormidableForm<S>
   void removeChangeListener(void Function() listener) =>
       _changeListeners.remove(listener);
 
-  /// Registers the children of the Form, in Schema declaration order, and its
-  /// Form [effects]. A generated Form calls it once from its constructor.
+  /// Registers the children of the Form, in Schema declaration order, its
+  /// Form [effects] and the [formValidators] declared on the Schema. A
+  /// generated Form calls it once from its constructor, with itself as [F],
+  /// which makes the compiler reject a Form Validator typed for another Form.
   ///
   /// The Effects run once before it returns, so the Form starts consistent.
-  void attach(
+  void attach<F extends FormidableForm<S>>(
     List<FormidableNode> nodes, {
     List<FormidableEffect<FormidableForm<Object?>>> effects = const [],
+    List<FormidableFormValidator<F>> formValidators = const [],
   }) {
     assert(_nodes.isEmpty, 'attach must be called once.');
+    assert(this is F, 'attach must be given the type of the Form itself.');
     _nodes = List.unmodifiable(nodes);
     _effects = List.unmodifiable(effects);
+    _formValidators = formValidators;
     for (final node in _nodes) {
       node.bindPipeline(this);
     }
@@ -146,8 +154,34 @@ abstract class FormidableForm<S>
     } finally {
       _running = false;
       _pending.clear();
+      _runFormValidators();
       for (final node in _nodes) {
         node.revalidate();
+      }
+    }
+  }
+
+  /// Runs the Form Validators and gives every Field the errors addressed to
+  /// it. Each Field then commits them together with its own errors in
+  /// `revalidate`, so listeners see the final errors in one notification.
+  void _runFormValidators() {
+    if (_formValidators.isEmpty) return;
+    final addressed =
+        <FormidableField<Object?>, List<FormidableValidationError>>{};
+    for (final validator in _formValidators) {
+      // Safe at runtime: attach() only accepts validators typed on this Form.
+      for (final item in validator.validate(this)) {
+        assert(
+          _nodes.contains(item.field),
+          'A Form Validator addressed an error to a Field that is not in '
+          'this Form.',
+        );
+        (addressed[item.field] ??= []).add(item.error);
+      }
+    }
+    for (final node in _nodes) {
+      if (node is FormidableField<Object?>) {
+        node.replaceFormErrors(addressed[node] ?? const []);
       }
     }
   }

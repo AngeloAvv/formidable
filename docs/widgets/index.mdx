@@ -15,8 +15,6 @@ Available today: `FormidableTextField` for Material. Build any other widget from
 ```dart
 FormidableBindingBuilder<String>(
   field: form.username,
-  formatText: (value) => value,
-  parseText: (text) => text.isEmpty ? null : text,
   builder: (context, binding) => TextField(
     controller: binding.textController,
     focusNode: binding.focusNode,
@@ -26,4 +24,4 @@ FormidableBindingBuilder<String>(
 )
 ```
 
-`binding.errorText` is null until the Field is touched. A Field becomes touched when a focusable widget loses focus. Call `binding.onTouched()` for a widget that cannot take focus.
+The Binding picks a [Codec](/widgets/codecs) between the Field and its text, so the same code works for an `int` or a `DateTime` Field. `binding.errorText` is null until the Field is touched. A Field becomes touched when a focusable widget loses focus. Call `binding.onTouched()` for a widget that cannot take focus.

@@ -6,6 +6,8 @@ import 'package:material_ui/material_ui.dart';
 
 import 'support/account.dart';
 import 'support/account.formidable_scope.dart';
+import 'support/contact.dart';
+import 'support/contact.formidable_scope.dart';
 import 'support/sign_up.dart';
 import 'support/sign_up.formidable_scope.dart';
 
@@ -310,6 +312,36 @@ void main() {
 
       expect(find.text('one-off'), findsOneWidget);
     });
+  });
+
+  group('AnyOf error', () {
+    const anyOf = {
+      'en': 'Does not satisfy any of the allowed rules.',
+      'it': 'Non soddisfa nessuna delle regole consentite.',
+      'es': 'No cumple ninguna de las reglas permitidas.',
+      'fr': 'Ne satisfait aucune des règles autorisées.',
+      'de': 'Erfüllt keine der erlaubten Regeln.',
+    };
+
+    for (final entry in anyOf.entries) {
+      testWidgets('is said in ${entry.key}', (tester) async {
+        await tester.pumpWidget(
+          app(
+            locale: Locale(entry.key),
+            child: ContactFormScope(
+              create: () =>
+                  ContactForm(reference: 'ab')..reference.markAsTouched(),
+              child: Builder(
+                builder: (context) =>
+                    FormidableTextField(field: context.contactForm.reference),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.text(entry.value), findsOneWidget);
+      });
+    }
   });
 }
 
