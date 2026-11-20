@@ -195,4 +195,159 @@ void main() {
       isNotNull,
     );
   });
+
+  group('public fields', () {
+    testWidgets('every parameter can be read back from the widget', (
+      tester,
+    ) async {
+      final focusNode = FocusNode();
+      addTearDown(focusNode.dispose);
+      final widget = FormidableCupertinoTextField<String>(
+        field: name,
+        focusNode: focusNode,
+        placeholder: 'Name',
+        padding: const EdgeInsets.all(20),
+        prefixMode: OverlayVisibilityMode.editing,
+        clearButtonMode: OverlayVisibilityMode.notEditing,
+        maxLines: 3,
+        maxLength: 9,
+        obscureText: true,
+        textAlign: TextAlign.end,
+      );
+
+      expect(widget.placeholder, 'Name');
+      expect(widget.padding, const EdgeInsets.all(20));
+      expect(widget.prefixMode, OverlayVisibilityMode.editing);
+      expect(widget.clearButtonMode, OverlayVisibilityMode.notEditing);
+      expect(widget.maxLines, 3);
+      expect(widget.maxLength, 9);
+      expect(widget.obscureText, isTrue);
+      expect(widget.textAlign, TextAlign.end);
+      expect(widget.focusNode, focusNode);
+      // What was left out keeps the default of CupertinoTextField, or is null
+      // when the default is built inside Flutter.
+      expect(widget.decoration, isNull);
+      expect(widget.suffixMode, OverlayVisibilityMode.always);
+      expect(widget.cursorWidth, 2.0);
+    });
+  });
+
+  group('state dependent parts', () {
+    testWidgets('a suffixBuilder shows a clear button once there is text', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        app(
+          FormidableCupertinoTextField<String>(
+            field: name,
+            suffixBuilder: (context, control) => (control.value ?? '').isEmpty
+                ? null
+                : CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    onPressed: control.clear,
+                    child: const Icon(CupertinoIcons.clear, key: Key('clear')),
+                  ),
+          ),
+        ),
+      );
+      expect(find.byKey(const Key('clear')), findsNothing);
+
+      await tester.enterText(find.byType(CupertinoTextField), 'angelo');
+      await tester.pump();
+      expect(find.byKey(const Key('clear')), findsOneWidget);
+
+      await tester.tap(find.byKey(const Key('clear')));
+      await tester.pump();
+
+      expect(find.byKey(const Key('clear')), findsNothing);
+      expect(name.isSet, isFalse);
+      expect(
+        tester
+            .widget<CupertinoTextField>(find.byType(CupertinoTextField))
+            .controller!
+            .text,
+        isEmpty,
+      );
+    });
+
+    testWidgets('a prefixBuilder follows the control', (tester) async {
+      await tester.pumpWidget(
+        app(
+          FormidableCupertinoTextField<String>(
+            field: name,
+            prefixBuilder: (context, control) =>
+                Text('${(control.value ?? '').length}', key: const Key('n')),
+          ),
+        ),
+      );
+      expect(tester.widget<Text>(find.byKey(const Key('n'))).data, '0');
+
+      await tester.enterText(find.byType(CupertinoTextField), 'abcd');
+      await tester.pump();
+
+      expect(tester.widget<Text>(find.byKey(const Key('n'))).data, '4');
+    });
+
+    testWidgets('a decorationBuilder can mark the box when there is an error', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        app(
+          FormidableCupertinoTextField<String>(
+            field: name,
+            decorationBuilder: (context, control) => BoxDecoration(
+              border: Border.all(
+                color: control.errorText == null
+                    ? CupertinoColors.systemGrey
+                    : CupertinoColors.destructiveRed,
+              ),
+            ),
+          ),
+        ),
+      );
+      BoxDecoration? decoration() => tester
+          .widget<CupertinoTextField>(find.byType(CupertinoTextField))
+          .decoration;
+      expect(
+        decoration()!.border,
+        Border.all(color: CupertinoColors.systemGrey),
+      );
+
+      await tester.enterText(find.byType(CupertinoTextField), 'ab');
+      name.markAsTouched();
+      await tester.pump();
+
+      expect(
+        decoration()!.border,
+        Border.all(color: CupertinoColors.destructiveRed),
+      );
+    });
+
+    test('a static value and its builder can not both be given', () {
+      expect(
+        () => FormidableCupertinoTextField<String>(
+          field: name,
+          decoration: const BoxDecoration(),
+          decorationBuilder: (context, control) => const BoxDecoration(),
+        ),
+        throwsAssertionError,
+      );
+      expect(
+        () => FormidableCupertinoTextField<String>(
+          field: name,
+          prefix: const Text('a'),
+          prefixBuilder: (context, control) => const Text('b'),
+        ),
+        throwsAssertionError,
+      );
+      expect(
+        () => FormidableCupertinoTextField<String>(
+          field: name,
+          suffix: const Text('a'),
+          suffixBuilder: (context, control) => const Text('b'),
+        ),
+        throwsAssertionError,
+      );
+    });
+  });
 }
