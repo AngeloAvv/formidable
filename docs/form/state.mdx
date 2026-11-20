@@ -1,11 +1,11 @@
 ---
 title: State snapshots and reactive widgets
-description: Immutable Field, Field Array and Form state, notifications, builders, listeners and selectors
+description: Immutable Field, Field Array and Form state, notifications, streams, builders, listeners and selectors
 ---
 
 # State snapshots and reactive widgets
 
-Every Field, Field Array and Form holds an immutable **state snapshot** and notifies its listeners synchronously when that snapshot changes. The snapshot of a Form is complete: it holds the state of everything below it, so a change anywhere, a typed character included, gives a state that is different from the previous one. Builders have the current snapshot from the first frame, so there is no empty first build. Formidable does not depend on bloc, but the widgets work the way you would expect from `flutter_bloc`.
+Every Field, Field Array and Form holds an immutable **state snapshot** and notifies its listeners synchronously when that snapshot changes. Imperative code can follow it through [streams](#streams) that only emit for what it cares about. The snapshot of a Form is complete: it holds the state of everything below it, so a change anywhere, a typed character included, gives a state that is different from the previous one. Builders have the current snapshot from the first frame, so there is no empty first build. Formidable does not depend on bloc, but the widgets work the way you would expect from `flutter_bloc`.
 
 ## Field state
 
@@ -80,6 +80,77 @@ ValueListenableBuilder(
   builder: (context, state, _) => Text('${state.value}'),
 )
 ```
+
+## Streams
+
+`addListener` is the low-level channel: it fires on every state change, which is what a widget wants and what imperative code rarely does. Searching when a text Field merely lost focus, or planning a route again when a Form was touched, are the usual surprises. Every Field, Form, Nested Form, Field Array and Dynamic Form therefore has four streams that listen for you and only wake you up for what you ask for:
+
+| Stream | Emits |
+| --- | --- |
+| `changes` | The full state, on every state change. The stream form of `addListener` |
+| `valueChanges` | Only when the value changes, see the table below |
+| `statusChanges` | A `FormidableStatus`, only when it changes between `valid` and `invalid` |
+| `select<R>(selector)` | What `selector` picks from the state, only when it changes (`==`) |
+
+What `valueChanges` means and what it emits depends on the node:
+
+| Node | Emits when | Event |
+| --- | --- | --- |
+| Field | its value or presence changes | the value, `T?` |
+| Form, Nested Form | the value or presence of any Field below it changes, Nested Forms, Field Arrays and Dynamic Forms included | the state of the Form, typed after the Schema (`SignUpFormState`) |
+| Field Array | an item is added, removed, moved or edited | `FormidableFieldArrayState<S>` |
+| Dynamic Form | a Field is registered or removed, or the value or presence of one changes | `FormidableDynamicFormState` |
+
+Touching a Field, submitting, focus, errors and `pending` are state changes, not value changes: they reach `changes` and `select`, never `valueChanges`. The event of a Form is its state and not the Schema instance on purpose. `state.form.value` is null until the Form is valid, and a Form that becomes valid because a server error went away or an async check finished has no new value, so `valueChanges` does not follow `form.value`. Read `state.form.value` in the listener when you want the Schema instance.
+
+For a Field the event is `null` both when the Field becomes Unset and when null is chosen on a nullable Field, so going from one to the other emits `null` again. Read `field.isSet` in the listener to tell them apart, see [Unset is not null](/schema/presence#unset-is-not-null).
+
+`select` is the general tool. It computes the selection when you subscribe, so the first event is a real change, and it compares with `==`, so a record or a value class works:
+
+```dart
+// Plan the route again only when the stops change, not when the Form is touched.
+final subscription = form.select((state) => (state.from.value, state.to.value))
+    .listen((stops) => planRoute(stops.$1, stops.$2));
+```
+
+On a generated Form the streams are typed after the state: `form.valueChanges` is a `Stream<SignUpFormState>`, and the selector of `form.select` receives a `SignUpFormState`.
+
+The streams are driven by the same state as the listeners, so they behave the same way:
+
+- They are **broadcast and synchronous**: the event arrives right after the change, before the write returns, and any number of listeners can subscribe. A listener that writes to the Form from inside an event sees its own change delivered right after the current event, in order, never nested.
+- They **never emit the initial state**: the state at the time you listen is the baseline.
+- They **listen to the node only while they have subscribers** and cost nothing otherwise. Cancel the subscription when you are done, and `form.hasListeners` tells whether anything is still listening.
+- They **close when the node is disposed**, so `onDone` runs and a `StreamSubscription` needs no manual clean-up for that.
+- A batch (`patch`, `replace`, `reset`, `batch`) is one change, so it is one event.
+
+### Search as you type
+
+A Field's `valueChanges` ignores everything that is not a value, so it is the right input for a search box. A debounce is a few lines of plain Dart, and does not need an extra dependency:
+
+```dart
+final class QuerySearch {
+  QuerySearch(this.form, this.search) {
+    _subscription = form.query.valueChanges.listen(_onQuery);
+  }
+
+  final SearchForm form;
+  final void Function(String? query) search;
+  late final StreamSubscription<String?> _subscription;
+  Timer? _debounce;
+
+  void _onQuery(String? query) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 300), () => search(query));
+  }
+
+  void dispose() {
+    _debounce?.cancel();
+    _subscription.cancel();
+  }
+}
+```
+
+The query is searched 300 ms after the user stops typing, and not when the Field is merely focused, touched or left. Compare with `form.query.addListener`, which also fires when the Field is touched.
 
 ## Builder, Listener and Selector
 

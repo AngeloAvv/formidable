@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:formidable/formidable.dart';
 import 'package:formidable_test_schemas/mixed_containers.dart';
 import 'package:formidable_test_schemas/nested.dart';
@@ -723,5 +724,39 @@ void main() {
       expect(changes, isNotEmpty);
       expect(keys, [1]);
     });
+  });
+
+  group('the debounced search of the docs', () {
+    test(
+      'searches once the user stops typing, not when the Field is touched',
+      () {
+        fakeAsync((async) {
+          final form = itinerary();
+          final searched = <String?>[];
+          Timer? debounce;
+          final subscription = form.title.valueChanges.listen((query) {
+            debounce?.cancel();
+            debounce = Timer(
+              const Duration(milliseconds: 300),
+              () => searched.add(query),
+            );
+          });
+
+          form.title.markAsTouched();
+          form.title.setValue('Pa');
+          async.elapse(const Duration(milliseconds: 100));
+          form.title.setValue('Par');
+          async.elapse(const Duration(milliseconds: 100));
+          form.title.setValue('Paris');
+          async.elapse(const Duration(milliseconds: 299));
+          expect(searched, isEmpty);
+          async.elapse(const Duration(milliseconds: 1));
+          expect(searched, ['Paris']);
+
+          subscription.cancel();
+          debounce?.cancel();
+        });
+      },
+    );
   });
 }
