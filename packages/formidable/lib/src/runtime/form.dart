@@ -638,7 +638,9 @@ abstract class FormidableForm<S>
     List<FormidableValidationError> formErrors = const [],
   }) {
     _formErrors = List.unmodifiable(formErrors);
-    fieldErrors.forEach((field, errors) => field.applyErrors(errors));
+    batch(
+      () => fieldErrors.forEach((field, errors) => field.applyErrors(errors)),
+    );
     _onNodeChanged();
   }
 
@@ -715,13 +717,20 @@ abstract class FormidableForm<S>
   @override
   void markSubmitted() {
     if (!isSet) return;
-    if (_formErrors.isNotEmpty) {
-      _formErrors = const [];
-      _onNodeChanged();
+    // Every Field changes, and the Form notifies once.
+    _holdTree(1);
+    try {
+      if (_formErrors.isNotEmpty) {
+        _formErrors = const [];
+        _onNodeChanged();
+      }
+      for (final node in _nodes) {
+        node.markSubmitted();
+      }
+    } finally {
+      _holdTree(-1);
     }
-    for (final node in _nodes) {
-      node.markSubmitted();
-    }
+    _flushTree();
   }
 
   /// Adds the errors of every Field below this Form to [into]. An Unset

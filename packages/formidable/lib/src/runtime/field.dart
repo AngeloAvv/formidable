@@ -138,13 +138,17 @@ final class FormidableField<T>
   /// A disabled Field shows no applied errors.
   void applyErrors(List<FormidableValidationError> errors) {
     _applied = List.unmodifiable(errors);
-    _refresh();
+    _stale = true;
+    _settle();
   }
 
   void _setEnabled(bool enabled) {
     if (_enabled == enabled) return;
     _enabled = enabled;
-    _refresh();
+    _stale = true;
+    // Through the Form: the rules that read this Field, and the asynchronous
+    // Form Validators that wait for it, have to run again.
+    _settle();
     _focusLayoutChanged();
   }
 

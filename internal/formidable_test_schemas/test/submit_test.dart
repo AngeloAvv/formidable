@@ -21,6 +21,19 @@ void main() {
   setUp(() => log = []);
 
   group('submit', () {
+    test('marks every Field and notifies the Form once', () async {
+      final form = AccountForm(username: 'angelo');
+      var changes = 0;
+      form.addChangeListener(() => changes++);
+
+      await form.submit();
+
+      expect(changes, 1);
+      expect(form.username.state.submitted, isTrue);
+      expect(form.password.state.submitted, isTrue);
+      expect(form.code.state.submitted, isTrue);
+    });
+
     test('marks every Field as touched, valid or not', () async {
       final form = AccountForm(username: 'angelo');
 

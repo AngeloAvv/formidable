@@ -195,4 +195,95 @@ void main() {
       expect(form.state.status, FormidableStatus.invalid);
     });
   });
+  group('Disabled Field and the Form', () {
+    test('updates the Form status and notifies it once, both ways', () {
+      final form = _valid()..password.setValue('short');
+      expect(form.state.status, FormidableStatus.invalid);
+      var states = 0;
+      var changes = 0;
+      form
+        ..addListener(() => states++)
+        ..addChangeListener(() => changes++);
+
+      form.password.disable();
+
+      expect(form.state.status, FormidableStatus.valid);
+      expect(states, 1);
+      expect(changes, 1);
+
+      form.password.enable();
+
+      expect(form.state.status, FormidableStatus.invalid);
+      expect(states, 2);
+      expect(changes, 2);
+    });
+
+    test('lets submit succeed with the value of the disabled Field', () async {
+      final form = _valid()..password.setValue('short');
+      form.password.disable();
+
+      final result = await form.submit();
+
+      expect(
+        (result as FormidableSubmitValid<Account>).value.password,
+        'short',
+      );
+    });
+
+    test('starts the asynchronous Form Validator when it is enabled again', () {
+      fakeAsync((async) {
+        final validator = async_schema.PostalCodeMatchesCity();
+        final form = async_schema.ShippingForm(
+          postalCode: '70121',
+          city: 'Roma',
+          note: 'n',
+          postalCodeMatchesCity: validator,
+        )..city.disable();
+        async.elapse(const Duration(seconds: 5));
+        expect(validator.calls, isEmpty);
+        expect(form.state.pending, isFalse);
+
+        form.city.enable();
+        expect(form.state.pending, isTrue);
+        async.elapse(const Duration(milliseconds: 300));
+
+        expect(validator.calls, ['70121/Roma']);
+      });
+    });
+
+    test('stops a running asynchronous Form Validator when disabled', () {
+      fakeAsync((async) {
+        final validator = async_schema.PostalCodeMatchesCity();
+        final form = async_schema.ShippingForm(
+          postalCode: '70121',
+          city: 'Roma',
+          note: 'n',
+          postalCodeMatchesCity: validator,
+        );
+        expect(form.state.pending, isTrue);
+
+        form.city.disable();
+        async.elapse(const Duration(seconds: 5));
+
+        expect(validator.calls, isEmpty);
+        expect(form.state.pending, isFalse);
+      });
+    });
+  });
+
+  group('applyErrors and the Form', () {
+    test('makes the Form invalid and clears it again', () {
+      final form = _valid();
+      var states = 0;
+      form.addListener(() => states++);
+
+      form.username.applyErrors([const FormidableRequiredError()]);
+      expect(form.state.status, FormidableStatus.invalid);
+      expect(states, 1);
+
+      form.username.applyErrors(const []);
+      expect(form.state.status, FormidableStatus.valid);
+      expect(states, 2);
+    });
+  });
 }
