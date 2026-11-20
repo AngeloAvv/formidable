@@ -7,8 +7,8 @@ import 'cupertino_preferences.formidable_scope.dart';
 
 /// Every Cupertino widget of `formidable_cupertino`, each bound to a Field of
 /// the same Form. Errors show once a Field is touched, or after a submit.
-class CupertinoWidgetsPage extends StatelessWidget {
-  const CupertinoWidgetsPage({super.key});
+class WidgetsCupertinoPage extends StatelessWidget {
+  const WidgetsCupertinoPage({super.key});
 
   @override
   Widget build(BuildContext context) => CupertinoPreferencesFormScope(

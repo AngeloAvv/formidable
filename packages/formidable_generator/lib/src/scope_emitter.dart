@@ -27,15 +27,23 @@ String _scope(SchemaModel schema) {
   final scope = schema.scopeName;
   final getter =
       '${schema.name[0].toLowerCase()}${schema.name.substring(1)}Form';
+  // A Form that cannot be created without arguments (it takes Async Validator
+  // instances or a Schema instance for a Passthrough Field) has no default.
+  final needsCreate =
+      schema.requiresInitial || schema.asyncParameters.isNotEmpty;
+  final createParameter = needsCreate
+      ? 'required $form Function() create,'
+      : '$form Function()? create,';
+  final createArgument = needsCreate ? 'create' : 'create ?? $form.new';
   return '''
 /// Creates a [$form], makes it available to the widgets below and disposes it.
 class $scope extends FormidableScope<$form> {
   $scope({
     super.key,
-    $form Function()? create,
+    $createParameter
     super.errorDisplay,
     required super.child,
-  }) : super(create: create ?? $form.new);
+  }) : super(create: $createArgument);
 
   /// Exposes a [$form] that something else owns, without disposing it.
   const $scope.value({

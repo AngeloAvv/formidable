@@ -1,0 +1,204 @@
+---
+title: A multi-step wizard
+description: One Form with a Nested Form per step, validated and submitted step by step
+---
+
+# A multi-step wizard
+
+A wizard splits one long Form into steps. Formidable needs no special wizard type: model each step as a **Nested Form** of one Schema. The whole Form lives for the whole wizard, so what the user typed in a step is still there when they come back, and each step can be submitted on its own.
+
+## 1. One Schema, one Nested Form per step
+
+```dart
+// example/lib/wizard/wizard.dart
+@Formidable()
+class Traveler {
+  const Traveler({required this.name, required this.email});
+
+  @Trim()
+  @MinLength(2)
+  final String name;
+
+  @Trim()
+  @Email()
+  final String email;
+}
+// ...
+@Formidable()
+class Journey {
+  const Journey({
+    required this.from,
+    required this.to,
+    required this.passengers,
+  });
+
+  @Trim()
+  @MinLength(2)
+  final String from;
+
+  @Trim()
+  @MinLength(2)
+  @Different(#from)
+  final String to;
+
+  @Min(1)
+  @Max(9)
+  final int passengers;
+}
+// ...
+@Formidable()
+class Confirmation {
+  const Confirmation({this.acceptedTerms = false});
+
+  @IsTrue()
+  final bool acceptedTerms;
+}
+// ...
+@Formidable()
+class Booking {
+  const Booking({
+    required this.traveler,
+    required this.journey,
+    required this.confirmation,
+  });
+
+  final Traveler traveler;
+  final Journey journey;
+  final Confirmation confirmation;
+}
+```
+
+- Every step is a normal [Nested Form](/schema/nested-forms) with its own Validators.
+- `@Different(#from)` is a [cross-field rule](/validation/cross-field) inside the step: it addresses `from`, which lives in the same Schema.
+- `acceptedTerms` has a default of `false`, so it is optional and `@IsTrue()` judges it.
+
+## 2. Create the Form once
+
+Put the Form Scope above the steps, so that moving between steps never recreates it. With `FormidableErrorDisplay.submit`, a step shows its errors only after the user presses Next, not while they are still typing.
+
+```dart
+// example/lib/wizard/wizard_material.dart
+class WizardMaterialPage extends StatelessWidget {
+  const WizardMaterialPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => BookingFormScope(
+    // Errors show only after a submit: a step is judged when the user presses
+    // Next, not while they are still typing.
+    errorDisplay: FormidableErrorDisplay.submit,
+    child: Scaffold(
+      appBar: AppBar(title: const Text('Wizard')),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: _WizardBody(),
+      ),
+    ),
+  );
+}
+```
+
+## 3. Step through the Nested Forms
+
+Every generated Form can be submitted, including a Nested Form. `submit()` on a step touches its Fields, waits for its checks, focuses the first invalid Field and returns the usual sealed result. Advance only when it is valid. Fields of a step that is not on screen keep their values, and are skipped when the focus moves.
+
+```dart
+// example/lib/wizard/wizard.dart
+/// The Form of the step at [index], as a Form of any Schema: every Form can be
+/// submitted on its own.
+FormidableForm<Object?> stepForm(BookingForm form, int index) =>
+    switch (index) {
+      0 => form.traveler,
+      1 => form.journey,
+      _ => form.confirmation,
+    };
+```
+
+```dart
+// example/lib/wizard/wizard_material.dart
+Future<void> _next(BookingForm form) async {
+  // Submitting a step touches its Fields and focuses the first invalid one.
+  final advance = switch (await stepForm(form, _step).submit()) {
+    FormidableSubmitValid() => true,
+    FormidableSubmitInvalid() => false,
+  };
+  if (advance && mounted) setState(() => _step++);
+}
+```
+
+## 4. Show one step at a time
+
+Build the widgets of the current step. Moving back and forth only changes which Fields are on screen; the Form is the same.
+
+```dart
+// example/lib/wizard/wizard_material.dart
+...switch (_step) {
+  0 => _travelerStep(form),
+  1 => _journeyStep(form),
+  _ => _confirmStep(form),
+},
+```
+
+```dart
+// example/lib/wizard/wizard_material.dart
+List<Widget> _journeyStep(BookingForm form) => [
+  FormidableTextField(
+    key: const Key('journey-from'),
+    field: form.journey.from,
+    decoration: const InputDecoration(
+      labelText: 'From',
+      border: OutlineInputBorder(),
+    ),
+  ),
+  FormidableTextField(
+    key: const Key('journey-to'),
+    field: form.journey.to,
+    decoration: const InputDecoration(
+      labelText: 'To',
+      border: OutlineInputBorder(),
+    ),
+  ),
+  FormidableTextField(
+    key: const Key('journey-passengers'),
+    field: form.journey.passengers,
+    keyboardType: TextInputType.number,
+    decoration: const InputDecoration(
+      labelText: 'Passengers',
+      border: OutlineInputBorder(),
+    ),
+  ),
+];
+```
+
+## 5. Book
+
+The last step submits the **whole** Form, so a step the user never fixed cannot slip through. A valid result holds the complete `Booking`:
+
+```dart
+// example/lib/wizard/wizard_material.dart
+Future<void> _book(BookingForm form) async {
+  final result = switch (await form.submit()) {
+    FormidableSubmitValid(:final value) => describeConfirmation(value),
+    FormidableSubmitInvalid() => 'Please fix the errors above.',
+  };
+  if (mounted) setState(() => _result = result);
+}
+```
+
+The Cupertino page has the same state and the same Form; only the widgets change:
+
+```dart
+// example/lib/wizard/wizard_cupertino.dart
+List<Widget> _travelerStep(BookingForm form) => [
+  FormidableCupertinoTextField(
+    key: const Key('traveler-name'),
+    field: form.traveler.name,
+    placeholder: 'Name',
+  ),
+  FormidableCupertinoTextField(
+    key: const Key('traveler-email'),
+    field: form.traveler.email,
+    placeholder: 'Email',
+    keyboardType: TextInputType.emailAddress,
+  ),
+];
+```

@@ -1,11 +1,11 @@
-import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
-import 'cupertino_widgets_page.dart';
-import 'sign_up_page.dart';
+import 'guides.dart';
 
 void main() => runApp(const ExampleApp());
 
+/// The example app: a list of guides, each shown with Material and Cupertino
+/// widgets side by side.
 class ExampleApp extends StatelessWidget {
   const ExampleApp({super.key});
 
@@ -13,12 +13,6 @@ class ExampleApp extends StatelessWidget {
   Widget build(BuildContext context) => MaterialApp(
     title: 'Formidable example',
     theme: ThemeData(colorSchemeSeed: Colors.indigo),
-    localizationsDelegates: [
-      FormidableLocalizations.delegate,
-      ...GlobalMaterialLocalizations.delegates,
-    ],
-    supportedLocales: FormidableLocalizations.supportedLocales,
-    home: const SignUpPage(),
-    routes: {'/cupertino': (_) => const CupertinoWidgetsPage()},
+    home: const HomePage(),
   );
 }

@@ -1,0 +1,238 @@
+---
+title: Sign up
+description: A sign-up form with an asynchronous check, cross-field rules and an imperative submit
+---
+
+# Sign up
+
+A sign-up form is the first form most apps need. This guide builds one with:
+
+- a username that is trimmed, has a minimum length and is checked against a service,
+- a password and a confirmation that must match,
+- an account type, where a company must also give a VAT number,
+- one button that calls `submit()`.
+
+## 1. Declare the Schema
+
+The Schema is a plain Dart class. Annotations declare how each Field is judged, and the generator writes `SignUpForm` and `SignUpFormScope` from it.
+
+```dart
+// example/lib/sign_up/sign_up.dart
+@Formidable()
+@PasswordWithoutUsername()
+@Effects([VatOnlyForCompanies()])
+class SignUp {
+  const SignUp({
+    required this.username,
+    required this.password,
+    required this.confirmation,
+    this.type = AccountType.personal,
+    this.vat,
+  });
+
+  @Trim()
+  @MinLength(4)
+  @AsyncValidator<UsernameAvailable>()
+  final String username;
+
+  @MinLength(8)
+  final String password;
+
+  @MustMatch(#password)
+  final String confirmation;
+
+  final AccountType type;
+
+  @RequiredIf(#type, AccountType.company)
+  final String? vat;
+}
+```
+
+- `@Trim()` is a [Normalizer](/validation/normalizers): it runs before validation.
+- `@MustMatch(#password)` and `@RequiredIf(#type, AccountType.company)` are [cross-field rules](/validation/cross-field). The symbols are checked by the generator, so a typo is a build error.
+- `type` has a default, so it is optional and always has a value.
+- `@AsyncValidator<UsernameAvailable>()` makes the generated Form take an instance of the validator.
+
+## 2. Write the asynchronous check
+
+An [Async Validator](/validation/async) is a class you write, with its dependencies as constructor parameters. Return your own Validation Error when the value is rejected.
+
+```dart
+// example/lib/sign_up/sign_up.dart
+final class UsernameTakenError extends FormidableValidationError {
+  const UsernameTakenError(this.username);
+
+  final String username;
+
+  @override
+  List<Object?> get props => [username];
+}
+// ...
+class UsernameAvailable extends FormidableAsyncValidator<String> {
+  UsernameAvailable(this.repository);
+
+  final UserRepository repository;
+
+  @override
+  Duration get debounce => const Duration(milliseconds: 300);
+
+  @override
+  Future<List<FormidableValidationError>> validate(String value) async =>
+      await repository.isTaken(value) ? [UsernameTakenError(value)] : const [];
+}
+```
+
+A Validation Error has no text. Register its message once, for the whole app, on `FormidableConfig`. Messages for the built-in errors come from the [localizations](/validation/messages).
+
+```dart
+// example/lib/showcase.dart
+final exampleMessages = const FormidableMessages()
+    .on<UsernameTakenError>(
+      (context, error) => '"${error.username}" is already taken.',
+    )
+    .on<PasswordHasUsernameError>(
+      (context, error) => 'The password must not contain the username.',
+    )
+    .on<EmailInUseError>(
+      (context, error) => 'That email is already registered.',
+    );
+```
+
+Put the config above the Navigator, so that every page sees it. The example does it in the `builder` of each app:
+
+```dart
+// example/lib/showcase.dart
+Widget _config(BuildContext context, Widget? child) =>
+    FormidableConfig(messages: exampleMessages, child: child!);
+```
+
+`MaterialApp(builder: _config)` and `CupertinoApp(builder: _config)` then wrap every route.
+
+## 3. Create the Form and bind the widgets
+
+The Form Scope creates the Form once and disposes it. Because `SignUp` needs an Async Validator, `create` is required and passes the instance.
+
+```dart
+// example/lib/sign_up/sign_up_material.dart
+class SignUpMaterialPage extends StatelessWidget {
+  const SignUpMaterialPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => SignUpFormScope(
+    // The generated Form takes the instance of every Async Validator.
+    create: () => SignUpForm(
+      usernameAvailable: UsernameAvailable(const UserRepository()),
+    ),
+    child: Scaffold(
+      appBar: AppBar(title: const Text('Sign up')),
+      body: const SingleChildScrollView(
+        padding: EdgeInsets.all(16),
+        child: _SignUpBody(),
+      ),
+    ),
+  );
+}
+```
+
+Every widget takes the Field handle, so a Field of another type does not compile. `context.signUpForm` finds the Form below the scope.
+
+```dart
+// example/lib/sign_up/sign_up_material.dart
+FormidableTextField(
+  key: const Key('username'),
+  field: form.username,
+  decoration: const InputDecoration(
+    labelText: 'Username',
+    border: OutlineInputBorder(),
+  ),
+),
+```
+
+Cupertino uses the same Form with `FormidableCupertinoTextField`:
+
+```dart
+// example/lib/sign_up/sign_up_cupertino.dart
+FormidableCupertinoTextField(
+  key: const Key('username'),
+  field: form.username,
+  placeholder: 'Username',
+),
+```
+
+## 4. Submit
+
+The button is always enabled. `submit()` marks every Field touched, so every error shows, waits for the asynchronous check, moves the focus to the first invalid Field and returns a sealed result:
+
+```dart
+// example/lib/sign_up/sign_up_material.dart
+Future<void> _submit(SignUpForm form) async {
+  final greeting = switch (await form.submit()) {
+    FormidableSubmitValid(:final value) => 'Welcome, ${value.username}!',
+    FormidableSubmitInvalid() => 'Please fix the errors above.',
+  };
+  if (mounted) setState(() => _greeting = greeting);
+}
+```
+
+This is the **imperative pattern**. [Submit patterns](/guides/submit-patterns) compares it with the declarative one.
+
+## 5. Show that a check is running
+
+`pending` is part of the Field state, so a Field Builder can show progress while the service answers. `submit()` waits for it, so the user never submits an unchecked value.
+
+```dart
+// example/lib/sign_up/sign_up_material.dart
+class _Checking extends StatelessWidget {
+  const _Checking(this.field);
+
+  final FormidableField<String> field;
+
+  @override
+  Widget build(BuildContext context) => FormidableFieldBuilder<String>(
+    field: field,
+    buildWhen: (previous, current) => previous.pending != current.pending,
+    builder: (context, state) => state.pending
+        ? const Text('Checking username…')
+        : const SizedBox.shrink(),
+  );
+}
+```
+
+## 6. A rule over several Fields, and a Form Effect
+
+When no built-in rule fits, write a [Form Validator](/validation/custom). It receives the typed Form and addresses its error to a Field.
+
+```dart
+// example/lib/sign_up/sign_up.dart
+class PasswordWithoutUsername extends FormidableFormValidator<SignUpForm> {
+  const PasswordWithoutUsername();
+
+  @override
+  List<FormidableFieldError> validate(SignUpForm form) =>
+      form.username.isSet &&
+          form.password.isSet &&
+          form.password.value!.contains(form.username.value!)
+      ? [FormidableFieldError(form.password, const PasswordHasUsernameError())]
+      : const [];
+}
+```
+
+A [Form Effect](/form/effects) changes Fields when others change. Here the VAT number is available only to companies; a disabled Field takes no input and is not validated.
+
+```dart
+// example/lib/sign_up/sign_up.dart
+class VatOnlyForCompanies extends FormidableEffect<SignUpForm> {
+  const VatOnlyForCompanies();
+
+  @override
+  void apply(SignUpForm form, FormidableEffectContext context) {
+    if (form.type.value == AccountType.company) {
+      form.vat.enable();
+    } else {
+      form.vat.disable();
+    }
+  }
+}
+```
+
+Declare both next to the Schema with `@PasswordWithoutUsername()` and `@Effects([VatOnlyForCompanies()])`.

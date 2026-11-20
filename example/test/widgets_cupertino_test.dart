@@ -1,25 +1,12 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:formidable_example/cupertino_widgets_page.dart';
-import 'package:formidable_flutter/formidable_flutter.dart';
+import 'package:formidable_example/widgets/widgets_cupertino.dart';
+
+import 'support.dart';
 
 void main() {
-  // A tall surface, so that the whole list is built and on screen.
-  Future<void> pumpPage(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(800, 4000);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(
-      CupertinoApp(
-        localizationsDelegates: [
-          FormidableLocalizations.delegate,
-          ...GlobalCupertinoLocalizations.delegates,
-        ],
-        supportedLocales: FormidableLocalizations.supportedLocales,
-        home: const CupertinoWidgetsPage(),
-      ),
-    );
-  }
+  Future<void> pumpPage(WidgetTester tester) =>
+      pumpCupertino(tester, const WidgetsCupertinoPage());
 
   testWidgets('shows every Cupertino widget', (tester) async {
     await pumpPage(tester);

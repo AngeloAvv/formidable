@@ -7,8 +7,8 @@ import 'profile.formidable_scope.dart';
 
 /// Shows every Material widget of `formidable_material`, each bound to one
 /// Field of the `Profile` Schema.
-class WidgetsPage extends StatelessWidget {
-  const WidgetsPage({super.key});
+class WidgetsMaterialPage extends StatelessWidget {
+  const WidgetsMaterialPage({super.key});
 
   @override
   Widget build(BuildContext context) => ProfileFormScope(

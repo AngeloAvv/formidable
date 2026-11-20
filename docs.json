@@ -70,7 +70,15 @@
     },
     {
       "group": "Guides",
-      "pages": [{ "title": "Guides", "href": "/guides" }]
+      "pages": [
+        { "title": "Overview and example app", "href": "/guides" },
+        { "title": "Sign up", "href": "/guides/sign-up" },
+        { "title": "Submit patterns", "href": "/guides/submit-patterns" },
+        { "title": "Edit a contact", "href": "/guides/edit-form" },
+        { "title": "Dynamic lists", "href": "/guides/dynamic-lists" },
+        { "title": "A multi-step wizard", "href": "/guides/wizard" },
+        { "title": "A questionnaire from the server", "href": "/guides/questionnaire" }
+      ]
     }
   ]
 }

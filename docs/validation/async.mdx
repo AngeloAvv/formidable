@@ -43,6 +43,15 @@ The generated Form takes the instance as a required named parameter, named after
 final form = SignUpForm(usernameAvailable: UsernameAvailable(repository));
 ```
 
+The generated Form Scope of such a Schema has a required `create`, because the Form cannot be built without the instance:
+
+```dart
+SignUpFormScope(
+  create: () => SignUpForm(usernameAvailable: UsernameAvailable(repository)),
+  child: ...,
+)
+```
+
 If several Fields name the same class they share one parameter. Two different classes that would produce the same parameter name, or a name that is also a Field name, fail the build. The Validator must accept the Field type, like a synchronous one.
 
 ## When it runs

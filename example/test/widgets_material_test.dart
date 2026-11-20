@@ -1,15 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:formidable_example/profile.dart';
-import 'package:formidable_example/widgets_page.dart';
+import 'package:formidable_example/widgets/profile.dart';
+import 'package:formidable_example/widgets/widgets_material.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'support.dart';
+
 void main() {
-  Future<void> pumpPage(WidgetTester tester) async {
-    tester.view.physicalSize = const Size(800, 3000);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    await tester.pumpWidget(const MaterialApp(home: WidgetsPage()));
-  }
+  Future<void> pumpPage(WidgetTester tester) =>
+      pumpMaterial(tester, const WidgetsMaterialPage());
 
   testWidgets('shows every Material widget', (tester) async {
     await pumpPage(tester);

@@ -1,0 +1,216 @@
+---
+title: Dynamic lists
+description: Repeatable sections with Field Arrays of Nested Forms and of Fields
+---
+
+# Dynamic lists
+
+A **Field Array** is a list the user can grow and shrink: the stops of a trip, the phone numbers of a contact, the tags of a post. This guide builds a trip with a list of stops (each one a Nested Form) and a list of tags (each one a Field).
+
+## 1. The Schema
+
+A `List` of Schemas is a Field Array of Nested Forms. A `List<String>` is a single Field by default; `@FieldArray` opts it into a Field Array where every entry is an input of its own.
+
+```dart
+// example/lib/trip/trip.dart
+@Formidable()
+class Stop {
+  const Stop({required this.place, this.nights = 1});
+
+  @Trim()
+  @MinLength(2)
+  final String place;
+
+  @Min(1)
+  final int nights;
+}
+// ...
+@Formidable()
+class Trip {
+  const Trip({required this.name, required this.stops, this.tags = const []});
+
+  @Trim()
+  @MinLength(3)
+  final String name;
+
+  @MaxItems(3)
+  final List<Stop> stops;
+
+  @FieldArray(each: [MinLength(2)], normalizers: [Trim()])
+  @MaxItems(4)
+  final List<String> tags;
+}
+```
+
+- `@MaxItems(3)` judges the **number** of items. An empty array is Unset, so `stops` is required: the Form is invalid until it has a stop.
+- `each` and `normalizers` of `@FieldArray` apply to every tag.
+
+## 2. Build the rows
+
+`FormidableFieldArrayBuilder` rebuilds when the array changes and keys every row with the item's stable `id`, so the text, focus and scroll state of a row stay with its item when rows are added, removed or moved. `itemBuilder` builds one row; `builder` lays the rows out and receives the state of the array.
+
+```dart
+// example/lib/trip/trip_material.dart
+FormidableFieldArrayBuilder<StopForm, Stop>(
+  array: form.stops,
+  itemBuilder: (context, index, item) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      spacing: 8,
+      children: [
+        Expanded(
+          flex: 3,
+          child: FormidableTextField(
+            key: Key('place-${item.id}'),
+            field: item.node.place,
+            decoration: const InputDecoration(
+              labelText: 'Place',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 2,
+          child: FormidableTextField(
+            key: Key('nights-${item.id}'),
+            field: item.node.nights,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Nights',
+              hintText: '1',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        IconButton(
+          key: Key('move-up-$index'),
+          icon: const Icon(Icons.arrow_upward),
+          onPressed: index == 0
+              ? null
+              : () => form.stops.move(index, index - 1),
+        ),
+        IconButton(
+          key: Key('remove-$index'),
+          icon: const Icon(Icons.delete_outline),
+          onPressed: () => form.stops.remove(item),
+        ),
+      ],
+    ),
+  ),
+  builder: (context, state, items) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      ...items,
+      // The errors of the array itself: its size, or "required".
+      if (state.dirty || state.submitted)
+        for (final error in state.errors)
+          Text(
+            formidableMessageOf(context, error),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ),
+      TextButton(
+        onPressed: form.stops.add,
+        child: const Text('Add stop'),
+      ),
+    ],
+  ),
+),
+```
+
+Every row reaches the Fields of its item through `item.node`, a generated `StopForm` with typed handles. `Stop.nights` is an `int`: the text field converts through a [Codec](/widgets/codecs).
+
+## 3. Add, remove and reorder
+
+The array has the methods you would expect. `move` keeps the item and everything the user typed in it. `add()` creates an empty item; `add(const Stop(place: 'Rome'))` creates a prefilled one.
+
+```dart
+// example/lib/trip/trip_material.dart
+IconButton(
+  key: Key('move-up-$index'),
+  icon: const Icon(Icons.arrow_upward),
+  onPressed: index == 0
+      ? null
+      : () => form.stops.move(index, index - 1),
+),
+// ...
+IconButton(
+  key: Key('remove-$index'),
+  icon: const Icon(Icons.delete_outline),
+  onPressed: () => form.stops.remove(item),
+),
+```
+
+## 4. Show the errors of the array
+
+The errors of the array itself (too many stops, none at all) are in `state.errors` of the `builder`, as in the snippet above, and the errors of the items belong to their own Fields. The example shows the errors of the array once the user has changed the list or submitted, with `formidableMessageOf` turning each Validation Error into text.
+
+## 5. A list of Fields
+
+`@FieldArray` turns `List<String>` into an array of `FormidableField<String>`. The item node is the Field itself:
+
+```dart
+// example/lib/trip/trip_material.dart
+FormidableFieldArrayBuilder<FormidableField<String>, String>(
+  array: form.tags,
+  itemBuilder: (context, index, item) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Row(
+      spacing: 8,
+      children: [
+        Expanded(
+          child: FormidableTextField(
+            key: Key('tag-${item.id}'),
+            field: item.node,
+            decoration: const InputDecoration(
+              labelText: 'Tag',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () => form.tags.remove(item),
+        ),
+      ],
+    ),
+  ),
+  builder: (context, state, items) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      ...items,
+      if (state.dirty || state.submitted)
+        for (final error in state.errors)
+          Text(
+            formidableMessageOf(context, error),
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.error,
+            ),
+          ),
+      TextButton(
+        onPressed: form.tags.add,
+        child: const Text('Add tag'),
+      ),
+    ],
+  ),
+),
+```
+
+## 6. Submit
+
+`submit()` touches every Field of every item and returns the errors of the items in `fieldErrors` and the errors of the arrays in `arrayErrors`. A valid result has a typed `List<Stop>`:
+
+```dart
+// example/lib/trip/trip_material.dart
+Future<void> _save(TripForm form) async {
+  final result = switch (await form.submit()) {
+    FormidableSubmitValid(:final value) =>
+      'Saved ${value.name}: ${value.stops.map((s) => s.place).join(', ')}.',
+    FormidableSubmitInvalid() => 'Please fix the errors above.',
+  };
+  if (mounted) setState(() => _result = result);
+}
+```
+
+See [Field Arrays and collections](/schema/field-arrays) for the full behavior: dirty, reset, async checks on items and the build errors the generator reports.
