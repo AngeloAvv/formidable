@@ -16,3 +16,54 @@ workspace:
 
 dev_dependencies:
   melos: ^8.0.0
+
+melos:
+  scripts:
+    generate:
+      description: Run build_runner in every package that generates code.
+      exec:
+        command: dart run build_runner build
+        concurrency: 1
+      packageFilters:
+        dependsOn: build_runner
+
+    analyze:
+      description: Analyze every package and the example app.
+      exec:
+        command: fvm flutter analyze
+        concurrency: 1
+        failFast: true
+
+    test:
+      description: Run the tests of every package, pure Dart ones with dart test.
+      run: melos run test:dart && melos run test:flutter
+
+    test:dart:
+      description: Run the tests of the pure Dart packages.
+      exec:
+        command: fvm dart test
+        concurrency: 1
+        failFast: true
+      packageFilters:
+        flutter: false
+        dirExists: test
+
+    test:flutter:
+      description: Run the tests of the Flutter packages and the example app.
+      exec:
+        command: fvm flutter test
+        concurrency: 1
+        failFast: true
+      packageFilters:
+        flutter: true
+        dirExists: test
+
+    format:
+      description: Format every package.
+      exec:
+        command: dart format .
+        concurrency: 1
+
+    ci:
+      description: What the CI runs, in order.
+      run: melos run generate && melos run analyze && melos run test

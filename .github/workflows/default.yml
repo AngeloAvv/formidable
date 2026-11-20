@@ -1,0 +1,42 @@
+name: Pipeline
+
+on: push
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze ${{ matrix.working-directory }}
+    strategy:
+      fail-fast: false
+      matrix:
+        working-directory:
+          - packages/formidable
+          - packages/formidable_generator
+          - packages/formidable_flutter
+          - packages/formidable_material
+          - packages/formidable_cupertino
+          - internal/formidable_test_schemas
+          - example
+    uses: ./.github/workflows/analyze.yml
+    with:
+      working-directory: ${{ matrix.working-directory }}
+
+  test:
+    name: Test ${{ matrix.working-directory }}
+    strategy:
+      fail-fast: false
+      matrix:
+        working-directory:
+          - packages/formidable
+          - packages/formidable_generator
+          - packages/formidable_flutter
+          - packages/formidable_material
+          - packages/formidable_cupertino
+          - internal/formidable_test_schemas
+          - example
+    uses: ./.github/workflows/test.yml
+    with:
+      working-directory: ${{ matrix.working-directory }}

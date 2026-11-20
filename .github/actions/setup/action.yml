@@ -1,0 +1,35 @@
+name: Set up the workspace
+description: Install Flutter through fvm, resolve the workspace and run the code generators of one package.
+
+inputs:
+  working-directory:
+    description: The package or app to prepare
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Dart
+      uses: dart-lang/setup-dart@v1.7.2
+
+    - name: Install fvm
+      shell: bash
+      run: dart pub global activate fvm
+
+    - name: Install Flutter
+      shell: bash
+      run: fvm install
+
+    - name: Resolve the workspace
+      shell: bash
+      run: fvm flutter pub get
+
+    - name: Generate code
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      run: |
+        if grep -q '^  build_runner:' pubspec.yaml; then
+          fvm dart run build_runner build
+        else
+          echo "No code generation in ${{ inputs.working-directory }}."
+        fi
