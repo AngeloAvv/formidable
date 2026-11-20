@@ -1,6 +1,7 @@
 import 'package:build/build.dart';
 import 'package:build_test/build_test.dart';
 import 'package:formidable_generator/formidable_generator.dart';
+import 'package:logging/logging.dart';
 import 'package:test/test.dart';
 
 /// Seam 3: feed Schemas to the real builders and assert on the diagnostics
@@ -9,6 +10,7 @@ Future<TestBuilderResult> _build(
   Builder builder,
   String schema, {
   String? pubspec,
+  List<LogRecord>? logs,
 }) async {
   final readerWriter = TestReaderWriter(rootPackage: 'app');
   await readerWriter.testing.loadIsolateSources();
@@ -18,6 +20,7 @@ Future<TestBuilderResult> _build(
     rootPackage: 'app',
     readerWriter: readerWriter,
     generateFor: {'app|lib/schema.dart'},
+    onLog: logs?.add,
   );
 }
 
@@ -81,6 +84,130 @@ enum SignUp { a }
       expect(result.errors.join('\n'), contains('can only annotate a class'));
     });
 
+    test('fails when the Schema is generic', () async {
+      final result = await _build(formBuilder, '''
+$_prelude
+@Formidable()
+class Wrapper<T> {
+  const Wrapper({required this.value});
+
+  final T value;
+}
+''');
+
+      expect(result.succeeded, isFalse);
+      expect(
+        result.errors.join('\n'),
+        allOf(contains('Wrapper'), contains('generic')),
+      );
+    });
+
+    test('positional constructor parameters are matched by name', () async {
+      final result = await _build(formBuilder, '''
+$_prelude
+@Formidable()
+class SignUp {
+  const SignUp(this.username, [this.email = '']);
+
+  final String username;
+  final String email;
+}
+''');
+
+      expect(result.succeeded, isTrue);
+    });
+
+    test('getters are ignored and inherited fields are accepted', () async {
+      final result = await _build(formBuilder, '''
+$_prelude
+abstract class Base {
+  const Base({required this.id});
+
+  final int id;
+}
+
+@Formidable()
+class SignUp extends Base {
+  const SignUp({required super.id, required this.username});
+
+  final String username;
+
+  String get label => '\$username#\$id';
+}
+''');
+
+      expect(result.succeeded, isTrue);
+    });
+
+    test(
+      'an inherited final field missing from the constructor fails',
+      () async {
+        final result = await _build(formBuilder, '''
+$_prelude
+abstract class Base {
+  const Base({this.id = 0});
+
+  final int id;
+}
+
+@Formidable()
+class SignUp extends Base {
+  const SignUp({required this.username});
+
+  final String username;
+}
+''');
+
+        expect(result.succeeded, isFalse);
+        expect(
+          result.errors.join('\n'),
+          allOf(contains('id'), contains('missing from its constructor')),
+        );
+      },
+    );
+  });
+
+  group('Required warning', () {
+    test('@Required() on a non-nullable Field warns but builds', () async {
+      final logs = <LogRecord>[];
+      final result = await _build(formBuilder, '''
+$_prelude
+@Formidable()
+class SignUp {
+  const SignUp({required this.username});
+
+  @Required()
+  final String username;
+}
+''', logs: logs);
+
+      expect(result.succeeded, isTrue);
+      final warnings = logs.where((r) => r.level == Level.WARNING);
+      expect(
+        warnings.map((r) => r.message).join('\n'),
+        allOf(contains('username'), contains('@Required()')),
+      );
+    });
+
+    test('@Required() on a nullable Field does not warn', () async {
+      final logs = <LogRecord>[];
+      final result = await _build(formBuilder, '''
+$_prelude
+@Formidable()
+class SignUp {
+  const SignUp({this.nickname});
+
+  @Required()
+  final String? nickname;
+}
+''', logs: logs);
+
+      expect(result.succeeded, isTrue);
+      expect(logs.where((r) => r.level >= Level.WARNING), isEmpty);
+    });
+  });
+
+  group('Form builder success', () {
     test('succeeds and writes the part file for a valid Schema', () async {
       final result = await _build(formBuilder, '''
 $_prelude

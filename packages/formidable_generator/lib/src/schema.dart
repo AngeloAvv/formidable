@@ -8,6 +8,10 @@ const _schemaChecker = TypeChecker.typeNamed(
   Formidable,
   inPackage: 'formidable',
 );
+const _requiredChecker = TypeChecker.typeNamed(
+  Required,
+  inPackage: 'formidable',
+);
 const _validatorChecker = TypeChecker.typeNamed(
   FormidableValidator,
   inPackage: 'formidable',
@@ -22,6 +26,7 @@ final class SchemaModel {
     required this.name,
     required this.fields,
     required this.constructorArguments,
+    this.warnings = const [],
   });
 
   /// The Schema class name, for example `SignUp`.
@@ -32,6 +37,9 @@ final class SchemaModel {
 
   /// How the Schema constructor is called, in parameter order.
   final List<ConstructorArgument> constructorArguments;
+
+  /// Problems that do not stop the build, reported by the Form builder only.
+  final List<String> warnings;
 
   String get formName => '${name}Form';
   String get scopeName => '${name}FormScope';
@@ -81,6 +89,14 @@ SchemaModel readSchema(Element element) {
   }
   final name = element.name!;
 
+  if (element.typeParameters.isNotEmpty) {
+    throw InvalidGenerationSourceError(
+      '$name is generic, and generic Schemas are not supported. '
+      'Declare a Schema without type parameters.',
+      element: element,
+    );
+  }
+
   final constructor = element.constructors.where(
     (c) => c.name == null || c.name == 'new' || c.name!.isEmpty,
   );
@@ -124,6 +140,15 @@ SchemaModel readSchema(Element element) {
       field.name!: _readField(field, defaults[field.name]),
   };
 
+  final warnings = [
+    for (final field in fields)
+      if (_requiredChecker.hasAnnotationOf(field) &&
+          !models[field.name!]!.isNullable)
+        '@Required() on "${field.name}" of $name has no effect: a '
+            'non-nullable Field is already required. Remove it, or make the '
+            'Field nullable if choosing null should count as a value.',
+  ];
+
   return SchemaModel(
     name: name,
     fields: [for (final field in fields) models[field.name!]!],
@@ -131,6 +156,7 @@ SchemaModel readSchema(Element element) {
       for (final p in parameters)
         ConstructorArgument(field: models[p.name]!, isNamed: p.isNamed),
     ],
+    warnings: warnings,
   );
 }
 

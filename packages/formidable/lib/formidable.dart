@@ -3,6 +3,7 @@
 library;
 
 export 'src/annotations/formidable.dart';
+export 'src/annotations/required.dart';
 export 'src/runtime/field.dart';
 export 'src/runtime/field_state.dart';
 export 'src/runtime/form.dart';
