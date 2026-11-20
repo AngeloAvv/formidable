@@ -123,7 +123,9 @@ final class FormidableField<T>
   /// Makes the Field take part in the Form again, and validates it.
   void enable() => _setEnabled(true);
 
-  /// Takes the Field out of validation. It keeps its value and still
+  /// Takes the Field out of validation: its Validators, the Form Validators and
+  /// cross-field rules that address it, and the Async Validators stop judging
+  /// it, and applied errors are hidden. It keeps its value and still
   /// contributes to the output. An Unset Field that is required still blocks
   /// submit, because no valid output exists without it.
   void disable() => _setEnabled(false);
@@ -421,12 +423,15 @@ final class FormidableField<T>
       enabled: _enabled,
       submitted: _submitted,
       dirty: _isSet != _initialIsSet || (_isSet && _value != _initialValue),
-      pending: _asyncPending || _asyncFormPending,
+      pending: _asyncPending || (_enabled && _asyncFormPending),
       errors: [
         ...own,
-        ..._formErrors,
+        // A disabled Field takes no part in validation: only its presence
+        // errors (in `own`) remain, so every rule that judges its value or
+        // spans several Fields is dropped.
+        if (_enabled) ..._formErrors,
         ..._asyncErrors,
-        ..._asyncFormErrors,
+        if (_enabled) ..._asyncFormErrors,
         if (_enabled) ..._applied,
       ],
     );

@@ -67,7 +67,8 @@ class FormidableBinding<T> extends ChangeNotifier {
   /// The Validation Message to show, or null when no error should be shown.
   ///
   /// Errors are shown according to [errorDisplay], and the first error in the
-  /// order of the annotations wins. A disabled Field has none.
+  /// order of the annotations wins. A disabled Field shows only its presence
+  /// error (it is Unset and required); its value is not validated.
   String? get errorText {
     final state = field.state;
     if (state.errors.isEmpty) return null;

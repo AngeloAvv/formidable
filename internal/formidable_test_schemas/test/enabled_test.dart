@@ -1,4 +1,8 @@
+import 'package:fake_async/fake_async.dart';
 import 'package:formidable/formidable.dart';
+import 'package:formidable_test_schemas/async_validation.dart' as async_schema;
+import 'package:formidable_test_schemas/cross_field.dart';
+import 'package:formidable_test_schemas/custom_validators.dart';
 import 'package:formidable_test_schemas/submit_flow.dart';
 import 'package:test/test.dart';
 
@@ -125,6 +129,68 @@ void main() {
       final b = _valid()..username.disable();
 
       expect(a.username.state, isNot(b.username.state));
+    });
+  });
+  group('Disabled Field and rules that span Fields', () {
+    test('drops the error of a cross-field rule', () {
+      final form = PasswordChangeForm(password: 'a', confirmation: 'b');
+      expect(form.confirmation.state.errors, [isA<FormidableMustMatchError>()]);
+
+      form.confirmation.disable();
+
+      expect(form.confirmation.state.errors, isEmpty);
+      expect(form.state.status, FormidableStatus.valid);
+
+      form.confirmation.enable();
+
+      expect(form.confirmation.state.errors, [isA<FormidableMustMatchError>()]);
+    });
+
+    test('drops the error of a Form Validator', () {
+      final form = RegistrationForm(
+        password: 'password-1',
+        confirmation: 'password-2',
+        nickname: 'nick',
+        handle: 'h',
+      );
+      expect(
+        form.confirmation.state.errors,
+        contains(const PasswordMismatchError()),
+      );
+
+      form.confirmation.disable();
+
+      expect(form.confirmation.state.errors, isEmpty);
+    });
+
+    test('drops the error of an asynchronous Form Validator', () {
+      fakeAsync((async) {
+        final validator = async_schema.PostalCodeMatchesCity();
+        final form = async_schema.ShippingForm(
+          postalCode: '70121',
+          city: 'Roma',
+          note: 'n',
+          postalCodeMatchesCity: validator,
+        );
+        async.elapse(const Duration(milliseconds: 300));
+        validator.answer('70121/Roma', mismatch: true);
+        async.flushMicrotasks();
+        expect(form.city.state.errors, [const async_schema.CityMismatchError()]);
+
+        form.city.disable();
+
+        expect(form.city.state.errors, isEmpty);
+        expect(form.city.state.pending, isFalse);
+      });
+    });
+
+    test('still follows the presence rules when it is Unset and required', () {
+      final form = PasswordChangeForm(password: 'a');
+
+      form.confirmation.disable();
+
+      expect(form.confirmation.state.errors, [isA<FormidableRequiredError>()]);
+      expect(form.state.status, FormidableStatus.invalid);
     });
   });
 }
