@@ -98,6 +98,38 @@ class SignUp {
         'lib/schema.formidable.dart',
       ]);
     });
+
+    test('accepts @Required() and @Passthrough() Fields', () async {
+      final result = await _build(formBuilder, '''
+$_prelude
+@Formidable()
+class EditUser {
+  const EditUser({
+    required this.id,
+    this.mood,
+    this.revision = 1,
+    this.parentId,
+  });
+
+  @Passthrough()
+  final int id;
+
+  @Required()
+  final bool? mood;
+
+  @Passthrough()
+  final int revision;
+
+  @Passthrough()
+  final int? parentId;
+}
+''');
+
+      expect(result.succeeded, isTrue);
+      expect(result.outputs.map((id) => id.path), [
+        'lib/schema.formidable.dart',
+      ]);
+    });
   });
 
   group('Form Scope builder', () {
