@@ -47,7 +47,8 @@
     {
       "group": "Widgets",
       "pages": [{ "title": "Binding Fields to widgets", "href": "/widgets" },
-        { "title": "Codecs", "href": "/widgets/codecs" }
+        { "title": "Codecs", "href": "/widgets/codecs" },
+        { "title": "Focus and keyboard actions", "href": "/widgets/focus" }
       ]
     },
     {

@@ -141,6 +141,19 @@ abstract class FormidableForm<S>
   }
 
   @override
+  List<FormidableField<Object?>> get focusOrder => [
+    for (final node in _nodes)
+      if (node is FormidableField<Object?>) node,
+  ];
+
+  @override
+  void focusLayoutChanged() {
+    for (final field in focusOrder) {
+      field.notifyFocusLayout();
+    }
+  }
+
+  @override
   void settle() {
     if (_running) return;
     if (_batchDepth > 0) {
