@@ -16,7 +16,7 @@ environment:
   sdk: ^3.11.0
 
 dependencies:
-  analyzer: ">=14.0.0 <15.0.0"
+  analyzer: ">=10.0.0 <15.0.0"
   build: ">=4.0.0 <6.0.0"
   formidable: ^0.1.0
   source_gen: ^4.1.0

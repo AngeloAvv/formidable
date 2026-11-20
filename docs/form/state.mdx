@@ -1,11 +1,11 @@
 ---
 title: State snapshots and reactive widgets
-description: Immutable Field and Form state, notifications, builders, listeners and selectors
+description: Immutable Field, Field Array and Form state, notifications, builders, listeners and selectors
 ---
 
 # State snapshots and reactive widgets
 
-Every Field and every Form holds an immutable **state snapshot** and notifies its listeners synchronously when that snapshot changes. Builders have the current snapshot from the first frame, so there is no empty first build. Formidable does not depend on bloc, but the widgets work the way you would expect from `flutter_bloc`.
+Every Field, Field Array and Form holds an immutable **state snapshot** and notifies its listeners synchronously when that snapshot changes. The snapshot of a Form is complete: it holds the state of everything below it, so a change anywhere, a typed character included, gives a state that is different from the previous one. Builders have the current snapshot from the first frame, so there is no empty first build. Formidable does not depend on bloc, but the widgets work the way you would expect from `flutter_bloc`.
 
 ## Field state
 
@@ -21,10 +21,11 @@ Every Field and every Form holds an immutable **state snapshot** and notifies it
 | `dirty` | The value or presence differs from the initial state. Going back to the initial state makes the Field clean again |
 | `enabled` | Whether the Field takes part in the Form |
 | `submitted` | The Form was submitted since the Field was created |
+| `pending` | An [Async Validator](/validation/async) is still checking the value |
 
 ## Form state
 
-`form.state` is a `FormidableFormState`:
+`form.state` is typed after the Form. The generator writes one state class per Schema, for example `SignUpFormState`, and `SignUpForm.state` returns it. It extends `FormidableFormState`:
 
 | Member | Meaning |
 | --- | --- |
@@ -32,10 +33,30 @@ Every Field and every Form holds an immutable **state snapshot** and notifies it
 | `dirty` | Any Field is dirty |
 | `pending` | Any Field is still waiting for the result of an [Async Validator](/validation/async) |
 | `errors` | Errors of the Form as a whole, not tied to a Field |
+| `isSet` | False only for an optional [Nested Form](/schema/nested-forms) that is Unset |
+| `value` | The Schema instance while the Form is valid and not pending, null otherwise (typed as `SignUp?` in the generated state) |
 
-## `form.value`
+And, on the generated state, one member per child, with the name of the Schema field:
 
-`form.value` is the Schema instance while the Form is valid and not pending, and null otherwise. It is computed on every read.
+| Child | Type of its member |
+| --- | --- |
+| A Field | `FormidableFieldState<T>` |
+| A Passthrough Field | its value, `T` |
+| A Nested Form | the generated state of that Form, for example `AddressFormState` |
+| A [Field Array](/schema/field-arrays) | `FormidableFieldArrayState<S>`, where `S` is the state of an item: `PhoneFormState` for Nested Forms, `FormidableFieldState<String>` for Fields |
+| A [Dynamic Form](/schema/dynamic-forms) | `FormidableDynamicFormState`, which holds the state of what is registered, by key |
+
+```dart
+final state = form.state; // SignUpFormState
+state.username.value;     // String?
+state.address.street;     // FormidableFieldState<String>, in a Nested Form
+state.phones.items.first; // PhoneFormState, in a Field Array
+state.value;              // SignUp?
+```
+
+Equality is deep. Editing an item of a Field Array, adding, removing or moving one, or changing a Field of a Nested Form gives a state that is `!=` to the previous one. `value` does not take part in equality: it is derived from the states of the children, and a Schema is not required to define `==`.
+
+`form.value` is the same Schema instance as `form.state.value`, computed on every read:
 
 ```dart
 final signUp = form.value;
@@ -44,7 +65,7 @@ if (signUp != null) save(signUp);
 
 ## Notifications
 
-A Field or a Form calls its listeners synchronously and only when its state is different from before. Both have the shape of Flutter's `ValueListenable` (`state`, `addListener`, `removeListener`); `asValueListenable()` adapts them:
+A Field, a Field Array or a Form calls its listeners synchronously and only when its state is different from before. Because the state of a Form holds every child, `form.addListener` fires on every change below it: a value, `touched`, an error, an item added to an array. All of them have the shape of Flutter's `ValueListenable` (`state`, `addListener`, `removeListener`); `asValueListenable()` adapts them:
 
 ```dart
 ValueListenableBuilder(
@@ -53,7 +74,13 @@ ValueListenableBuilder(
 )
 ```
 
-A Form also has `addChangeListener`, which hears every change of any Field, even one that leaves the Form state equal. The Form Selector uses it, because `form.value` can change while the state does not.
+## Builder, Listener and Selector
+
+The three widgets exist for Fields, Field Arrays and Forms, and they mean the same everywhere:
+
+- **Builder.** `builder(context, state)`. The first frame uses the current state. `buildWhen(previous, next)` receives two states and decides whether to rebuild. Without it every state change rebuilds.
+- **Listener.** `listener(context, state)`, never for the state present when it is built. `listenWhen(previous, next)` decides whether to call it. Without it every state change calls it.
+- **Selector.** `selector(state)` picks a value `R`. The widget rebuilds only when the picked value changes (`==`). The optional `buildWhen(previousR, nextR)` receives the previous and the next picked value and can still veto the rebuild.
 
 ## Field widgets
 
@@ -80,16 +107,23 @@ FormidableFieldSelector<String, bool>(
 )
 ```
 
-- `buildWhen` and `listenWhen` receive the previous and the current state. The listener never fires for the state present when it is built.
-- The selector rebuilds only when the selected value changes. Its optional `buildWhen` receives the previous and the current selected value and can still veto the rebuild.
-
 ## Form widgets
 
-`FormidableFormBuilder`, `FormidableFormListener` and `FormidableFormSelector` take an optional `form`. Without one they look up the closest Form Scope of their type argument, and throw an error that names the missing scope when there is none.
+The generator writes three typed widgets next to the Form Scope, in `*.formidable_scope.dart`. They need no type arguments, and the builder gets the generated state:
 
 ```dart
-FormidableFormSelector<SignUpForm, bool>(
-  selector: (form) => form.value != null,
+SignUpFormBuilder(
+  builder: (context, SignUpFormState state) => Text(state.username.value ?? ''),
+)
+
+SignUpFormListener(
+  listenWhen: (previous, next) => previous.status != next.status,
+  listener: (context, state) => log('${state.status}'),
+  child: ...,
+)
+
+SignUpFormSelector<bool>(
+  selector: (state) => state.value != null,
   builder: (context, canSubmit) => FilledButton(
     onPressed: canSubmit ? () => save(context.signUpForm.value!) : null,
     child: const Text('Sign up'),
@@ -97,7 +131,21 @@ FormidableFormSelector<SignUpForm, bool>(
 )
 ```
 
-The selector receives the Form itself and runs after every change, so it can read `form.value`. This is the pattern for enabling a button when the Form is valid.
+Each takes an optional `form`. Without one it looks up the closest `SignUpFormScope`, and throws an error that names the missing scope when there is none. `SignUpFormSelector` rebuilds only when the selected value changes, so a selector on `state.value != null` enables a button when the Form is valid and does not rebuild while the user types.
+
+For code that does not use the generator, `FormidableFormBuilder<SignUpForm>`, `FormidableFormListener<SignUpForm>` and `FormidableFormSelector<SignUpForm, R>` do the same with the state typed as `FormidableFormState`. `FormidableTypedFormBuilder<SignUpForm, SignUpFormState>` and its Listener and Selector are what the generated widgets extend; use them to get the typed state without the generated widgets.
+
+## Field Array widgets
+
+`FormidableFieldArrayBuilder`, `FormidableFieldArrayListener` and `FormidableFieldArraySelector` take the array. The state they get is the `FormidableFieldArrayState<S>` of the array, which holds the state of every item, so they follow an edit of an item too. The builder keeps handing out the keyed item widgets, see [Field Arrays](/schema/field-arrays#the-field-array-builder).
+
+```dart
+FormidableFieldArraySelector(
+  array: form.phones,
+  selector: (state) => state.length,
+  builder: (context, count) => Text('$count phones'),
+)
+```
 
 ## Form Scope
 
@@ -107,6 +155,19 @@ The selector receives the Form itself and runs after every change, so it can rea
 SignUpFormScope.value(
   form: _form,
   child: ...,
+)
+```
+
+Both take exactly one of `child` and `builder`. The builder receives the Form and a context below the scope, so the Form is usable right away:
+
+```dart
+SignUpFormScope(
+  builder: (context, form) => Column(
+    children: [
+      FormidableTextField(field: form.username),
+      // `context` is below the scope, so context.signUpForm works too.
+    ],
+  ),
 )
 ```
 

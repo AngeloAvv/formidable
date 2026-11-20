@@ -131,9 +131,7 @@ class _WizardBodyState extends State<_WizardBody> {
   ];
 
   List<Widget> _confirmStep(BookingForm form) => [
-    BookingFormBuilder(
-      builder: (context, _) => Text(describeBooking(form)),
-    ),
+    BookingFormBuilder(builder: (context, _) => Text(describeBooking(form))),
     Row(
       spacing: 12,
       children: [

@@ -85,7 +85,7 @@ void removeQuestions(SurveyForm form) {
 
 ## 4. Render by key
 
-`field<T>(key)` looks a Field up by key and type. The state of the Dynamic Form holds the registered keys and changes when a Field is registered or removed, so a `ValueListenableBuilder` over it rebuilds the list.
+`field<T>(key)` looks a Field up by key and type. The state of the Dynamic Form holds the registered keys and the state of every registered Field, so it changes when a Field is registered, removed or edited, and a `ValueListenableBuilder` over it rebuilds the list. The rows keep their widgets and their text, because every row has a key.
 
 ```dart
 // example/lib/survey/survey_material.dart
@@ -127,7 +127,7 @@ Widget _answer(SurveyForm form, Question question) => switch (question) {
 
 ```dart
 // example/lib/survey/survey_material.dart
-// Rebuilds when a Field is registered or removed.
+// Rebuilds when a Field is registered, removed or edited.
 ValueListenableBuilder<FormidableDynamicFormState>(
   valueListenable: form.answers.asValueListenable(),
   builder: (context, state, _) => Column(

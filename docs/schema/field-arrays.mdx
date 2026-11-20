@@ -32,7 +32,7 @@ class Person {
 }
 ```
 
-`form.phones` is a `FormidableFieldArray<TelephoneForm, Telephone>`:
+`form.phones` is a `FormidableFieldArray<TelephoneForm, Telephone, TelephoneFormState>`: the type of an item, the type of its value and the type of its state.
 
 ```dart
 final form = PersonForm();
@@ -86,7 +86,7 @@ Validators of the array run only while it has items, like the Validators of a Fi
 - **Dirty, reset and commit.** Adding, removing or moving an item makes the Form dirty. `reset()` puts back the items the array had (the same Forms, each reset) and drops the new ones; `commit()` makes the current items the new initial state.
 - **Submit and focus.** `submit()` makes every item touched and submitted and focuses the first invalid Field in tree order. See [focus and keyboard actions](/widgets/focus).
 - **Async Validators.** The Fields of an item can have [Async Validators](/validation/async). The parent Form takes the instances once and gives them to every item it creates, so a new item checks its Fields like any other. The array waits for them on `submit()`, and removing an item cancels its pending checks. `@AsyncValidator` on the list itself is a build error: put it on a Field of the items.
-- **Notifications.** A listener of the array (`addListener`) is called when its state changes, for example when an item is added or moved. `addChangeListener` also fires for every change inside an item, as it does for a Nested Form.
+- **Notifications and state.** The state of the array, `form.state.phones`, is a `FormidableFieldArrayState<TelephoneFormState>`: the `ids` of the items, the typed state of every item in `items` (a `FormidableFieldState<String>` for an array of Fields), the errors of the array itself, `touched`, `dirty` and `submitted`. A listener of the array (`addListener`) is called when that state changes, for example when an item is added or moved, and also when anything inside an item changes, its value included.
 - **Disposal.** Removing an item disposes it, unless `reset()` could still bring it back. Disposing the parent disposes every item.
 
 ## Lists, sets and maps of primitive values
@@ -104,7 +104,7 @@ Opt a list into a Field Array of Fields with `@FieldArray()` when every entry is
 ```dart
 @FieldArray(each: [MinLength(2)], normalizers: [Trim()])
 @MaxItems(5)
-final List<String> tags;         // FormidableFieldArray<FormidableField<String>, String>
+final List<String> tags;         // FormidableFieldArray<FormidableField<String>, String, FormidableFieldState<String>>
 ```
 
 `each` adds Validators and `normalizers` adds Normalizers to every item. The Validators written as annotations of the list still judge the list. An item of a `List<String>` is required, so an Unset item blocks submit; use `List<String?>` for items that may be null.
@@ -124,10 +124,10 @@ The build fails, with a message that names the Field, for:
 
 ## The Field Array Builder
 
-`FormidableFieldArrayBuilder` rebuilds when the array changes and wraps every item in a widget keyed with its `id`. It has a synchronous first frame.
+`FormidableFieldArrayBuilder` rebuilds when the array or any of its items changes and wraps every item in a widget keyed with its `id`. It has a synchronous first frame.
 
 ```dart
-FormidableFieldArrayBuilder<TelephoneForm, Telephone>(
+FormidableFieldArrayBuilder(
   array: context.personForm.phones,
   itemBuilder: (context, index, item) => Row(children: [
     Expanded(
@@ -151,6 +151,8 @@ FormidableFieldArrayBuilder<TelephoneForm, Telephone>(
 )
 ```
 
-`builder` lays the rows out and receives the state of the array, which is where you show its errors (`state.errors`, through `formidableMessageOf`). It defaults to a `Column`; return a `ListView` for long lists. `buildWhen` limits the rebuilds.
+`builder` lays the rows out and receives the state of the array, which is where you show its errors (`state.errors`, through `formidableMessageOf`) or react to the value of an item (`state.items`). It defaults to a `Column`; return a `ListView` for long lists. `buildWhen(previous, next)` limits the rebuilds.
+
+`FormidableFieldArrayListener` calls a `listener(context, state)` for every change of the array, and `FormidableFieldArraySelector` rebuilds only when `selector(state)` picks a different value. Both take `array` and the same `listenWhen` and `buildWhen` conditions, see [State snapshots](/form/state#field-array-widgets).
 
 The item-count errors are localized in English, Italian, Spanish, French and German like every other built-in error.

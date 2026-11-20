@@ -48,8 +48,12 @@ _Avoid_: Form array, repeater
 A part of a Form whose Fields are registered at runtime under string keys rather than declared in the Schema. Each registered Field still has an explicit type. Use it only for edge cases.
 _Avoid_: Untyped form, free form
 
+**State**:
+The immutable snapshot that a Field, a Field Array or a Form publishes, and that listeners and widgets follow. The state of a Form holds the state of every child (Fields, Nested Forms, Field Arrays, Dynamic Forms) and the Schema value, so it differs from the previous one whenever anything below the Form changes. The generator types it after the Schema, for example `SignUpFormState`.
+_Avoid_: Model, view model, store
+
 **Form Scope**:
-The part of the widget tree where a Form is available. A scope can own the Form, creating and disposing it, or it can expose a Form that something else owns.
+The part of the widget tree where a Form is available. A scope can own the Form, creating and disposing it, or it can expose a Form that something else owns. It gives the Form to a child or to a builder.
 _Avoid_: Provider, form builder
 
 **Dirty**:

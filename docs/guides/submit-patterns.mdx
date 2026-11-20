@@ -41,12 +41,12 @@ FilledButton(
 
 ## Declarative: a Form Selector over `value` drives the button
 
-A [Form Selector](/form/state) reads the Form after every change and rebuilds only when what it selects changes. `form.value` is the Schema instance while the Form is valid and null otherwise, so the selector can answer "can this be sent?":
+A [Form Selector](/form/state) reads the state of the Form after every change and rebuilds only when what it selects changes. `state.value` is the Schema instance while the Form is valid and null otherwise, so the selector can answer "can this be sent?":
 
 ```dart
 // example/lib/contact/contact_material.dart
-FormidableFormSelector<ContactForm, bool>(
-  selector: (form) => form.value != null && form.state.dirty,
+ContactFormSelector<bool>(
+  selector: (state) => state.value != null && state.dirty,
   builder: (context, canSave) => FilledButton(
     onPressed: canSave ? () => _save(form) : null,
     child: const Text('Save'),
@@ -99,6 +99,6 @@ const Text('Save is on while the form is valid and has changes.'),
 | --- | --- | --- |
 | Button | Always enabled | Enabled when `form.value != null` |
 | Errors | All shown on press | Shown as the user touches Fields |
-| Code | `switch (await form.submit())` | `FormidableFormSelector` and `form.value!` |
+| Code | `switch (await form.submit())` | `ContactFormSelector` and `form.value!` |
 | Async checks | `submit()` waits | `value` is null while pending, so the button stays off |
 | Good for | Sign-up, checkout, anything with a long form | Edit screens, save-when-ready toolbars |
