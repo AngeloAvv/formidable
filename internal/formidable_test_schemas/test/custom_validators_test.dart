@@ -55,6 +55,61 @@ void main() {
   });
 
   group('Form Validator', () {
+    test('is updated after patch, with one notification', () {
+      final form = _form();
+      var notifications = 0;
+      form.addListener(() => notifications++);
+
+      form.patch(confirmation: 'different-pass');
+
+      expect(form.confirmation.state.errors, [const PasswordMismatchError()]);
+      expect(notifications, 1);
+
+      form.patch(password: 'different-pass');
+
+      expect(form.confirmation.state.errors, isEmpty);
+      expect(notifications, 2);
+    });
+
+    test('is updated after replace', () {
+      final form = _form();
+
+      form.replace(
+        const Registration(
+          password: 'long-enough',
+          confirmation: 'different-pass',
+          nickname: 'nickname1',
+          handle: 'h',
+        ),
+      );
+
+      expect(form.confirmation.state.errors, [const PasswordMismatchError()]);
+    });
+
+    test('is updated after reset', () {
+      final form = _form()..confirmation.setValue('different-pass');
+      expect(form.confirmation.state.errors, [const PasswordMismatchError()]);
+      var notifications = 0;
+      form.addListener(() => notifications++);
+
+      form.reset();
+
+      expect(form.confirmation.state.errors, isEmpty);
+      expect(form.state.status, FormidableStatus.valid);
+      expect(notifications, 1);
+    });
+
+    test('is updated after commit', () {
+      final form = _form()..confirmation.setValue('different-pass');
+
+      form.commit();
+      form.reset();
+
+      // The mismatching value is the committed one: reset keeps the error.
+      expect(form.confirmation.value, 'different-pass');
+      expect(form.confirmation.state.errors, [const PasswordMismatchError()]);
+    });
+
     test('adds an error to the Field handle it addresses', () {
       final form = _form()..confirmation.setValue('different-pass');
 

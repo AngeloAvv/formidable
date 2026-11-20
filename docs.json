@@ -41,12 +41,15 @@
       "pages": [
         { "title": "The generated Form", "href": "/form" },
         { "title": "State and reactive widgets", "href": "/form/state" },
-        { "title": "Form Effects", "href": "/form/effects" }
+        { "title": "Form Effects", "href": "/form/effects" },
+        { "title": "Writing, dirty and leaving the screen", "href": "/form/writes" },
+        { "title": "Submit, errors and disabled Fields", "href": "/form/submit" }
       ]
     },
     {
       "group": "Widgets",
       "pages": [{ "title": "Binding Fields to widgets", "href": "/widgets" },
+        { "title": "Material widgets", "href": "/widgets/material" },
         { "title": "Codecs", "href": "/widgets/codecs" }
       ]
     },
