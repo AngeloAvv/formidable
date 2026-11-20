@@ -27,6 +27,7 @@ class FormidableCupertinoTextField<T> extends StatelessWidget {
     this.suffix,
     this.keyboardType,
     this.textInputAction,
+    this.onEditingComplete,
     this.obscureText = false,
     this.minLines,
     this.maxLines = 1,
@@ -41,7 +42,14 @@ class FormidableCupertinoTextField<T> extends StatelessWidget {
   final Widget? prefix;
   final Widget? suffix;
   final TextInputType? keyboardType;
+
+  /// The keyboard action. Null is "next" while another Field follows, "done"
+  /// on the last one. A multiline field keeps its newline key.
   final TextInputAction? textInputAction;
+
+  /// Called when the user presses the keyboard action. Null moves focus to the
+  /// next Field in Schema declaration order. When it is set it replaces that.
+  final VoidCallback? onEditingComplete;
   final bool obscureText;
   final int? minLines;
   final int? maxLines;
@@ -73,7 +81,9 @@ class FormidableCupertinoTextField<T> extends StatelessWidget {
         prefix: prefix,
         suffix: suffix,
         keyboardType: keyboardType,
-        textInputAction: textInputAction,
+        textInputAction:
+            textInputAction ?? (maxLines == 1 ? binding.textInputAction : null),
+        onEditingComplete: onEditingComplete ?? binding.onEditingComplete,
         obscureText: obscureText,
         minLines: minLines,
         maxLines: maxLines,

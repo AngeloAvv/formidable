@@ -75,6 +75,7 @@ final class FormidableField<T>
   bool _enabled = true;
   bool _submitted = false;
   final List<FormidableFocusTarget> _focusTargets = [];
+  final List<void Function()> _focusLayoutListeners = [];
   List<FormidableValidationError> _applied = const [];
   bool _stale = false;
   FormidableValidationError? _inputError;
@@ -142,6 +143,7 @@ final class FormidableField<T>
     if (_enabled == enabled) return;
     _enabled = enabled;
     _refresh();
+    _focusLayoutChanged();
   }
 
   /// Replaces the errors that the Form Validators address to this Field. They
@@ -196,7 +198,56 @@ final class FormidableField<T>
   /// function that removes the registration.
   void Function() registerFocusTarget(FormidableFocusTarget target) {
     _focusTargets.add(target);
-    return () => _focusTargets.remove(target);
+    _focusLayoutChanged();
+    return () {
+      if (_focusTargets.remove(target)) _focusLayoutChanged();
+    };
+  }
+
+  /// Calls [listener] when a widget is registered for any Field of the Form
+  /// (or removed), which can change whether this Field is the last one that
+  /// the keyboard reaches. A standalone Field only hears about itself.
+  void addFocusLayoutListener(void Function() listener) =>
+      _focusLayoutListeners.add(listener);
+
+  void removeFocusLayoutListener(void Function() listener) =>
+      _focusLayoutListeners.remove(listener);
+
+  /// Calls the focus layout listeners. Public only because Fields and Forms
+  /// are different libraries: a Form calls it on every Field.
+  void notifyFocusLayout() {
+    for (final listener in List.of(_focusLayoutListeners)) {
+      listener();
+    }
+  }
+
+  void _focusLayoutChanged() {
+    final pipeline = _pipeline;
+    if (pipeline == null) {
+      notifyFocusLayout();
+    } else {
+      pipeline.focusLayoutChanged();
+    }
+  }
+
+  /// The Field after this one in Schema declaration order that the keyboard
+  /// can reach (enabled and shown by a widget), or null for the last one and
+  /// for a standalone Field.
+  FormidableField<Object?>? get nextFocusable {
+    final order = _pipeline?.focusOrder;
+    if (order == null) return null;
+    final index = order.indexOf(this);
+    if (index < 0) return null;
+    return order.skip(index + 1).where((field) => field.canFocus).firstOrNull;
+  }
+
+  /// Moves the input focus to [nextFocusable]. Returns false, and moves
+  /// nothing, when there is none.
+  bool focusNext() {
+    final next = nextFocusable;
+    if (next == null) return false;
+    next.focus();
+    return true;
   }
 
   /// Whether [focus] can do something: the Field is enabled and a widget is
