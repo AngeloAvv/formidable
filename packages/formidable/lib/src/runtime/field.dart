@@ -45,6 +45,7 @@ final class FormidableField<T>
   final bool _required;
   final T? _defaultValue;
   late FormidableFieldState<T> _state;
+  FormidableValidationError? _inputError;
 
   @override
   FormidableFieldState<T> get state => _state;
@@ -62,10 +63,23 @@ final class FormidableField<T>
 
   /// Gives the Field a value. The type is exactly the Field's type, so the
   /// compiler rejects null for a non-nullable Field.
-  void setValue(T value) => _update(isSet: true, value: value);
+  void setValue(T value) =>
+      _update(isSet: true, value: value, inputError: null);
 
   /// Makes the Field Unset.
-  void clear() => _update(isSet: false, value: null);
+  void clear() => _update(isSet: false, value: null, inputError: null);
+
+  /// Rejects what the user typed: the Field becomes Unset and invalid with
+  /// [error], even when it is optional, so that bad input never turns into a
+  /// null silently. [error] replaces the required error.
+  ///
+  /// Widgets call it when a Codec fails to parse their input. The next
+  /// [setValue] or [clear] lifts the rejection.
+  void reject(FormidableValidationError error) =>
+      _update(isSet: false, value: null, inputError: error);
+
+  /// The error given to [reject], or null when the last input was accepted.
+  FormidableValidationError? get inputError => _inputError;
 
   /// Records that the user interacted with the Field and left it.
   void markAsTouched() => _update(touched: true);
@@ -88,16 +102,27 @@ final class FormidableField<T>
     if (_state.errors.isNotEmpty) into[this] = _state.errors;
   }
 
-  void _update({bool? isSet, T? value, bool? touched}) {
+  void _update({
+    bool? isSet,
+    T? value,
+    bool? touched,
+    Object? inputError = _keep,
+  }) {
+    final previousInputError = _inputError;
+    if (!identical(inputError, _keep)) {
+      _inputError = inputError as FormidableValidationError?;
+    }
     final next = _stateFor(
       isSet: isSet ?? _state.isSet,
       value: isSet == null ? _state.value : value,
       touched: touched ?? _state.touched,
     );
-    if (next == _state) return;
+    if (next == _state && previousInputError == _inputError) return;
     _state = next;
     notifyListeners();
   }
+
+  static const Object _keep = Object();
 
   FormidableFieldState<T> _stateFor({
     required bool isSet,
@@ -107,7 +132,11 @@ final class FormidableField<T>
     value: value,
     isSet: isSet,
     touched: touched,
-    errors: isSet ? _validate(value) : _presenceErrors(),
+    errors: isSet
+        ? _validate(value)
+        : _inputError != null
+        ? [_inputError!]
+        : _presenceErrors(),
   );
 
   /// Errors of an Unset Field: required unless something supplies the output.
