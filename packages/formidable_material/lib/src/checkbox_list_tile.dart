@@ -9,6 +9,9 @@ import 'error_text.dart';
 /// An Unset Field is shown unchecked. The first interaction marks the Field
 /// touched, and the Validation Message shows below the row from then on. With
 /// [tristate], a `bool?` Field can also choose null, which is shown as a dash.
+/// Reaching the dash is a choice: the Field stays set and is dirty. A `bool`
+/// Field cannot hold null, so there the dash makes it Unset (touched), and it
+/// is shown unchecked again.
 ///
 /// It takes every parameter of [CheckboxListTile] except the ones Formidable
 /// owns: `value`, `onChanged` and `enabled` (the Field says it), and

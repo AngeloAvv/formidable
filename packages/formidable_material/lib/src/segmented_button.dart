@@ -9,7 +9,10 @@ import 'error_text.dart';
 /// While the Field is Unset, no segment is selected. That includes a segment
 /// whose value is null, which needs a nullable Field: choosing it sets the
 /// Field to null, which is a value. Tapping the selected segment keeps it,
-/// unless [allowDeselect] puts the Field back to Unset.
+/// unless [allowDeselect] lets the user deselect it. Deselecting is a choice
+/// and not a reset: when the Field's type admits null, null becomes the chosen
+/// value (the Field stays set and is dirty); when it does not, null cannot be
+/// written and the Field falls back to Unset, still touched.
 ///
 /// The first interaction marks the Field touched, and the Validation Message
 /// shows below the control from then on.
@@ -60,7 +63,9 @@ class FormidableMaterialSegmentedButton<T> extends FormidableFieldWidget<T, T> {
                      if (selection.isNotEmpty) {
                        control.didChange(selection.first.$1, touch: true);
                      } else if (allowDeselect) {
-                       control.clear(touch: true);
+                       // Deselecting is a choice: null when the Field admits
+                       // it, Unset when it does not.
+                       control.didChange(null, touch: true);
                      }
                    }
                  : null,
@@ -89,7 +94,8 @@ class FormidableMaterialSegmentedButton<T> extends FormidableFieldWidget<T, T> {
   /// The segments to choose from. See [SegmentedButton.segments].
   final List<ButtonSegment<T>> segments;
 
-  /// Whether tapping the selected segment puts the Field back to Unset.
+  /// Whether tapping the selected segment deselects it: null when the type of
+  /// the Field admits it, Unset when it does not.
   final bool allowDeselect;
 
   /// See [SegmentedButton.expandedInsets].

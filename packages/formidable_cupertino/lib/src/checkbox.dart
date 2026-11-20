@@ -12,12 +12,19 @@ import 'error_caption.dart';
 /// touched on the first interaction.
 ///
 /// It takes every parameter of [CupertinoCheckbox] except the ones Formidable
-/// owns (`value` and `onChanged`) and the deprecated `inactiveColor`. With
-/// [tristate], cycling to the mixed state makes the Field Unset.
+/// owns (`value` and `onChanged`) and the deprecated `inactiveColor`.
+///
+/// With [tristate], cycling to the mixed state is the user deselecting, which
+/// is a choice and not a reset. When the Field's type admits null (`bool?`),
+/// null becomes the chosen value: the Field stays set and is dirty. When it
+/// does not (`bool`), null cannot be written, so the Field falls back to
+/// Unset, still touched. An Unset Field is shown as mixed too, so only the
+/// Field tells the two apart.
 ///
 /// For everything else, build a `CupertinoCheckbox` from a
 /// [FormidableFieldWidget].
-class FormidableCupertinoCheckbox extends FormidableFieldWidget<bool?, bool?> {
+class FormidableCupertinoCheckbox<T extends bool?>
+    extends FormidableFieldWidget<T, T> {
   FormidableCupertinoCheckbox({
     super.key,
     required super.field,
@@ -42,9 +49,9 @@ class FormidableCupertinoCheckbox extends FormidableFieldWidget<bool?, bool?> {
              value: tristate ? control.value : control.value ?? false,
              tristate: tristate,
              onChanged: control.enabled
-                 ? (value) => value == null
-                       ? control.clear(touch: true)
-                       : control.didChange(value, touch: true)
+                 // Cycling to mixed is a choice: null when the Field admits it,
+                 // Unset when it does not.
+                 ? (value) => control.didChange(value as T?, touch: true)
                  : null,
              mouseCursor: mouseCursor,
              activeColor: activeColor,
@@ -61,8 +68,8 @@ class FormidableCupertinoCheckbox extends FormidableFieldWidget<bool?, bool?> {
          ),
        );
 
-  /// Whether the checkbox has a third, mixed state. The Field is Unset while
-  /// it is mixed.
+  /// Whether the checkbox has a third, mixed state. An Unset Field is shown as
+  /// mixed, and so is a nullable Field that chose null.
   final bool tristate;
 
   /// See [CupertinoCheckbox.mouseCursor].

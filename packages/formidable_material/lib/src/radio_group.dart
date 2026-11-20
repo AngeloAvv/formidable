@@ -63,8 +63,13 @@ class FormidableMaterialRadioOption<T> {
 /// nullable Field of the Schema to make the user choose among the options.
 ///
 /// The first interaction marks the Field touched, and the Validation Message
-/// shows below the group from then on. With [toggleable], choosing the selected
-/// option again puts the Field back to Unset.
+/// shows below the group from then on.
+///
+/// With [toggleable], choosing the selected option again is the user
+/// deselecting, which is a choice and not a reset. When the Field's type admits
+/// null (`String?`), null becomes the chosen value: the Field stays set and is
+/// dirty. When it does not (`String`), null cannot be written, so the Field
+/// falls back to Unset, still touched.
 ///
 /// Each of the [options] is a `RadioListTile`. The group takes every parameter
 /// of [RadioListTile] that is not about one tile alone, and gives it to every
@@ -120,7 +125,9 @@ class FormidableMaterialRadioGroup<T> extends FormidableFieldWidget<T, T> {
                  if (choice != null) {
                    control.didChange(choice.$1, touch: true);
                  } else if (toggleable) {
-                   control.clear(touch: true);
+                   // Deselecting is a choice: null when the Field admits it,
+                   // Unset when it does not.
+                   control.didChange(null, touch: true);
                  }
                },
                child: Column(

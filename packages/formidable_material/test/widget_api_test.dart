@@ -461,7 +461,7 @@ void main() {
       expect(plan.isSet, isFalse);
     });
 
-    testWidgets('a toggleable group puts the Field back to Unset', (
+    testWidgets('a toggleable group on a non-nullable Field goes Unset', (
       tester,
     ) async {
       await tester.pumpWidget(
