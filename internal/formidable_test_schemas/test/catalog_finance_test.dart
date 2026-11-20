@@ -261,8 +261,18 @@ void main() {
   test('CurrencyCode accepts ISO 4217 codes in upper case', () {
     check(
       form.currency,
-      valid: ['EUR', 'USD', 'GBP', 'JPY', 'CHF', 'BRL', 'INR', 'ZAR'],
+      valid: ['EUR', 'USD', 'GBP', 'JPY', 'CHF', 'BRL', 'INR', 'ZAR', 'XCG'],
       invalid: ['', 'eur', 'EU', 'EURO', 'XYZ', 'US1', 'AAA'],
+      error: const FormidableCurrencyCodeError(),
+    );
+  });
+
+  test('CurrencyCode no longer knows currencies that were replaced', () {
+    check(
+      form.currency,
+      valid: ['EUR'],
+      // Bulgaria adopted the euro on 2026-01-01; Croatia on 2023-01-01.
+      invalid: ['BGN', 'HRK'],
       error: const FormidableCurrencyCodeError(),
     );
   });
