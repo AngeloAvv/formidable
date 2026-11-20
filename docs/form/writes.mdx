@@ -17,7 +17,7 @@ form.patch(name: '  Marco ', note: 'vip');
 
 - Only the Fields you pass are written. An omitted argument leaves the Field unchanged.
 - It is one change: the Form Effects run once after the last write, and the Form and each changed Field notify once, so there are no intermediate rebuilds.
-- A null argument is the same as an omitted one. To write null into a nullable Field, use `form.phone.setValue(null)` or `replace`. To make a Field Unset, use `clear()`.
+- **`null` means "leave unchanged", not "write null".** A null argument is the same as an omitted one, so `form.patch(phone: null)` does nothing. To choose null for a nullable Field, call `form.phone.setValue(null)` or use `replace`. To make a Field Unset, call `clear()`.
 
 ## replace
 
