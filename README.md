@@ -50,3 +50,11 @@ fvm dart run melos run ci    # generate, analyze and test everything
 Other scripts: `melos run generate`, `analyze`, `test` and `format`. Generated files (`*.formidable.dart`, `*.formidable_scope.dart`) are not committed.
 
 See [`GLOSSARY.md`](GLOSSARY.md) for the vocabulary and [`docs/adr`](docs/adr) for the decisions behind the design.
+
+## Releasing
+
+Set the same version in every `packages/*/pubspec.yaml`, add a matching entry to every `CHANGELOG.md`, then push a tag named `v<version>` (for example `v0.1.0`). The pipeline checks that the tag matches every package, runs analyze and test, and publishes the packages to pub.dev through automated publishing in dependency order, waiting for each one to be indexed before publishing the next.
+
+## License
+
+MIT, see [`LICENSE`](LICENSE).

@@ -1,0 +1,115 @@
+name: Publish
+
+# Called by the pipeline for every push, but each job only runs on a tag push.
+# Packages are published in dependency order and every one waits until the
+# previous one is indexed on pub.dev, because the next one resolves it from there:
+#
+#   formidable -> formidable_generator -> formidable_flutter -> formidable_material
+#                                                            \-> formidable_cupertino
+#
+# The tag must be `v<version>` (the tag pattern configured in the automated
+# publishing settings of every package on pub.dev) and every package must carry
+# that version.
+
+on:
+  workflow_call:
+
+jobs:
+  verify_version:
+    name: Verify the tag matches every package version
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Compare the tag with the package versions
+        run: |
+          STATUS=0
+          for PUBSPEC in packages/*/pubspec.yaml; do
+            VERSION=$(grep '^version:' "$PUBSPEC" | awk '{print $2}')
+            if [ "$GITHUB_REF_NAME" != "v$VERSION" ]; then
+              echo "::error file=$PUBSPEC::Version $VERSION does not match the tag $GITHUB_REF_NAME."
+              STATUS=1
+            fi
+          done
+          exit $STATUS
+
+  formidable:
+    name: Publish formidable
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: verify_version
+    permissions:
+      id-token: write
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: packages/formidable
+      use-flutter: false
+
+  wait_for_formidable:
+    name: Wait for formidable
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: formidable
+    uses: ./.github/workflows/wait-for-pub.yml
+    with:
+      package: formidable
+      working-directory: packages/formidable
+
+  formidable_generator:
+    name: Publish formidable_generator
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: wait_for_formidable
+    permissions:
+      id-token: write
+    uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
+    with:
+      working-directory: packages/formidable_generator
+      use-flutter: false
+
+  wait_for_formidable_generator:
+    name: Wait for formidable_generator
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: formidable_generator
+    uses: ./.github/workflows/wait-for-pub.yml
+    with:
+      package: formidable_generator
+      working-directory: packages/formidable_generator
+
+  formidable_flutter:
+    name: Publish formidable_flutter
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: wait_for_formidable_generator
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/publish-flutter.yml
+    with:
+      working-directory: packages/formidable_flutter
+
+  wait_for_formidable_flutter:
+    name: Wait for formidable_flutter
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: formidable_flutter
+    uses: ./.github/workflows/wait-for-pub.yml
+    with:
+      package: formidable_flutter
+      working-directory: packages/formidable_flutter
+
+  formidable_material:
+    name: Publish formidable_material
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: wait_for_formidable_flutter
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/publish-flutter.yml
+    with:
+      working-directory: packages/formidable_material
+
+  formidable_cupertino:
+    name: Publish formidable_cupertino
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: wait_for_formidable_flutter
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/publish-flutter.yml
+    with:
+      working-directory: packages/formidable_cupertino
