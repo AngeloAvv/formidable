@@ -130,7 +130,7 @@ class SignUpPage extends StatelessWidget {
 - it shows the Field's value, and keeps showing it when code changes the Field;
 - it updates the Field as the user types, and a completely empty text leaves the Field Unset;
 - the Field becomes **touched** when the text field loses focus;
-- the error text is shown once the Field is touched. When there are several errors, the first one in the order of the annotations is shown.
+- the Validation Message is shown once the Field is touched. When there are several errors, the first one in the order of the annotations is shown.
 
 Under the hood the widget is a thin layer over the headless `FormidableBinding`, which works with any widget. See [Binding Fields to widgets](/widgets).
 
