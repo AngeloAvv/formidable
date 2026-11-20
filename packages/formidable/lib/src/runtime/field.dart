@@ -395,6 +395,7 @@ final class FormidableField<T>
     _isSet = false;
     _value = null;
     _inputError = error;
+    _applied = const [];
     _stale = true;
     return true;
   }

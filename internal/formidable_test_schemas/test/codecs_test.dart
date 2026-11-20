@@ -202,6 +202,40 @@ void main() {
       ]);
     });
 
+    test('drops the errors applied before it, like any other change', () {
+      final form = MeasurementsForm(age: 30);
+      const applied = FormidableNumberParseError(input: 'server');
+      const error = FormidableNumberParseError(input: 'x');
+      form.weight.applyErrors([applied]);
+      expect(form.weight.state.errors, [applied]);
+
+      form.weight.reject(error);
+
+      expect(form.weight.state.errors, [error]);
+    });
+
+    test('is cleared by reset()', () async {
+      final form = MeasurementsForm(age: 30);
+      form.weight.reject(const FormidableNumberParseError(input: 'x'));
+      expect(form.weight.inputError, isNotNull);
+
+      form.reset();
+
+      expect(form.weight.inputError, isNull);
+      expect(form.weight.state.errors, isEmpty);
+      expect(form.state.status, FormidableStatus.valid);
+      expect(await form.submit(), isA<FormidableSubmitValid<Measurements>>());
+    });
+
+    test('is cleared by reset() on the Field alone', () {
+      final form = MeasurementsForm(age: 30);
+      form.weight.reject(const FormidableNumberParseError(input: 'x'));
+
+      form.weight.reset();
+
+      expect(form.weight.state.errors, isEmpty);
+    });
+
     test('notifies listeners once, and only on a change', () {
       final form = MeasurementsForm(age: 30);
       var notifications = 0;
