@@ -175,7 +175,9 @@ void main() {
         async.elapse(const Duration(milliseconds: 300));
         validator.answer('70121/Roma', mismatch: true);
         async.flushMicrotasks();
-        expect(form.city.state.errors, [const async_schema.CityMismatchError()]);
+        expect(form.city.state.errors, [
+          const async_schema.CityMismatchError(),
+        ]);
 
         form.city.disable();
 

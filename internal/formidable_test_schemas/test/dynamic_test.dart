@@ -4,19 +4,21 @@ import 'package:test/test.dart';
 
 void main() {
   group('Dynamic Form registration', () {
-    test('registers a Field under a key and outputs a map of the values',
-        () async {
-      final form = SurveyForm()..title.setValue('Pets');
+    test(
+      'registers a Field under a key and outputs a map of the values',
+      () async {
+        final form = SurveyForm()..title.setValue('Pets');
 
-      form.answers.register<int>('age').setValue(7);
-      form.answers.register<String?>('nickname').setValue('Rex');
+        form.answers.register<int>('age').setValue(7);
+        form.answers.register<String?>('nickname').setValue('Rex');
 
-      final result = await form.submit();
+        final result = await form.submit();
 
-      final valid = result as FormidableSubmitValid<Survey>;
-      expect(valid.value.title, 'Pets');
-      expect(valid.value.answers, {'age': 7, 'nickname': 'Rex'});
-    });
+        final valid = result as FormidableSubmitValid<Survey>;
+        expect(valid.value.title, 'Pets');
+        expect(valid.value.answers, {'age': 7, 'nickname': 'Rex'});
+      },
+    );
 
     test('starts with an empty map', () {
       final form = SurveyForm()..title.setValue('Pets');
@@ -42,15 +44,17 @@ void main() {
       expect(form.value!.answers.keys, ['b', 'a']);
     });
 
-    test('an optional Field outputs null, a Field with a default its default',
-        () {
-      final form = SurveyForm()..title.setValue('Pets');
+    test(
+      'an optional Field outputs null, a Field with a default its default',
+      () {
+        final form = SurveyForm()..title.setValue('Pets');
 
-      form.answers.register<String?>('nickname');
-      form.answers.register<int>('legs', defaultValue: 4);
+        form.answers.register<String?>('nickname');
+        form.answers.register<int>('legs', defaultValue: 4);
 
-      expect(form.value!.answers, {'nickname': null, 'legs': 4});
-    });
+        expect(form.value!.answers, {'nickname': null, 'legs': 4});
+      },
+    );
   });
 
   group('Dynamic Form lookup', () {
@@ -96,21 +100,23 @@ void main() {
       );
     });
 
-    test('fails when a Field is looked up as a Nested Form and the reverse',
-        () {
-      final form = SurveyForm()
-        ..answers.register<int>('age')
-        ..answers.registerForm('home', PlaceForm());
+    test(
+      'fails when a Field is looked up as a Nested Form and the reverse',
+      () {
+        final form = SurveyForm()
+          ..answers.register<int>('age')
+          ..answers.registerForm('home', PlaceForm());
 
-      expect(
-        () => form.answers.form<PlaceForm>('age'),
-        throwsA(isA<FormidableDynamicTypeError>()),
-      );
-      expect(
-        () => form.answers.field<int>('home'),
-        throwsA(isA<FormidableDynamicTypeError>()),
-      );
-    });
+        expect(
+          () => form.answers.form<PlaceForm>('age'),
+          throwsA(isA<FormidableDynamicTypeError>()),
+        );
+        expect(
+          () => form.answers.field<int>('home'),
+          throwsA(isA<FormidableDynamicTypeError>()),
+        );
+      },
+    );
   });
 
   group('Dynamic Form removal', () {
@@ -193,10 +199,8 @@ void main() {
       final form = SurveyForm();
 
       expect(
-        () => form.answers.register<int>(
-          'age',
-          validators: const [MinLength(3)],
-        ),
+        () =>
+            form.answers.register<int>('age', validators: const [MinLength(3)]),
         throwsA(isA<FormidableDynamicTypeError>()),
       );
       expect(form.answers.contains('age'), isFalse);
@@ -213,23 +217,29 @@ void main() {
       expect(name.value, 'Rex');
     });
 
-    test('shows errors on submit and moves invalid Fields into the result',
-        () async {
-      final form = SurveyForm()..title.setValue('Pets');
-      final age = form.answers.register<int>('age');
+    test(
+      'shows errors on submit and moves invalid Fields into the result',
+      () async {
+        final form = SurveyForm()..title.setValue('Pets');
+        final age = form.answers.register<int>('age');
 
-      final result = await form.submit();
+        final result = await form.submit();
 
-      final invalid = result as FormidableSubmitInvalid<Survey>;
-      expect(invalid.fieldErrors.keys, [age]);
-      expect(age.state.touched, isTrue);
-    });
+        final invalid = result as FormidableSubmitInvalid<Survey>;
+        expect(invalid.fieldErrors.keys, [age]);
+        expect(age.state.touched, isTrue);
+      },
+    );
 
     test('applied server errors reach a dynamic Field', () {
       final form = SurveyForm()..title.setValue('Pets');
       final age = form.answers.register<int>('age')..setValue(7);
 
-      form.applyErrors(fieldErrors: {age: const [PasswordMismatch()]});
+      form.applyErrors(
+        fieldErrors: {
+          age: const [PasswordMismatch()],
+        },
+      );
 
       expect(age.state.errors, [isA<PasswordMismatch>()]);
       expect(form.state.status, FormidableStatus.invalid);
@@ -258,7 +268,10 @@ void main() {
 
     test('an Unset optional Nested Form outputs null and blocks nothing', () {
       final form = SurveyForm()..title.setValue('Pets');
-      form.answers.registerForm('home', PlaceForm()..markOptional(initiallySet: false));
+      form.answers.registerForm(
+        'home',
+        PlaceForm()..markOptional(initiallySet: false),
+      );
 
       expect(form.value!.answers, {'home': null});
     });
@@ -269,10 +282,9 @@ void main() {
 
       final result = await form.submit();
 
-      expect(
-        (result as FormidableSubmitInvalid<Survey>).fieldErrors.keys,
-        [home.street],
-      );
+      expect((result as FormidableSubmitInvalid<Survey>).fieldErrors.keys, [
+        home.street,
+      ]);
     });
   });
 
@@ -325,8 +337,7 @@ void main() {
       expect(confirm.state.errors, [isA<PasswordMismatch>()]);
     });
 
-    test('registering a Field notifies the Form and the Dynamic Form once',
-        () {
+    test('registering a Field notifies the Form and the Dynamic Form once', () {
       final form = SurveyForm()..title.setValue('Pets');
       var formCalls = 0;
       var keyCalls = 0;
@@ -401,18 +412,20 @@ void main() {
   });
 
   group('Dynamic Form initial values, patch and replace', () {
-    test('a Field registered under a key of the source starts with its value',
-        () {
-      final form = SurveyForm.from(
-        const Survey(title: 'Pets', answers: {'age': 7}),
-      );
+    test(
+      'a Field registered under a key of the source starts with its value',
+      () {
+        final form = SurveyForm.from(
+          const Survey(title: 'Pets', answers: {'age': 7}),
+        );
 
-      final age = form.answers.register<int>('age');
+        final age = form.answers.register<int>('age');
 
-      expect(age.value, 7);
-      expect(form.state.dirty, isFalse);
-      expect(form.value!.answers, {'age': 7});
-    });
+        expect(age.value, 7);
+        expect(form.state.dirty, isFalse);
+        expect(form.value!.answers, {'age': 7});
+      },
+    );
 
     test('an initial value of the wrong type fails at registration', () {
       final form = SurveyForm.from(

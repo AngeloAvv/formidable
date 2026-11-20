@@ -72,12 +72,7 @@ void _crossFieldRules() {
     final day = DateTime(2026, 1, 10);
 
     test('compares an int with a double', () {
-      final form = BookingForm(
-        start: day,
-        end: day,
-        budget: 10.5,
-        spent: 10,
-      );
+      final form = BookingForm(start: day, end: day, budget: 10.5, spent: 10);
       expect(form.spent.state.errors, isEmpty);
 
       form.spent.setValue(11);
@@ -127,11 +122,11 @@ void _crossFieldRules() {
         FormidableComparison.greaterThanOrEqualTo: [false, true, true],
       };
       for (final entry in expected.entries) {
-        expect([
-          entry.key.accepts(-1),
-          entry.key.accepts(0),
-          entry.key.accepts(1),
-        ], entry.value, reason: '${entry.key}');
+        expect(
+          [entry.key.accepts(-1), entry.key.accepts(0), entry.key.accepts(1)],
+          entry.value,
+          reason: '${entry.key}',
+        );
       }
     });
   });

@@ -71,7 +71,9 @@ void main() {
 
   test('the languages say different things', () {
     for (final error in errors) {
-      final texts = {for (final l in locales) localizations(l).messageOf(error)};
+      final texts = {
+        for (final l in locales) localizations(l).messageOf(error),
+      };
       expect(texts.length, greaterThan(1), reason: '$error');
     }
   });
@@ -95,10 +97,9 @@ void main() {
           ],
           home: Scaffold(
             body: PasswordChangeFormScope(
-              create: () => PasswordChangeForm(
-                password: 'a',
-                confirmation: 'b',
-              )..confirmation.markAsTouched(),
+              create: () =>
+                  PasswordChangeForm(password: 'a', confirmation: 'b')
+                    ..confirmation.markAsTouched(),
               child: Builder(
                 builder: (context) => FormidableTextField(
                   field: context.passwordChangeForm.confirmation,

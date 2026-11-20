@@ -58,7 +58,8 @@ final class FormidableRequiredWithoutError extends FormidableValidationError {
 }
 
 /// The Field is required because all the other Fields are empty.
-final class FormidableRequiredWithoutAllError extends FormidableValidationError {
+final class FormidableRequiredWithoutAllError
+    extends FormidableValidationError {
   const FormidableRequiredWithoutAllError();
 
   @override
@@ -69,7 +70,8 @@ final class FormidableRequiredWithoutAllError extends FormidableValidationError 
 }
 
 /// The Field is required because another Field is accepted.
-final class FormidableRequiredIfAcceptedError extends FormidableValidationError {
+final class FormidableRequiredIfAcceptedError
+    extends FormidableValidationError {
   const FormidableRequiredIfAcceptedError();
 
   @override
@@ -80,7 +82,8 @@ final class FormidableRequiredIfAcceptedError extends FormidableValidationError 
 }
 
 /// The Field is required because another Field is declined.
-final class FormidableRequiredIfDeclinedError extends FormidableValidationError {
+final class FormidableRequiredIfDeclinedError
+    extends FormidableValidationError {
   const FormidableRequiredIfDeclinedError();
 
   @override

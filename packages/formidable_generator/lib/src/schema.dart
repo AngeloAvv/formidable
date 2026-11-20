@@ -160,6 +160,7 @@ final class FieldModel {
 
   /// The cross-field rules of the Field, in annotation order.
   final List<CrossFieldRuleModel> crossFieldRules;
+
   /// The Async Validators of the Field, in annotation order.
   final List<AsyncParameter> asyncValidators;
 
@@ -525,12 +526,10 @@ ArrayModel? _readArray(
 ) {
   final where = 'Field "${field.name}" of ${owner.name}';
   final type = field.type;
-  final annotation = field.metadata.annotations
-      .where((a) {
-        final t = a.computeConstantValue()?.type;
-        return t != null && _fieldArrayChecker.isExactlyType(t);
-      })
-      .firstOrNull;
+  final annotation = field.metadata.annotations.where((a) {
+    final t = a.computeConstantValue()?.type;
+    return t != null && _fieldArrayChecker.isExactlyType(t);
+  }).firstOrNull;
 
   final listType = type is InterfaceType && type.isDartCoreList ? type : null;
 

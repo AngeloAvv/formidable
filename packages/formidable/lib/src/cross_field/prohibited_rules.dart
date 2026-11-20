@@ -32,7 +32,8 @@ final class FormidableProhibitsError extends FormidableValidationError {
   List<Object?> get props => const [];
 
   @override
-  String toString() => 'This field cannot be used together with the related fields.';
+  String toString() =>
+      'This field cannot be used together with the related fields.';
 }
 
 /// The Field has to be true because another Field has a given value.
@@ -115,7 +116,9 @@ class AcceptedIf extends FormidableCrossFieldRule {
   List<FormidableValidationError> validate(
     FormidableField<Object?> target,
     List<FormidableField<Object?>> references,
-  ) => formidableFieldEquals(references.single, operand) && !formidableFieldEquals(target, true)
+  ) =>
+      formidableFieldEquals(references.single, operand) &&
+          !formidableFieldEquals(target, true)
       ? const [FormidableAcceptedIfError()]
       : const [];
 }
@@ -135,7 +138,9 @@ class DeclinedIf extends FormidableCrossFieldRule {
   List<FormidableValidationError> validate(
     FormidableField<Object?> target,
     List<FormidableField<Object?>> references,
-  ) => formidableFieldEquals(references.single, operand) && !formidableFieldEquals(target, false)
+  ) =>
+      formidableFieldEquals(references.single, operand) &&
+          !formidableFieldEquals(target, false)
       ? const [FormidableDeclinedIfError()]
       : const [];
 }

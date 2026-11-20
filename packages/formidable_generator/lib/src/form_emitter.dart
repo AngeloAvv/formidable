@@ -100,7 +100,9 @@ String emitForm(SchemaModel schema) {
   out.writeln(
     '  /// Form takes a Schema instance and replaces all its Fields; patch',
   );
-  out.writeln('  /// part of it through its own `patch`. A Field Array takes a list and');
+  out.writeln(
+    '  /// part of it through its own `patch`. A Field Array takes a list and',
+  );
   out.writeln('  /// replaces all its items.');
   out.writeln('  void patch({$patchParameters}) => batch(() {');
   for (final f in fields) {
@@ -231,7 +233,8 @@ String _array(FieldModel f) {
         .map((p) => '${p.name}: ${p.name}')
         .join(', ');
     final fromInjected = injected.isEmpty ? '' : ', $injected';
-    create = 'initial == null ? $form($injected) : $form.from(initial$fromInjected)';
+    create =
+        'initial == null ? $form($injected) : $form.from(initial$fromInjected)';
     read = 'item.buildOutput()';
   } else {
     final source = array.fieldArraySource!;

@@ -32,10 +32,7 @@ final class FormidableUniqueByError extends FormidableValidationError {
 /// an empty list, so nothing is in it.
 class InList extends FormidableCrossFieldRule {
   const InList(Symbol list)
-    : super(
-        other: list,
-        referenceFit: FormidableReferenceFit.iterableOfTarget,
-      );
+    : super(other: list, referenceFit: FormidableReferenceFit.iterableOfTarget);
 
   @override
   List<FormidableValidationError> validate(
@@ -61,10 +58,7 @@ class InList extends FormidableCrossFieldRule {
 /// a value that is not null.
 class UniqueBy<E> extends FormidableCrossFieldRule {
   const UniqueBy(Symbol list, this.key)
-    : super(
-        other: list,
-        referenceFit: FormidableReferenceFit.iterableOfTarget,
-      );
+    : super(other: list, referenceFit: FormidableReferenceFit.iterableOfTarget);
 
   /// The key two elements are compared by.
   final Object? Function(E element) key;

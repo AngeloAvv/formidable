@@ -19,10 +19,7 @@ final class FormidableMustMatchError extends FormidableValidationError {
 /// Unset referenced Field matches nothing.
 class MustMatch extends FormidableCrossFieldRule {
   const MustMatch(Symbol other)
-    : super(
-        other: other,
-        referenceFit: FormidableReferenceFit.sameAsTarget,
-      );
+    : super(other: other, referenceFit: FormidableReferenceFit.sameAsTarget);
 
   @override
   List<FormidableValidationError> validate(
@@ -57,10 +54,7 @@ final class FormidableDifferentError extends FormidableValidationError {
 /// It runs when both Fields have a value.
 class Different extends FormidableCrossFieldRule {
   const Different(Symbol other)
-    : super(
-        other: other,
-        referenceFit: FormidableReferenceFit.sameAsTarget,
-      );
+    : super(other: other, referenceFit: FormidableReferenceFit.sameAsTarget);
 
   @override
   List<FormidableValidationError> validate(
@@ -108,7 +102,8 @@ final class FormidableCompareError extends FormidableValidationError {
   @override
   String toString() => switch (comparison) {
     FormidableComparison.equalTo => 'Must be equal to the other value.',
-    FormidableComparison.notEqualTo => 'Must be different from the other value.',
+    FormidableComparison.notEqualTo =>
+      'Must be different from the other value.',
     FormidableComparison.lessThan => 'Must be less than the other value.',
     FormidableComparison.lessThanOrEqualTo =>
       'Must be less than or equal to the other value.',

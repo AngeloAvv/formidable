@@ -369,8 +369,9 @@ abstract class FormidableForm<S>
     _flush();
   }
 
-  /// Runs the Form Validators of this Form and of its Nested Forms and gives
-  /// every Field below this Form the errors addressed to it. Each Field then
+  /// Runs the Form Validators of this Form and of its Nested Forms, after the
+  /// Field Validators, and gives every Field below this Form the errors
+  /// addressed to it. Each Field then
   /// commits them together with its own errors in `revalidate`, so listeners
   /// see the final errors in one notification.
   ///
@@ -380,8 +381,14 @@ abstract class FormidableForm<S>
     if (!_hasFormValidators) return;
     final addressed =
         <FormidableField<Object?>, List<FormidableValidationError>>{};
+    final fields = _fieldsBelow().toList();
+    // The Field Validators run first: a Form Validator that reads the state of
+    // a Field sees the errors of the current values.
+    for (final field in fields) {
+      field.refreshOwnState();
+    }
     _collectFormErrors(addressed);
-    for (final field in _fieldsBelow()) {
+    for (final field in fields) {
       field.replaceFormErrors(addressed[field] ?? const []);
     }
   }
