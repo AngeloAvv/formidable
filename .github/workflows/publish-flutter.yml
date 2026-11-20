@@ -1,0 +1,43 @@
+name: Publish a Flutter package
+
+# The reusable Dart publish workflow cannot install the Flutter version pinned
+# by .fvmrc, so the Flutter packages publish through this job instead.
+# `flutter pub publish` authenticates with the OIDC token of the run, which is
+# why the job needs the `id-token` permission.
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+
+jobs:
+  publish:
+    name: Publish ${{ inputs.working-directory }}
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Dart
+        uses: dart-lang/setup-dart@v1.7.2
+
+      - name: Install fvm
+        run: dart pub global activate fvm
+
+      - name: Install Flutter
+        run: fvm install
+
+      - name: Resolve the workspace
+        run: fvm flutter pub get
+
+      - name: Publish - dry run
+        working-directory: ${{ inputs.working-directory }}
+        run: fvm flutter pub publish --dry-run
+
+      - name: Publish to pub.dev
+        working-directory: ${{ inputs.working-directory }}
+        run: fvm flutter pub publish --force

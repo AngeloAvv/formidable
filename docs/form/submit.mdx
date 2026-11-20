@@ -1,0 +1,89 @@
+---
+title: Submit, errors and disabled Fields
+description: What submit() does, when errors are shown, applying server errors and disabling Fields
+---
+
+# Submit, errors and disabled Fields
+
+## Submitting
+
+`submit()` is asynchronous and returns a sealed result. Handle both cases with an exhaustive `switch`:
+
+```dart
+final result = await form.submit();
+switch (result) {
+  case FormidableSubmitValid(:final value):
+    await api.signUp(value);
+  case FormidableSubmitInvalid(:final errors):
+    // Every invalid Field and Field Array, keyed by its typed handle.
+    print(errors[form.email]);
+    print(errors[form.members]); // a Field Array, e.g. MinItems
+}
+```
+
+`errors` is one map in tree order. Its keys are the handles of the Fields and of the Field Arrays that have errors; a Field Array comes before the Fields of its items. The errors of a Field Array are the errors of the array itself (a minimum number of items, an empty required array), never the errors of its items.
+
+Before it decides, `submit()`:
+
+1. clears the errors applied to the Form as a whole;
+2. marks **every** Field as touched and submitted, so every error can show;
+3. waits for every pending [Async Validator](/validation/async), so it never decides on an unchecked value;
+4. when the Form is invalid, focuses the **first invalid Field in Schema declaration order**. Fields that are disabled or not shown by any widget are skipped.
+
+Formidable does not track your own side effects, so there is no "submitting" state.
+
+The declarative pattern drives a button from a Form Selector over `value` and uses `form.value` in the tap handler. A disabled button hides the reasons for invalidity until the user touches the Fields, so prefer an enabled button plus `submit()` when the user needs to see what to fix.
+
+## When errors are shown
+
+An error is shown when the policy says so:
+
+| Policy | Errors show |
+| --- | --- |
+| `FormidableErrorDisplay.touched` (default) | once the Field is touched, that is, the user left it |
+| `FormidableErrorDisplay.dirty` | as soon as the value or presence differs from the initial state |
+| `FormidableErrorDisplay.submit` | only after `submit()` |
+
+Under every policy, `submit()` shows every error. Set the policy for the whole app on the config, and for one Form on its Form Scope. The Form Scope wins; a single widget can still override both.
+
+```dart
+FormidableConfig(
+  errorDisplay: FormidableErrorDisplay.dirty,
+  child: ...,
+);
+
+SignUpFormScope(
+  errorDisplay: FormidableErrorDisplay.submit,
+  child: ...,
+);
+```
+
+The policy only decides what the widgets show. `state.errors`, `status` and `submit()` always see every error.
+
+## Applying errors
+
+Use `applyErrors` for errors only a server can find:
+
+```dart
+form.applyErrors(
+  fieldErrors: {
+    form.username: [const UsernameTakenError()],
+  },
+  formErrors: [const ServiceUnavailableError()],
+);
+```
+
+- Field errors are added after the errors of the Field's Validators and make the Field, and the Form, invalid. They **clear on the next change to that Field's value or presence**. Writing the same value, or touching the Field, does not clear them.
+- Form errors belong to the Form as a whole. They show in `form.state.errors`, make the Form invalid, and clear on the next change to any Field and when `submit()` starts.
+- Show them like any error: register messages for your own error classes in `FormidableConfig.messages`.
+
+## Disabled Fields
+
+```dart
+form.discount.disable();
+form.discount.enable();
+```
+
+A disabled Field keeps its value and still contributes to the output, but its Validators and applied errors are skipped, and the widget does not accept input. It still follows the presence rules: a required Field that is Unset blocks submit even when disabled, because no valid output would exist.
+
+`state.enabled` tells you the current state, and `field.focus()` does nothing while a Field is disabled.

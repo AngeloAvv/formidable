@@ -1,0 +1,154 @@
+---
+title: A questionnaire from the server
+description: Register Fields at runtime in a Dynamic Form and render them by key
+---
+
+# A questionnaire from the server
+
+Most Forms are fully described by their Schema. When part of a Form comes from the server (a questionnaire, a list of custom fields), mark one `Map<String, Object?>` Field with `@Dynamic()` and **register typed Fields at runtime**. Use it only for that part; keep the rest as declared Fields.
+
+## 1. The Schema
+
+```dart
+// example/lib/survey/survey.dart
+@Formidable()
+class Survey {
+  const Survey({required this.title, required this.answers});
+
+  @Trim()
+  @MinLength(2)
+  final String title;
+
+  @Dynamic()
+  final Map<String, Object?> answers;
+}
+```
+
+`title` is a declared Field. `answers` is a [Dynamic Form](/schema/dynamic-forms): it starts empty and its output is a map of the registered values by key.
+
+## 2. Describe the questions
+
+The example describes questions as the server would, with a small sealed class:
+
+```dart
+// example/lib/survey/survey.dart
+sealed class Question {
+  const Question(this.key, this.label);
+
+  final String key;
+  final String label;
+}
+// ...
+final class NumberQuestion extends Question {
+  const NumberQuestion(super.key, super.label, {required this.min});
+
+  final int min;
+}
+```
+
+## 3. Register one Field per question
+
+`register<T>` takes the **exact type** of the Field, nullability included: `int` is required, `String?` is optional, and a `defaultValue` makes the Field optional with that default. Validators and Normalizers are the same instances you would use as annotations.
+
+```dart
+// example/lib/survey/survey.dart
+void registerQuestions(SurveyForm form, List<Question> questions) {
+  for (final question in questions) {
+    switch (question) {
+      case NumberQuestion(:final key, :final min):
+        form.answers.register<int>(key, validators: [Min(min)]);
+      case TextQuestion(:final key, required: true):
+        form.answers.register<String>(
+          key,
+          normalizers: const [Trim()],
+          validators: const [MinLength(2)],
+        );
+      case TextQuestion(:final key):
+        form.answers.register<String?>(key, normalizers: const [Trim()]);
+      case YesNoQuestion(:final key):
+        form.answers.register<bool>(key, defaultValue: false);
+    }
+  }
+}
+```
+
+A Validator that does not fit the type, such as `MinLength` on an `int`, throws when you register. Remove a Field with `remove(key)`:
+
+```dart
+// example/lib/survey/survey.dart
+void removeQuestions(SurveyForm form) {
+  for (final key in form.answers.keys.toList()) {
+    form.answers.remove(key);
+  }
+}
+```
+
+## 4. Render by key
+
+`field<T>(key)` looks a Field up by key and type. The state of the Dynamic Form holds the registered keys and changes when a Field is registered or removed, so a `ValueListenableBuilder` over it rebuilds the list.
+
+```dart
+// example/lib/survey/survey_material.dart
+Widget _answer(SurveyForm form, Question question) => switch (question) {
+  NumberQuestion(:final key, :final label) => FormidableTextField<int>(
+    key: Key('answer-$key'),
+    field: form.answers.field<int>(key),
+    keyboardType: TextInputType.number,
+    decoration: InputDecoration(
+      labelText: label,
+      border: const OutlineInputBorder(),
+    ),
+  ),
+  TextQuestion(:final key, :final label, :final required) =>
+    required
+        ? FormidableTextField<String>(
+            key: Key('answer-$key'),
+            field: form.answers.field<String>(key),
+            decoration: InputDecoration(
+              labelText: label,
+              border: const OutlineInputBorder(),
+            ),
+          )
+        : FormidableTextField<String?>(
+            key: Key('answer-$key'),
+            field: form.answers.field<String?>(key),
+            decoration: InputDecoration(
+              labelText: label,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+  YesNoQuestion(:final key, :final label) => FormidableSwitch(
+    key: Key('answer-$key'),
+    field: form.answers.field<bool>(key),
+    title: Text(label),
+  ),
+};
+```
+
+```dart
+// example/lib/survey/survey_material.dart
+// Rebuilds when a Field is registered or removed.
+ValueListenableBuilder<FormidableDynamicFormState>(
+  valueListenable: form.answers.asValueListenable(),
+  builder: (context, state, _) => Column(
+    spacing: 16,
+    children: [
+      for (final key in state.keys)
+        _answer(form, _questions.firstWhere((q) => q.key == key)),
+    ],
+  ),
+),
+```
+
+Every registered Field is a full node of the Form: it validates, it blocks `submit()` when invalid, it counts for focus order and dirty, and it appears in the output.
+
+```dart
+// example/lib/survey/survey_material.dart
+Future<void> _save(SurveyForm form) async {
+  final result = switch (await form.submit()) {
+    FormidableSubmitValid(:final value) => describeAnswers(value),
+    FormidableSubmitInvalid() => 'Please fix the errors above.',
+  };
+  if (mounted) setState(() => _result = result);
+}
+```

@@ -1,0 +1,136 @@
+---
+title: Asynchronous validation
+description: Remote checks on injected services, with debounce, cancellation and a submit that waits
+---
+
+# Asynchronous validation
+
+Some rules need time or a service: "is this username free?", "does this postal code belong to this city?". An Async Validator is a class you write, with its dependencies as constructor parameters, and declare on a Field. Its instance is a required, typed parameter of the generated Form, so a missing dependency is a compile error.
+
+## An Async Validator for one Field
+
+```dart
+class UsernameAvailable extends FormidableAsyncValidator<String> {
+  UsernameAvailable(this.repository);
+
+  final UserRepository repository;
+
+  @override
+  Future<List<FormidableValidationError>> validate(String value) async =>
+      await repository.isTaken(value) ? [UsernameTakenError(value)] : const [];
+
+  @override
+  Duration get debounce => const Duration(milliseconds: 300);
+}
+```
+
+Declare it with `@AsyncValidator<...>()`:
+
+```dart
+@Formidable()
+class SignUp {
+  const SignUp({required this.username});
+
+  @MinLength(3)
+  @AsyncValidator<UsernameAvailable>()
+  final String username;
+}
+```
+
+The generated Form takes the instance as a required named parameter, named after the class in lowerCamelCase:
+
+```dart
+final form = SignUpForm(usernameAvailable: UsernameAvailable(repository));
+```
+
+The generated Form Scope of such a Schema has a required `create`, because the Form cannot be built without the instance:
+
+```dart
+SignUpFormScope(
+  create: () => SignUpForm(usernameAvailable: UsernameAvailable(repository)),
+  child: ...,
+)
+```
+
+If several Fields name the same class they share one parameter. Two different classes that would produce the same parameter name, or a name that is also a Field name, fail the build. The Validator must accept the Field type, like a synchronous one.
+
+## When it runs
+
+- Only while the Field has a value and its synchronous Validators pass. Unset, a failing `@MinLength` or a disabled Field never reach the service. Errors that a Form Validator addresses to the Field count as well.
+- It also runs for the value the Form was created with.
+- It runs after `debounce` has passed without another change to **that** Field. Each Field has its own timer, so typing in one Field never delays the check of another. The default is 500 ms. When a Field has several Async Validators the longest `debounce` applies, and they run together.
+- Only the result for the latest value counts. A slow answer for an older value is dropped, whenever it arrives. Writing the value the Field already has does not restart anything.
+- The errors of a check are added after the errors of the synchronous Validators and the Form Validators, and they go away as soon as the value changes.
+
+## Pending
+
+While a check waits for its debounce or for the service, the Field is pending:
+
+```dart
+form.username.state.pending; // true while it runs
+form.state.pending;          // true while any Field is pending
+form.value;                  // null while the Form is pending
+```
+
+Pending is part of the Field state and of the Form state, so Field and Form builders rebuild when it changes. A pending Field has no result for the running check yet, so show progress instead of a verdict.
+
+## Cancellation
+
+Going back to Unset cancels the check, as does a value that stops passing the synchronous Validators, disabling the Field, and disposing the Form. A Dart future cannot be interrupted, so cancelling means that its answer is ignored. A Field is never stuck in pending.
+
+## Submit waits
+
+`submit()` waits until no Field is pending, including the debounce of checks that have not started yet, and only then decides:
+
+```dart
+final result = await form.submit(); // never passes an unchecked value
+```
+
+If the user changes a Field while `submit()` waits, the new value is checked too before the result comes back. If the Form is disposed while it waits, the result is invalid with no errors.
+
+## When the check throws
+
+If `validate` throws, for example because the network is down, the value was not checked, so it must not pass. The Field gets a `FormidableAsyncCheckFailedError` that carries the cause, and it blocks submit until the value changes. Its message is localized like the built-in errors. Catch the exceptions you can handle inside `validate`, and return your own Validation Error for them.
+
+## Asynchronous Form Validators
+
+A rule that reads several Fields and needs a service is an asynchronous Form Validator. It is typed on the generated Form, declares which Fields it depends on and addresses its errors to Fields:
+
+```dart
+class PostalCodeMatchesCity
+    extends FormidableAsyncFormValidator<ShippingForm> {
+  PostalCodeMatchesCity(this.geo);
+
+  final GeoService geo;
+
+  @override
+  List<FormidableField<Object?>> dependencies(ShippingForm form) => [
+    form.postalCode,
+    form.city,
+  ];
+
+  @override
+  Future<List<FormidableFieldError>> validate(ShippingForm form) async =>
+      await geo.matches(form.postalCode.value!, form.city.value!)
+      ? const []
+      : [FormidableFieldError(form.city, const CityMismatchError())];
+}
+
+@Formidable()
+@AsyncFormValidator<PostalCodeMatchesCity>()
+class Shipping {
+  const Shipping({required this.postalCode, required this.city});
+
+  final String postalCode;
+  final String city;
+}
+```
+
+It takes a `postalCodeMatchesCity:` parameter in the generated constructors, and follows the same lifecycle:
+
+- It runs only while every dependency has a value and has no error of its own, and none of them is waiting for its own Async Validator.
+- It is debounced as a whole: a change to any dependency restarts the timer. Only the latest result counts.
+- Every dependency is pending while it runs, and so is the Form.
+- A dependency going back to Unset or becoming invalid cancels it, and its errors go away.
+- `submit()` waits for it. If it throws, its first dependency gets a `FormidableAsyncCheckFailedError`.
+- A validator typed on another Form does not compile.

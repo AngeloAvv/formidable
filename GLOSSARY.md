@@ -72,7 +72,11 @@ _Avoid_: Remote validator
 
 **Form Validator**:
 A rule declared on a Schema that reads several Fields of the Form and attaches Validation Errors to specific Fields. It can be synchronous or asynchronous.
-_Avoid_: Group validator, cross-field validator
+_Avoid_: Group validator, multi-field validator
+
+**Cross-field rule**:
+A built-in Form Validator that you declare as an annotation on a Field instead of on the Schema, and that refers to other Fields of the Schema by symbol, for example `@MustMatch(#password)`. It attaches its Validation Error to the annotated Field.
+_Avoid_: Cross-field validator, dependent validator
 
 **Normalizer**:
 A rule declared on a Field that rewrites its value before validation, for example trimming whitespace. It applies only when you declare it.

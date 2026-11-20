@@ -1,0 +1,84 @@
+{
+  "$schema": "https://docs.page/schema.json",
+  "name": "Formidable",
+  "description": "Reactive forms for Flutter, built on annotations and code generation",
+  "theme": {
+    "primary": "#3F51B5"
+  },
+  "header": {
+    "showName": true,
+    "showThemeToggle": true,
+    "showGitHubCard": true
+  },
+  "sidebar": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        { "title": "Introduction", "href": "/" },
+        { "title": "Getting Started", "href": "/getting-started" }
+      ]
+    },
+    {
+      "group": "Schema",
+      "pages": [
+        { "title": "Declaring a Schema", "href": "/schema" },
+        { "title": "Required and optional Fields", "href": "/schema/presence" },
+        { "title": "Nested Forms", "href": "/schema/nested-forms" },
+        { "title": "Dynamic Forms", "href": "/schema/dynamic-forms" },
+        { "title": "Field Arrays and collections", "href": "/schema/field-arrays" }
+      ]
+    },
+    {
+      "group": "Validation",
+      "pages": [
+        { "title": "Validators", "href": "/validation" },
+        { "title": "String Validators", "href": "/validation/strings" },
+        { "title": "Format Validators", "href": "/validation/formats" },
+        { "title": "Number Validators", "href": "/validation/numbers" },
+        { "title": "Date Validators", "href": "/validation/dates" },
+        { "title": "Choice and equality Validators", "href": "/validation/choices" },
+        { "title": "Collection Validators", "href": "/validation/collections" },
+        { "title": "File Validators", "href": "/validation/files" },
+        { "title": "Network Validators", "href": "/validation/network" },
+        { "title": "Finance Validators", "href": "/validation/finance" },
+        { "title": "Locale Validators", "href": "/validation/locale" },
+        { "title": "Custom Validators", "href": "/validation/custom" },
+        { "title": "Cross-field rules", "href": "/validation/cross-field" },
+        { "title": "Asynchronous validation", "href": "/validation/async" },
+        { "title": "Normalizers", "href": "/validation/normalizers" },
+        { "title": "Messages and localization", "href": "/validation/messages" }
+      ]
+    },
+    {
+      "group": "Form",
+      "pages": [
+        { "title": "The generated Form", "href": "/form" },
+        { "title": "State and reactive widgets", "href": "/form/state" },
+        { "title": "Form Effects", "href": "/form/effects" },
+        { "title": "Writing, dirty and leaving the screen", "href": "/form/writes" },
+        { "title": "Submit, errors and disabled Fields", "href": "/form/submit" }
+      ]
+    },
+    {
+      "group": "Widgets",
+      "pages": [{ "title": "Binding Fields to widgets", "href": "/widgets" },
+        { "title": "Material widgets", "href": "/widgets/material" },
+        { "title": "Cupertino widgets", "href": "/widgets/cupertino" },
+        { "title": "Codecs", "href": "/widgets/codecs" },
+        { "title": "Focus and keyboard actions", "href": "/widgets/focus" }
+      ]
+    },
+    {
+      "group": "Guides",
+      "pages": [
+        { "title": "Overview and example app", "href": "/guides" },
+        { "title": "Sign up", "href": "/guides/sign-up" },
+        { "title": "Submit patterns", "href": "/guides/submit-patterns" },
+        { "title": "Edit a contact", "href": "/guides/edit-form" },
+        { "title": "Dynamic lists", "href": "/guides/dynamic-lists" },
+        { "title": "A multi-step wizard", "href": "/guides/wizard" },
+        { "title": "A questionnaire from the server", "href": "/guides/questionnaire" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,52 @@
+---
+title: Guides
+description: Patterns to copy, each one backed by the example app
+---
+
+# Guides
+
+Every guide is a flow you can copy into your own app. Each snippet is an excerpt of the [example app](#the-example-app), which is tested, so what you read here compiles and works.
+
+| Guide | You learn |
+| --- | --- |
+| [Sign up](/guides/sign-up) | A form with an asynchronous check, cross-field rules, a Form Validator and a Form Effect, submitted imperatively |
+| [Submit patterns](/guides/submit-patterns) | The imperative pattern (`submit()` and a `switch`) next to the declarative one (a Form Selector over `value`), and why a disabled button hides the reasons |
+| [Edit a contact](/guides/edit-form) | Starting from existing data with `.from`, a Nested Form, a Form Effect, `commit`, `reset`, server errors and a pop scope |
+| [Dynamic lists](/guides/dynamic-lists) | Field Arrays of Nested Forms and of Fields: add, remove, reorder, item counts |
+| [A multi-step wizard](/guides/wizard) | One Form with a Nested Form per step, submitted step by step |
+| [A questionnaire from the server](/guides/questionnaire) | A Dynamic Form whose Fields are registered at runtime |
+
+## The example app
+
+The `example/` folder of the repository is one app that covers every documented feature. Its home page lists the guides above plus a page with every Material and Cupertino widget. Opening a guide shows the **same Schema and the same generated Form with Material widgets and with Cupertino widgets, side by side**. A screen narrower than 900 logical pixels shows one design system at a time, with a switch.
+
+```sh
+cd example
+fvm flutter run -d chrome   # or any device; without fvm, flutter run
+```
+
+Only the widgets differ between the two panes. The Schema, the Validators, the Form Effects and the logic are shared, which is the point of keeping the Schema free of Flutter.
+
+| Feature | Where to look |
+| --- | --- |
+| Required, optional and default Fields | `sign_up/sign_up.dart`, `wizard/wizard.dart` |
+| Normalizers (`@Trim()`) | every Schema |
+| Validators of the catalog | `@MinLength`, `@Email`, `@Min`, `@Max`, `@IsTrue`, `@MinItems`, `@MaxItems` |
+| Cross-field rules | `@MustMatch` and `@RequiredIf` in `sign_up/sign_up.dart`, `@Different` in `wizard/wizard.dart` |
+| Custom Validation Errors and messages | `UsernameTakenError`, `showcase.dart` |
+| Async Validator, pending state | `sign_up/sign_up.dart` |
+| Form Validator | `PasswordWithoutUsername` in `sign_up/sign_up.dart` |
+| Form Effects, enabling and disabling Fields | `ClearProvinceOnCountryChange` in `contact/contact.dart`, `VatOnlyForCompanies` in `sign_up/sign_up.dart` |
+| Nested Forms | `contact/contact.dart`, `wizard/wizard.dart` |
+| Field Arrays | `trip/trip.dart` |
+| Dynamic Forms | `survey/survey.dart` |
+| Passthrough Fields | `Contact.id` |
+| `from`, `patch`, `reset`, `commit`, dirty | `contact/contact_material.dart` |
+| Pop scope | `contact/contact_material.dart` |
+| `applyErrors` | `contact/contact_material.dart` |
+| Error display policy | `wizard/wizard_material.dart` |
+| Focus on submit and keyboard navigation | `sign_up` and every text field |
+| Codecs | `Stop.nights` and `Journey.passengers` (an `int` in a text field) |
+| Every Material and Cupertino widget | `widgets/` |
+
+Run the tests of the guides with `fvm flutter test` in `example/`. The widget tests walk through each flow with both design systems.

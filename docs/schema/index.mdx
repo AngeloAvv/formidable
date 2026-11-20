@@ -1,0 +1,60 @@
+---
+title: Declaring a Schema
+description: How a plain Dart class becomes a Form
+---
+
+# Declaring a Schema
+
+A Schema is a plain Dart class marked with `@Formidable()`. Each final field becomes a Field, and the Schema constructor is used to build the output of a valid Form.
+
+See [Getting Started](/getting-started) for a complete example.
+
+This section grows with the library. See [Required and optional Fields](/schema/presence) for Unset versus null, defaults, `@Required()` and Passthrough Fields.
+
+## Constructor and fields
+
+The generator reads the unnamed constructor of the Schema and matches each parameter to a final field **by name**. Parameters can be positional, optional positional or named, and in any order. Fields keep the order in which they are declared, and that order is what Form-wide behavior such as focusing the first invalid Field follows.
+
+```dart
+@Formidable()
+class Coordinates {
+  const Coordinates(this.latitude, this.longitude, [this.label = 'unnamed']);
+
+  final double latitude;
+  final double longitude;
+  final String label;
+}
+```
+
+- **Getters are ignored.** A computed property such as `String get label => ...` never becomes a Field, and stays available on the output.
+- **Inherited fields are included** when they appear in the constructor, so Schemas can share common Fields.
+
+```dart
+abstract class Entity {
+  const Entity({required this.id});
+
+  final int id;
+}
+
+@Formidable()
+class Customer extends Entity {
+  const Customer({required super.id, required this.name});
+
+  final String name;
+}
+```
+
+`CustomerForm` has an `id` Field and a `name` Field.
+
+## Diagnostics
+
+When a Schema cannot become a Form, the build fails with a message that names the Schema and the member at fault.
+
+| Problem | What to do |
+| --- | --- |
+| A final field is missing from the constructor (an inherited one counts) | Add it to the constructor, or make it a getter or a non-final field if it is not part of the form. |
+| A constructor parameter has no matching final field | Declare a final field with the same name as the parameter. |
+| The Schema is generic | Remove the type parameters. Generic Schemas are not supported. |
+| `@Formidable()` is on something other than a class | Move it to a class. |
+
+One diagnostic is a warning, not an error: `@Required()` on a non-nullable Field. A non-nullable Field without a default is already required, so the annotation does nothing. The build still succeeds. Use `@Required()` only on nullable Fields, where it forces the user to make a choice.

@@ -1,0 +1,71 @@
+---
+title: Format Validators
+description: Emails, URLs, identifiers, colors, encodings and checksums
+---
+
+# Format Validators
+
+Every Validator on this page judges a `String`, so it applies to `String` and `String?` Fields. The generator rejects it on any other Field type. They check the shape of the value. Whether the mailbox, the host or the ISBN exists is a question for an Async Validator.
+
+```dart
+@Formidable()
+class Profile {
+  const Profile({required this.email, this.website, this.accent});
+
+  @Email()
+  final String email;
+
+  @Url()
+  final String? website;
+
+  @HexColor()
+  final String? accent;
+}
+```
+
+Every Validator returns a typed Validation Error, with a message in English, Italian, Spanish, French and German. See [Messages and localization](/validation/messages) to change the wording. An empty string is never a valid format: trim and clear it with `@Trim()` if an empty input must mean "no value".
+
+## Email, URL and identifiers
+
+| Annotation | Error | Accepts |
+|---|---|---|
+| `Email()` | `FormidableEmailError` | `local@domain.tld` with a plain local part and a domain of at least two labels |
+| `Url({schemes, requireTld})` | `FormidableUrlError(schemes, requireTld)` | an absolute URL with a host and one of `schemes` (default `http` and `https`) |
+| `Uuid({version})` | `FormidableUuidError(version)` | a UUID in the 8-4-4-4-12 form, of any version from 1 to 8 or of `version` |
+| `Ulid()` | `FormidableUlidError` | 26 characters of Crockford base32 |
+| `SemVer()` | `FormidableSemVerError` | a semantic version such as `1.2.3` or `1.0.0-beta.1+build.5`, without a leading `v` |
+
+`Email` is a practical check, not the full RFC 5322 grammar. `Url` rejects `http://localhost` unless you pass `requireTld: false`; an IP address is always accepted as a host.
+
+## Colors
+
+| Annotation | Error | Accepts |
+|---|---|---|
+| `HexColor({requireHash = true})` | `FormidableHexColorError` | `#rgb`, `#rgba`, `#rrggbb` and `#rrggbbaa`; the `#` is optional with `requireHash: false` |
+| `ColorCode({formats})` | `FormidableColorCodeError(formats)` | CSS colors in the given `ColorFormat`s (`hex`, `rgb`, `rgba`, `hsl`, `hsla`; all by default) |
+
+`ColorCode` accepts `rgb(255, 0, 0)`, `rgb(100% 0% 0%)`, `rgba(0, 0, 0, 0.5)`, `hsl(120, 100%, 50%)` and `hsla(120, 100%, 50%, 0.5)`. Arguments are separated by commas or spaces, with an optional slash before the alpha. Named colors are not accepted.
+
+```dart
+@ColorCode(formats: [ColorFormat.hex, ColorFormat.rgb])
+final String background;
+```
+
+## Numbers and encodings
+
+| Annotation | Error | Accepts |
+|---|---|---|
+| `Hexadecimal()` | `FormidableHexadecimalError` | hexadecimal digits, with an optional `0x` prefix |
+| `Octal()` | `FormidableOctalError` | octal digits, with an optional `0o` prefix |
+| `Base64({urlSafe = false})` | `FormidableBase64Error(urlSafe)` | Base64 with correct padding; with `urlSafe` the `-` and `_` alphabet and optional padding |
+| `Json()` | `FormidableJsonError` | any valid JSON document |
+| `Jwt()` | `FormidableJwtError` | three base64url parts where the header and the payload are JSON objects |
+
+`Jwt` checks the shape of the token and does not verify the signature: that needs the key and belongs to the server.
+
+## Checksums
+
+| Annotation | Error | Accepts |
+|---|---|---|
+| `Luhn()` | `FormidableLuhnError` | digits that pass the Luhn check, such as payment card numbers; spaces and dashes are ignored |
+| `Isbn({version})` | `FormidableIsbnError(version)` | an ISBN-10 or ISBN-13 with a correct check digit, or only `version` (10 or 13); spaces and dashes are ignored |

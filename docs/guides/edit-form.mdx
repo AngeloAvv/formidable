@@ -1,0 +1,208 @@
+---
+title: Edit a contact
+description: Start a form from existing data, edit a Nested Form, commit a save and warn before leaving
+---
+
+# Edit a contact
+
+Editing differs from creating in four ways: the Form starts from data that already exists, saving makes that data the new baseline, the user can discard their changes, and leaving the screen with unsaved changes needs a confirmation. This guide builds an edit screen for a contact with a Nested Form for the address.
+
+## 1. The Schema
+
+`Address` is a Schema of its own, used as a Field of `Contact`: it becomes a [Nested Form](/schema/nested-forms). `Contact.id` is a [Passthrough](/schema/presence) Field: the Form carries it from the instance to the output, and no widget is bound to it.
+
+```dart
+// example/lib/contact/contact.dart
+@Formidable()
+@Effects([ClearProvinceOnCountryChange()])
+class Address {
+  const Address({required this.street, this.country = 'IT', this.province});
+
+  @Trim()
+  @MinLength(2)
+  final String street;
+
+  final String country;
+
+  @Trim()
+  final String? province;
+}
+// ...
+@Formidable()
+class Contact {
+  const Contact({
+    required this.id,
+    required this.name,
+    this.email,
+    required this.address,
+  });
+
+  /// A Passthrough Field is not an input: the Form carries it from the
+  /// Schema instance to the output, and no widget is bound to it.
+  @Passthrough()
+  final int id;
+
+  @Trim()
+  @MinLength(2)
+  final String name;
+
+  @Trim()
+  @Email()
+  final String? email;
+
+  final Address address;
+}
+```
+
+## 2. A Form Effect
+
+When the country changes, the province no longer applies. A [Form Effect](/form/effects) is typed on the generated Form and runs after every change, whether the user or your code wrote it.
+
+```dart
+// example/lib/contact/contact.dart
+class ClearProvinceOnCountryChange extends FormidableEffect<AddressForm> {
+  const ClearProvinceOnCountryChange();
+
+  @override
+  void apply(AddressForm form, FormidableEffectContext context) {
+    if (context.changed(form.country)) form.province.clear();
+  }
+}
+```
+
+Declare it on the Schema with `@Effects([ClearProvinceOnCountryChange()])`. At creation nothing counts as changed, so the province you start with is kept.
+
+## 3. Start from existing data
+
+`ContactForm.from(contact)` creates the Form with every Field, Nested Form included, set from the instance. The Fields start clean: **dirty** means "differs from the initial state", and the initial state is what the Form was created with.
+
+```dart
+// example/lib/contact/contact_material.dart
+class ContactEditMaterialPage extends StatelessWidget {
+  const ContactEditMaterialPage({super.key, required this.store});
+
+  final ContactStore store;
+
+  @override
+  Widget build(BuildContext context) => ContactFormScope(
+    create: () => ContactForm.from(store.contact),
+```
+
+## 4. Bind the widgets and the Save button
+
+The Fields of a Nested Form are typed handles reached through the parent Form:
+
+```dart
+// example/lib/contact/contact_material.dart
+// A Nested Form: its Fields are typed handles like any other.
+FormidableTextField(
+  key: const Key('street'),
+  field: form.address.street,
+  decoration: const InputDecoration(
+    labelText: 'Street',
+    border: OutlineInputBorder(),
+  ),
+),
+// ...
+FormidableSegmentedButton<String>(
+  field: form.address.country,
+  segments: const [
+    ButtonSegment(value: 'IT', label: Text('Italy')),
+    ButtonSegment(value: 'FR', label: Text('France')),
+  ],
+),
+```
+
+Save is on only while the Form is valid *and* has changes, so a [Form Selector](/form/state) reads `value` and `state.dirty` (the **declarative pattern**):
+
+```dart
+// example/lib/contact/contact_material.dart
+FormidableFormSelector<ContactForm, bool>(
+  selector: (form) => form.value != null && form.state.dirty,
+  builder: (context, canSave) => FilledButton(
+    onPressed: canSave ? () => _save(form) : null,
+    child: const Text('Save'),
+  ),
+),
+```
+
+[Submit patterns](/guides/submit-patterns) compares this button with the imperative one and explains why the example says why Save is off.
+
+## 5. Commit after a save
+
+`commit()` makes the current values the new initial state. The Form is clean again (so Save goes off and the screen can be left), and a later `reset()` returns to what was saved.
+
+```dart
+// example/lib/contact/contact_material.dart
+widget.store.save(form.value!);
+form.commit();
+setState(() => _saved = true);
+```
+
+`reset()` is the "discard changes" button, and `patch` writes only the Fields you pass, as one change, with the Form Effects and Validators applied:
+
+```dart
+// example/lib/contact/contact_material.dart
+onPressed: () => form.patch(name: 'Grace Hopper'),
+child: const Text('Use a sample name'),
+```
+
+## Errors from the service
+
+Some errors only a server can find, such as an address that is already registered. `applyErrors` adds them to a Field like any Validation Error. They make the Form invalid and clear on the next change to that Field.
+
+```dart
+// example/lib/contact/contact_material.dart
+// The service has the last word on what no Validator can know.
+if (emailIsInUse(form.email.value)) {
+  form.applyErrors(
+    fieldErrors: {
+      form.email: [const EmailInUseError()],
+    },
+  );
+  // The user may not have left the Field yet: show the error now.
+  form.email.markAsTouched();
+  return;
+}
+```
+
+`markAsTouched()` makes the error show even if the user never left the Field; the message comes from `FormidableConfig.messages`, as in the [sign-up guide](/guides/sign-up).
+
+## 6. Warn before leaving
+
+`FormidablePopScope` blocks the pop while the Form is dirty and calls `confirmLeave`. Show a dialog and return whether to leave. A clean Form is left without asking, which is why `commit()` matters.
+
+```dart
+// example/lib/contact/contact_material.dart
+child: FormidablePopScope<ContactForm>(
+  confirmLeave: (context) async =>
+      await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Discard changes?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Stay'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Discard'),
+            ),
+          ],
+        ),
+      ) ??
+      false,
+```
+
+## Cupertino
+
+The Cupertino page is the same flow. It differs only in the widgets, such as `FormidableCupertinoSlidingSegmentedControl` for the country and `showCupertinoDialog` for the confirmation:
+
+```dart
+// example/lib/contact/contact_cupertino.dart
+FormidableCupertinoSlidingSegmentedControl<String>(
+  field: form.address.country,
+  children: const {'IT': Text('Italy'), 'FR': Text('France')},
+),
+```

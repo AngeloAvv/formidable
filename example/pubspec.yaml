@@ -1,0 +1,27 @@
+name: formidable_example
+description: Example app for Formidable.
+publish_to: none
+version: 0.1.0
+
+resolution: workspace
+
+environment:
+  sdk: ^3.14.0
+  flutter: ">=3.50.0"
+
+dependencies:
+  cupertino_ui: ^1.1.0
+  flutter:
+    sdk: flutter
+  formidable: ^0.1.0
+  formidable_cupertino: ^0.1.0
+  formidable_flutter: ^0.1.0
+  formidable_material: ^0.1.0
+  material_ui: ^1.11.0
+
+dev_dependencies:
+  build_runner: ^2.4.0
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+  formidable_generator: ^0.1.0

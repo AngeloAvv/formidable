@@ -1,0 +1,35 @@
+name: Run Tests
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up the workspace
+        uses: ./.github/actions/setup
+        with:
+          working-directory: ${{ inputs.working-directory }}
+
+      # Pure Dart packages run with `dart test` and Flutter packages with
+      # `flutter test`. A package without a test directory has nothing to run:
+      # the core and the Flutter bindings are exercised through the Seam 1
+      # package and the Material package.
+      - name: Test
+        working-directory: ${{ inputs.working-directory }}
+        run: |
+          if [ ! -d test ]; then
+            echo "No tests in ${{ inputs.working-directory }}."
+          elif grep -q 'sdk: flutter' pubspec.yaml; then
+            fvm flutter test
+          else
+            fvm dart test
+          fi

@@ -1,0 +1,24 @@
+name: Run Analyze
+
+on:
+  workflow_call:
+    inputs:
+      working-directory:
+        required: true
+        type: string
+
+jobs:
+  analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up the workspace
+        uses: ./.github/actions/setup
+        with:
+          working-directory: ${{ inputs.working-directory }}
+
+      - name: Analyze
+        run: fvm flutter analyze
+        working-directory: ${{ inputs.working-directory }}

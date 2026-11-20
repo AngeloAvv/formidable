@@ -1,0 +1,49 @@
+---
+title: File Validators
+description: Rules for files picked by the user, on the file type Formidable defines
+---
+
+# File Validators
+
+File Validators judge a `FormidableFile`, a small value type of the core package that describes a file without holding its bytes. A file picker adapts its own type to it:
+
+```dart
+FormidableFile(
+  name: picked.name,
+  size: picked.size,
+  mimeType: picked.mimeType, // optional
+  path: picked.path, // optional, null on the web
+)
+```
+
+`file.extension` is the extension of the name in lower case and without the dot, or null when the name has none (`.gitignore` has none).
+
+```dart
+@Formidable()
+class Upload {
+  const Upload({required this.avatar, required this.contract});
+
+  @ImageFile()
+  @MaxFileSize(2 * 1024 * 1024)
+  final FormidableFile avatar;
+
+  @FileExtension(['pdf', 'docx'])
+  @FileName(maxLength: 100)
+  final FormidableFile contract;
+}
+```
+
+| Annotation | Passes when | Error |
+|---|---|---|
+| `MinFileSize(bytes)` | The file has at least that many bytes. | `FormidableMinFileSizeError(minBytes, actualBytes)` |
+| `MaxFileSize(bytes)` | The file has at most that many bytes. | `FormidableMaxFileSizeError(maxBytes, actualBytes)` |
+| `FileExtension(extensions)` | The extension is one of the list. Case is ignored, and a leading dot is optional (`'.pdf'` is `'pdf'`). | `FormidableFileExtensionError(allowed, actual)` |
+| `MimeType(types)` | The MIME type is one of the list. `image/*` allows every image subtype. A file with no MIME type never passes. | `FormidableMimeTypeError(allowed, actual)` |
+| `ImageFile()` | The MIME type starts with `image/`. When the file has no MIME type, the extension decides (jpg, png, gif, webp, bmp, svg, heic, heif, avif, tiff, ico). | `FormidableImageFileError` |
+| `FileName({maxLength = 255})` | The name is not empty, not longer than `maxLength`, not `.` or `..`, does not end with a space or a dot, and has none of the characters `/ \ : * ? " < >`, the pipe or control characters. | `FormidableFileNameError(maxLength)` |
+
+The image Validator is `ImageFile` and not `Image`, so it does not clash with Flutter's `Image` widget in files that import both.
+
+Sizes in messages are written for people (`1.5 KB`, `5 MB`), with the decimal separator of the language.
+
+Checks that need the bytes, such as image dimensions, are not part of this release.

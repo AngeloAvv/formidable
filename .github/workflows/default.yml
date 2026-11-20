@@ -1,0 +1,69 @@
+name: Pipeline
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  analyze:
+    name: Analyze ${{ matrix.working-directory }}
+    strategy:
+      fail-fast: false
+      matrix:
+        working-directory:
+          - packages/formidable
+          - packages/formidable_generator
+          - packages/formidable_flutter
+          - packages/formidable_material
+          - packages/formidable_cupertino
+          - internal/formidable_test_schemas
+          - example
+    uses: ./.github/workflows/analyze.yml
+    with:
+      working-directory: ${{ matrix.working-directory }}
+
+  test:
+    name: Test ${{ matrix.working-directory }}
+    strategy:
+      fail-fast: false
+      matrix:
+        working-directory:
+          - packages/formidable
+          - packages/formidable_generator
+          - packages/formidable_flutter
+          - packages/formidable_material
+          - packages/formidable_cupertino
+          - internal/formidable_test_schemas
+          - example
+    uses: ./.github/workflows/test.yml
+    with:
+      working-directory: ${{ matrix.working-directory }}
+
+  # Required status check: fails unless analyze and test both succeeded.
+  # A skipped or cancelled run counts as a failure.
+  ci-ok:
+    name: ci-ok
+    if: ${{ always() }}
+    needs:
+      - analyze
+      - test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail unless every required job succeeded
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || contains(needs.*.result, 'skipped') }}
+        run: exit 1
+
+  # Only a tag push publishes: every job inside publish.yml checks for a tag.
+  publish:
+    name: Publish
+    needs: ci-ok
+    permissions:
+      id-token: write
+    uses: ./.github/workflows/publish.yml

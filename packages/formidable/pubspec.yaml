@@ -1,0 +1,19 @@
+name: formidable
+description: Pure Dart core of Formidable, a reactive form library built on annotations and code generation. Annotations, runtime, Validators and Validation Errors.
+version: 0.1.0
+homepage: https://docs.page/AngeloAvv/formidable
+repository: https://github.com/AngeloAvv/formidable
+issue_tracker: https://github.com/AngeloAvv/formidable/issues
+topics:
+  - forms
+  - validation
+  - code-generation
+
+resolution: workspace
+
+environment:
+  sdk: ^3.8.0
+
+dev_dependencies:
+  lints: ^6.0.0
+  test: ^1.25.0

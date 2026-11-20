@@ -1,0 +1,104 @@
+---
+title: Submit patterns
+description: Imperative and declarative submit side by side, and why a disabled button hides the reasons
+---
+
+# Submit patterns
+
+A Form can be sent in two ways. Both are supported, both use the same generated Form, and the example app uses one in each of the first two guides.
+
+## Imperative: call `submit()` and switch on the result
+
+The button is always enabled. When it is pressed, call `submit()` and handle the sealed result with an exhaustive `switch`:
+
+```dart
+// example/lib/sign_up/sign_up_material.dart
+Future<void> _submit(SignUpForm form) async {
+  final greeting = switch (await form.submit()) {
+    FormidableSubmitValid(:final value) => 'Welcome, ${value.username}!',
+    FormidableSubmitInvalid() => 'Please fix the errors above.',
+  };
+  if (mounted) setState(() => _greeting = greeting);
+}
+```
+
+`submit()` first touches every Field so that every error shows, then waits for the pending [Async Validators](/validation/async), then returns:
+
+- `FormidableSubmitValid(:final value)` with the Schema instance, or
+- `FormidableSubmitInvalid(:final errors)` with every invalid Field and every Field Array that has errors, keyed by its typed handle, in tree order. The focus has already moved to the first invalid Field.
+
+The button is wired in one line:
+
+```dart
+// example/lib/sign_up/sign_up_material.dart
+FilledButton(
+  onPressed: () => _submit(form),
+  child: const Text('Sign up'),
+),
+```
+
+**Use it when** the user must be told what to fix. Pressing the button is what reveals the errors.
+
+## Declarative: a Form Selector over `value` drives the button
+
+A [Form Selector](/form/state) reads the Form after every change and rebuilds only when what it selects changes. `form.value` is the Schema instance while the Form is valid and null otherwise, so the selector can answer "can this be sent?":
+
+```dart
+// example/lib/contact/contact_material.dart
+FormidableFormSelector<ContactForm, bool>(
+  selector: (form) => form.value != null && form.state.dirty,
+  builder: (context, canSave) => FilledButton(
+    onPressed: canSave ? () => _save(form) : null,
+    child: const Text('Save'),
+  ),
+),
+```
+
+The tap handler uses the value directly. The button is enabled only when `value` is not null, so the `!` is safe. The first lines apply an error only the service can know, which the [edit guide](/guides/edit-form#errors-from-the-service) explains:
+
+```dart
+// example/lib/contact/contact_material.dart
+void _save(ContactForm form) {
+  // The service has the last word on what no Validator can know.
+  if (emailIsInUse(form.email.value)) {
+    form.applyErrors(
+      fieldErrors: {
+        form.email: [const EmailInUseError()],
+      },
+    );
+    // The user may not have left the Field yet: show the error now.
+    form.email.markAsTouched();
+    return;
+  }
+  widget.store.save(form.value!);
+  form.commit();
+  setState(() => _saved = true);
+}
+```
+
+**Use it when** the screen should only offer what can be done now, for example a Save button that stays off until there is something valid to save.
+
+## A disabled button hides the reasons
+
+A button that is off tells the user nothing about *why*. With the default error display, a Field shows its errors only once the user has touched it, so a user who has not touched a Field sees a disabled button and no message. Two ways to deal with it:
+
+- Prefer the imperative pattern when the user needs to see what to fix. An enabled button plus `submit()` reveals every error at once.
+- With the declarative pattern, say it next to the button, as the example does, or call `form.submit()` from a secondary action to reveal the errors.
+
+```dart
+// example/lib/contact/contact_material.dart
+// A disabled button does not say why. Say it next to the button.
+const Text('Save is on while the form is valid and has changes.'),
+```
+
+`form.state.errors`, `form.value` and `submit()` always see every error, whatever the [error display policy](/form/submit#when-errors-are-shown) decides to show.
+
+## Which pattern, in short
+
+| | Imperative | Declarative |
+| --- | --- | --- |
+| Button | Always enabled | Enabled when `form.value != null` |
+| Errors | All shown on press | Shown as the user touches Fields |
+| Code | `switch (await form.submit())` | `FormidableFormSelector` and `form.value!` |
+| Async checks | `submit()` waits | `value` is null while pending, so the button stays off |
+| Good for | Sign-up, checkout, anything with a long form | Edit screens, save-when-ready toolbars |

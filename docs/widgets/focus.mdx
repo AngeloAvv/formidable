@@ -1,0 +1,75 @@
+---
+title: Focus and keyboard actions
+description: Move through a form with the keyboard, in Schema declaration order
+---
+
+# Focus and keyboard actions
+
+Users move through a form with the keyboard's action key. Formidable follows **Schema declaration order**, so the order of the Fields in your Schema is the order of the form.
+
+The order is a **tree order**: it descends into [Nested Forms](/schema/nested-forms) and into the items of [Field Arrays](/schema/field-arrays) right where they are declared. A Schema `title, origin (Nested Form), stops (Field Array), memo` is walked as `title`, the Fields of `origin`, the Fields of every stop in the order of the array, then `memo`. Adding, removing or moving an item changes the order with it. Submitting an invalid form focuses the first invalid Field in that same order.
+
+```dart
+@Formidable()
+class Shipping {
+  const Shipping({required this.name, required this.street, required this.city});
+
+  final String name;
+  final String street;
+  final String city;
+}
+```
+
+With one `FormidableTextField` per Field, pressing "next" on `name` focuses `street`, then `city`. On `city` the key is "done" and closes the keyboard.
+
+## Which Fields count
+
+Only Fields the keyboard can reach take part:
+
+- A Field with no widget is skipped. So is every **Passthrough** Field: it has no widget by definition.
+- A **disabled** Field is skipped.
+- The **last** reachable Field uses the "done" action. Every other one uses "next".
+
+The keyboard actions follow the widgets on screen. If a widget appears or goes away, or a Field is disabled or enabled, the actions update on the next frame: a Field that used to be last becomes "next" when another Field is added after it.
+
+A multiline text field keeps its newline key.
+
+## Overriding it
+
+Each widget can replace the action and the behaviour:
+
+```dart
+FormidableTextField<String>(
+  field: form.name,
+  textInputAction: TextInputAction.search, // a different key
+  onEditingComplete: search,               // replaces moving focus
+)
+```
+
+When `onEditingComplete` is set, Formidable does not move the focus: it is up to you.
+
+## In your own widgets
+
+`FormidableBinding` exposes the same behaviour for any text widget:
+
+```dart
+FormidableBindingBuilder<String>(
+  field: form.name,
+  builder: (context, binding) => TextField(
+    controller: binding.textController,
+    focusNode: binding.focusNode,
+    textInputAction: binding.textInputAction,
+    onEditingComplete: binding.onEditingComplete,
+  ),
+)
+```
+
+`field.focusNext()` moves the focus to the next reachable Field and returns whether there was one. `field.focus()` and `field.unfocus()` act on the Field's widget.
+
+## Several widgets on one Field
+
+You can show one Field in more than one widget. They stay in sync, and `field.focus()` goes to the **most recently registered** one. Pressing "next" in either of them moves to the Field after the shared one.
+
+## Who owns the focus node and the text controller
+
+The Binding creates and disposes its own `FocusNode` and `TextEditingController`. When you pass your own (`focusNode:`, `textController:`), the Binding uses them and **never disposes them**. You do.

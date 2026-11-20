@@ -1,0 +1,66 @@
+import 'schema.dart';
+
+/// Emits the library with the Form Scope and the context extension of every
+/// Schema in [schemas], which all live in [schemaFile].
+String emitScopeLibrary(
+  List<SchemaModel> schemas, {
+  required String schemaFile,
+}) {
+  final out = StringBuffer()
+    ..writeln('// GENERATED CODE - DO NOT MODIFY BY HAND')
+    ..writeln('// ignore_for_file: type=lint')
+    ..writeln()
+    ..writeln("import 'package:flutter/widgets.dart';")
+    ..writeln("import 'package:formidable_flutter/formidable_flutter.dart';")
+    ..writeln()
+    ..writeln("import '$schemaFile';");
+  for (final schema in schemas) {
+    out
+      ..writeln()
+      ..write(_scope(schema));
+  }
+  return out.toString();
+}
+
+String _scope(SchemaModel schema) {
+  final form = schema.formName;
+  final scope = schema.scopeName;
+  final getter =
+      '${schema.name[0].toLowerCase()}${schema.name.substring(1)}Form';
+  // A Form that cannot be created without arguments (it takes Async Validator
+  // instances or a Schema instance for a Passthrough Field) has no default.
+  final needsCreate =
+      schema.requiresInitial || schema.asyncParameters.isNotEmpty;
+  final createParameter = needsCreate
+      ? 'required $form Function() create,'
+      : '$form Function()? create,';
+  final createArgument = needsCreate ? 'create' : 'create ?? $form.new';
+  return '''
+/// Creates a [$form], makes it available to the widgets below and disposes it.
+class $scope extends FormidableScope<$form> {
+  $scope({
+    super.key,
+    $createParameter
+    super.errorDisplay,
+    required super.child,
+  }) : super(create: $createArgument);
+
+  /// Exposes a [$form] that something else owns, without disposing it.
+  const $scope.value({
+    super.key,
+    required $form form,
+    super.errorDisplay,
+    required super.child,
+  }) : super.value(form: form);
+
+  /// The [$form] of the closest [$scope] above [context].
+  static $form of(BuildContext context) =>
+      FormidableScope.of<$form>(context);
+}
+
+extension ${schema.name}FormContext on BuildContext {
+  /// The [$form] of the closest [$scope] above this context.
+  $form get $getter => $scope.of(this);
+}
+''';
+}
