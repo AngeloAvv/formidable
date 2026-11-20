@@ -46,10 +46,10 @@ void main() {
       expect(untouchedNotifications, 0);
     });
 
-    test('notifies change listeners once', () {
+    test('notifies listeners once', () {
       final form = contactForm();
       var changes = 0;
-      form.addChangeListener(() => changes++);
+      form.addListener(() => changes++);
 
       form.patch(name: 'Marco', phone: '456', note: 'vip');
 
@@ -59,7 +59,7 @@ void main() {
     test('a chosen null is written atomically with batch', () {
       final form = contactForm();
       var changes = 0;
-      form.addChangeListener(() => changes++);
+      form.addListener(() => changes++);
 
       form.patch(phone: null); // null means "leave unchanged"
       expect(form.phone.value, '123');
@@ -78,7 +78,6 @@ void main() {
       final form = contactForm();
       var notifications = 0;
       form.addListener(() => notifications++);
-      form.addChangeListener(() => notifications++);
 
       form.patch();
       form.patch(name: 'Angelo', phone: '123');
@@ -202,14 +201,11 @@ void main() {
       final form = contactForm();
       form.patch(name: 'Marco', phone: '456', id: 3);
       var notifications = 0;
-      var changes = 0;
       form.addListener(() => notifications++);
-      form.addChangeListener(() => changes++);
 
       form.reset();
 
       expect(notifications, 1);
-      expect(changes, 1);
     });
 
     test('restores the initial state exactly, without rerunning Effects', () {

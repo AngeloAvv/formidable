@@ -200,22 +200,17 @@ void main() {
       final form = _valid()..password.setValue('short');
       expect(form.state.status, FormidableStatus.invalid);
       var states = 0;
-      var changes = 0;
-      form
-        ..addListener(() => states++)
-        ..addChangeListener(() => changes++);
+      form.addListener(() => states++);
 
       form.password.disable();
 
       expect(form.state.status, FormidableStatus.valid);
       expect(states, 1);
-      expect(changes, 1);
 
       form.password.enable();
 
       expect(form.state.status, FormidableStatus.invalid);
       expect(states, 2);
-      expect(changes, 2);
     });
 
     test('lets submit succeed with the value of the disabled Field', () async {

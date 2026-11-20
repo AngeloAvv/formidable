@@ -144,11 +144,11 @@ void main() {
       expect(states.single.status, FormidableStatus.invalid);
     });
 
-    test('a Form change listener hears every item edit', () {
+    test('a Form listener hears every item edit', () {
       final form = PersonForm();
       form.phones.add(const Telephone(number: '555'));
       var calls = 0;
-      form.addChangeListener(() => calls++);
+      form.addListener(() => calls++);
 
       form.phones.items.first.node.label.setValue('home');
       form.phones.items.first.node.label.setValue('work');
@@ -439,7 +439,13 @@ void main() {
 
       expect(
         form.tags,
-        isA<FormidableFieldArray<FormidableField<String>, String>>(),
+        isA<
+          FormidableFieldArray<
+            FormidableField<String>,
+            String,
+            FormidableFieldState<String>
+          >
+        >(),
       );
       form.tags
         ..add('flutter')

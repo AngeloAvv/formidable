@@ -259,11 +259,10 @@ void main() {
       expect(form.home.state.dirty, isFalse);
     });
 
-    test('notifies the parent of a nested value change even if its state '
-        'stays equal', () {
+    test('notifies the parent of every nested value change', () {
       final form = ContactForm()..home.street.setValue('Via Roma');
       var changes = 0;
-      form.addChangeListener(() => changes++);
+      form.addListener(() => changes++);
 
       form.home.street.setValue('Via Milano');
 
@@ -394,7 +393,6 @@ void main() {
       var notifications = 0;
       form.addListener(() => notifications++);
 
-      form.patch(name: 'Other');
       form.home.patch(street: 'Via Napoli');
 
       expect(form.home.street.value, 'Via Napoli');
