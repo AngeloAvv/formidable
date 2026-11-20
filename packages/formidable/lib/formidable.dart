@@ -3,6 +3,7 @@
 library;
 
 export 'src/annotations/effects.dart';
+export 'src/annotations/field_array.dart';
 export 'src/annotations/formidable.dart';
 export 'src/annotations/passthrough.dart';
 export 'src/annotations/required.dart';
@@ -15,6 +16,8 @@ export 'src/normalizers/normalizer.dart';
 export 'src/normalizers/trim.dart';
 export 'src/runtime/effect.dart';
 export 'src/runtime/field.dart';
+export 'src/runtime/field_array.dart';
+export 'src/runtime/field_array_state.dart';
 export 'src/runtime/field_state.dart';
 export 'src/runtime/focus_target.dart';
 export 'src/runtime/form.dart';
@@ -33,5 +36,6 @@ export 'src/validators/any_of.dart';
 export 'src/validators/choices.dart';
 export 'src/validators/clock.dart';
 export 'src/validators/dates.dart';
+export 'src/validators/item_count.dart';
 export 'src/validators/min_length.dart';
 export 'src/validators/numbers.dart';

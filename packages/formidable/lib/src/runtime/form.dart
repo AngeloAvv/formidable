@@ -2,6 +2,7 @@ import '../validation/form_validator.dart';
 import '../validation/validation_error.dart';
 import 'effect.dart';
 import 'field.dart';
+import 'field_array.dart';
 import 'form_state.dart';
 import 'node.dart';
 import 'notifier.dart';
@@ -136,6 +137,8 @@ abstract class FormidableForm<S>
         node.clear();
       } else if (node is FormidableForm<Object?>) {
         node.clear();
+      } else if (node is FormidableFieldArray<FormidableNode, Object?>) {
+        node.clear();
       }
     }
   });
@@ -195,13 +198,38 @@ abstract class FormidableForm<S>
     _state = _computeState();
   }
 
-  void _follow(FormidableNode node) => node is FormidableForm<Object?>
-      ? node.addChangeListener(_onNodeChanged)
-      : node.addListener(_onNodeChanged);
+  // A Form and a Field Array hold other nodes: the parent follows every change
+  // below them, not only the changes of their own state.
+  void _follow(FormidableNode node) => switch (node) {
+    FormidableForm<Object?>() => node.addChangeListener(_onNodeChanged),
+    FormidableFieldArray<FormidableNode, Object?>() => node.addChangeListener(
+      _onNodeChanged,
+    ),
+    _ => node.addListener(_onNodeChanged),
+  };
 
-  void _unfollow(FormidableNode node) => node is FormidableForm<Object?>
-      ? node.removeChangeListener(_onNodeChanged)
-      : node.removeListener(_onNodeChanged);
+  void _unfollow(FormidableNode node) => switch (node) {
+    FormidableForm<Object?>() => node.removeChangeListener(_onNodeChanged),
+    FormidableFieldArray<FormidableNode, Object?>() =>
+      node.removeChangeListener(_onNodeChanged),
+    _ => node.removeListener(_onNodeChanged),
+  };
+
+  /// The Nested Forms right below this Form: its Nested Form children and the
+  /// Form items of its Field Arrays, in order.
+  Iterable<FormidableForm<Object?>> get _childForms sync* {
+    for (final node in _nodes) {
+      switch (node) {
+        case FormidableForm<Object?>():
+          yield node;
+        case FormidableFieldArray<FormidableNode, Object?>():
+          for (final item in node.items) {
+            if (item.node case final FormidableForm<Object?> form) yield form;
+          }
+        default:
+      }
+    }
+  }
 
   @override
   void change(FormidableNode node, bool Function() mutate) {
@@ -222,15 +250,20 @@ abstract class FormidableForm<S>
     if (!_running && _batchDepth == 0) _run();
   }
 
+  /// Every Field of the whole Form in tree order: Schema declaration order,
+  /// descending into Nested Forms and into the items of Field Arrays where
+  /// they stand. A Nested Form hands out the order of the Form that owns it.
   @override
-  List<FormidableField<Object?>> get focusOrder => [
-    for (final node in _nodes)
-      if (node is FormidableField<Object?>) node,
-  ];
+  List<FormidableField<Object?>> get focusOrder {
+    final parent = _parent;
+    return parent != null ? parent.focusOrder : _fieldsBelow().toList();
+  }
 
   @override
   void focusLayoutChanged() {
-    for (final field in focusOrder) {
+    final parent = _parent;
+    if (parent != null) return parent.focusLayoutChanged();
+    for (final field in _fieldsBelow().toList()) {
       field.notifyFocusLayout();
     }
   }
@@ -280,8 +313,8 @@ abstract class FormidableForm<S>
   /// Forms, so the whole tree notifies once per settle.
   void _holdTree(int delta) {
     _held += delta;
-    for (final node in _nodes) {
-      if (node is FormidableForm<Object?>) node._holdTree(delta);
+    for (final form in _childForms) {
+      form._holdTree(delta);
     }
   }
 
@@ -290,8 +323,8 @@ abstract class FormidableForm<S>
   void _flushTree() {
     _held++;
     try {
-      for (final node in _nodes) {
-        if (node is FormidableForm<Object?>) node._flushTree();
+      for (final form in _childForms) {
+        form._flushTree();
       }
     } finally {
       _held--;
@@ -318,9 +351,7 @@ abstract class FormidableForm<S>
 
   bool get _hasFormValidators =>
       _formValidators.isNotEmpty ||
-      _nodes.any(
-        (node) => node is FormidableForm<Object?> && node._hasFormValidators,
-      );
+      _childForms.any((form) => form._hasFormValidators);
 
   void _collectFormErrors(
     Map<FormidableField<Object?>, List<FormidableValidationError>> into,
@@ -340,19 +371,68 @@ abstract class FormidableForm<S>
         }
       }
     }
-    for (final node in _nodes) {
-      if (node is FormidableForm<Object?>) node._collectFormErrors(into);
+    for (final form in _childForms) {
+      form._collectFormErrors(into);
     }
   }
 
-  /// Every Field of this Form and of its Nested Forms, in declaration order.
+  /// Every Field of this Form, its Nested Forms and the items of its Field
+  /// Arrays, in tree order. An Unset optional Nested Form counts: its Fields
+  /// exist, whether or not a widget shows them.
   Iterable<FormidableField<Object?>> _fieldsBelow() sync* {
     for (final node in _nodes) {
-      if (node is FormidableField<Object?>) {
+      yield* _fieldsOf(node);
+    }
+  }
+
+  static Iterable<FormidableField<Object?>> _fieldsOf(
+    FormidableNode node,
+  ) sync* {
+    switch (node) {
+      case FormidableField<Object?>():
         yield node;
-      } else if (node is FormidableForm<Object?>) {
+      case FormidableForm<Object?>():
         yield* node._fieldsBelow();
-      }
+      case FormidableFieldArray<FormidableNode, Object?>():
+        for (final item in node.items) {
+          yield* _fieldsOf(item.node);
+        }
+      default:
+    }
+  }
+
+  /// Adds the Field Arrays below this Form that have errors of their own to
+  /// [into], in tree order. An Unset optional Nested Form has none.
+  void _collectArrayErrors(
+    Map<
+      FormidableFieldArray<FormidableNode, Object?>,
+      List<FormidableValidationError>
+    >
+    into,
+  ) {
+    if (!isSet) return;
+    for (final node in _nodes) {
+      _arrayErrorsOf(node, into);
+    }
+  }
+
+  static void _arrayErrorsOf(
+    FormidableNode node,
+    Map<
+      FormidableFieldArray<FormidableNode, Object?>,
+      List<FormidableValidationError>
+    >
+    into,
+  ) {
+    switch (node) {
+      case FormidableForm<Object?>():
+        node._collectArrayErrors(into);
+      case FormidableFieldArray<FormidableNode, Object?>():
+        if (node.state.errors.isNotEmpty) into[node] = node.state.errors;
+        for (final item in node.items) {
+          _arrayErrorsOf(item.node, into);
+        }
+      default:
     }
   }
 
@@ -375,16 +455,15 @@ abstract class FormidableForm<S>
   }
 
   bool get _hasEffects =>
-      _effects.isNotEmpty ||
-      _nodes.any((node) => node is FormidableForm<Object?> && node._hasEffects);
+      _effects.isNotEmpty || _childForms.any((form) => form._hasEffects);
 
   /// Runs the Effects of this Form, then those of its Nested Forms.
   void _applyEffects(FormidableEffectContext context) {
     for (final effect in _effects) {
       effect.apply(this, context);
     }
-    for (final node in _nodes) {
-      if (node is FormidableForm<Object?>) node._applyEffects(context);
+    for (final form in _childForms) {
+      form._applyEffects(context);
     }
   }
 
@@ -430,9 +509,18 @@ abstract class FormidableForm<S>
     final errors =
         <FormidableField<Object?>, List<FormidableValidationError>>{};
     collectErrors(errors);
-    if (errors.isNotEmpty) {
+    final arrayErrors =
+        <
+          FormidableFieldArray<FormidableNode, Object?>,
+          List<FormidableValidationError>
+        >{};
+    _collectArrayErrors(arrayErrors);
+    if (errors.isNotEmpty || arrayErrors.isNotEmpty) {
       errors.keys.where((field) => field.canFocus).firstOrNull?.focus();
-      return FormidableSubmitInvalid<S>(Map.unmodifiable(errors));
+      return FormidableSubmitInvalid<S>(
+        Map.unmodifiable(errors),
+        arrayErrors: Map.unmodifiable(arrayErrors),
+      );
     }
     return FormidableSubmitValid<S>(buildOutput());
   }
