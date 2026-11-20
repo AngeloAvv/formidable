@@ -1,0 +1,68 @@
+---
+title: Form Effects
+description: Change some Fields when others change
+---
+
+# Form Effects
+
+A Form Effect changes some Fields when others change, for example clearing the province when the country changes. It is declared next to the Schema, receives the typed generated Form, and can be tested without any UI.
+
+```dart
+@Formidable()
+@Effects([ClearProvinceOnCountryChange()])
+class Address {
+  const Address({required this.country, this.province});
+
+  final String country;
+  final String? province;
+}
+
+class ClearProvinceOnCountryChange extends FormidableEffect<AddressForm> {
+  const ClearProvinceOnCountryChange();
+
+  @override
+  void apply(AddressForm form, FormidableEffectContext context) {
+    if (context.changed(form.country)) form.province.clear();
+  }
+}
+```
+
+An Effect is a const class typed on the generated Form, so it reaches every Field through its typed handle. Declare Effects with `@Effects([...])` on the Schema class. They run in the order listed.
+
+## When Effects run
+
+- **After a change, before validation.** On every change, from the user or from code, the order is Normalizers, then Form Effects, then Validators. Validation always sees what the Effects changed.
+- **Once when the Form is created**, so dependent Fields are consistent from the start, including when you edit an existing object with `AddressForm.from(...)`.
+- **Synchronously.** When the write returns, the Effects have run.
+- **Until nothing changes.** When an Effect writes a Field, every Effect runs again, so an Effect can react to what another Effect did. An Effect should write only when the value has to change.
+
+Listeners of a Field are notified once per change, after the Effects ran and the Field was validated, with its final state. Inside an Effect, read Fields through `value` and `isSet`: their `state`, errors included, is updated after every Effect has run.
+
+## What changed
+
+`context.changed(field)` tells an Effect whether a Field changed since the previous run of the Effects: the write that started it on the first run, then what the Effects themselves changed. At creation nothing counts as changed, so an Effect that clears the province when the country changes does not clear the province you started with.
+
+An Effect that always keeps a Field in sync does not need it:
+
+```dart
+class DeriveLabel extends FormidableEffect<AddressForm> {
+  const DeriveLabel();
+
+  @override
+  void apply(AddressForm form, FormidableEffectContext context) {
+    form.label.setValue('${form.country.value}/${form.province.value ?? '-'}');
+  }
+}
+```
+
+## Touched
+
+Changes made by Effects never mark a Field as touched, so errors do not show up on Fields the user never interacted with. A Field the user already touched stays touched.
+
+## Passthrough Fields
+
+Effects can write Passthrough Fields too, and they remain observable.
+
+## Loops
+
+Effects that keep changing Fields without ever settling are a loop. In debug builds the write throws a `FormidableEffectLoopError` that names the Effects involved. The Form remains usable. In release builds the Effects stop after 100 passes and the Form keeps its current state.

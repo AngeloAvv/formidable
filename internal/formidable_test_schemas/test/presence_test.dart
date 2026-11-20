@@ -34,20 +34,22 @@ void main() {
   });
 
   group('the output of an Unset Field', () {
-    test('uses the default first, then null, and a required Field errors',
-        () async {
-      final form = PresenceForm(email: 'a@b.c', mood: false);
+    test(
+      'uses the default first, then null, and a required Field errors',
+      () async {
+        final form = PresenceForm(email: 'a@b.c', mood: false);
 
-      final valid = await form.submit() as FormidableSubmitValid<Presence>;
+        final valid = await form.submit() as FormidableSubmitValid<Presence>;
 
-      expect(valid.value.bio, 'none'); // default
-      expect(valid.value.age, 18); // default
-      expect(valid.value.nickname, isNull); // nullable, no default
+        expect(valid.value.bio, 'none'); // default
+        expect(valid.value.age, 18); // default
+        expect(valid.value.nickname, isNull); // nullable, no default
 
-      final missing = await PresenceForm(mood: false).submit();
-      final invalid = missing as FormidableSubmitInvalid<Presence>;
-      expect(invalid.fieldErrors.keys, hasLength(1)); // email, no output
-    });
+        final missing = await PresenceForm(mood: false).submit();
+        final invalid = missing as FormidableSubmitInvalid<Presence>;
+        expect(invalid.fieldErrors.keys, hasLength(1)); // email, no output
+      },
+    );
 
     test('a Field set to null is different from an Unset Field', () {
       final unset = PresenceForm(email: 'a@b.c');

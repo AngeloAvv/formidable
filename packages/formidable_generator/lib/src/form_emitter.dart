@@ -46,10 +46,13 @@ String emitForm(SchemaModel schema) {
   out.write(fields.map((f) => '${f.name} = ${_field(f)}').join(',\n        '));
   out.writeln(' {');
   final nodes = fields.map((f) => 'this.${f.name}').join(', ');
+  final effects = schema.effects.isEmpty
+      ? ''
+      : ', effects: [${schema.effects.map((e) => '...$e.effects').join(', ')}]';
   final validators = schema.formValidators.isEmpty
       ? ''
       : ', formValidators: [${schema.formValidators.join(', ')}]';
-  out.writeln('    attach<$form>([$nodes]$validators);');
+  out.writeln('    attach<$form>([$nodes]$effects$validators);');
   out.writeln('  }');
   for (final f in fields) {
     out.writeln();
@@ -89,6 +92,8 @@ String _handleType(FieldModel f) => f.isPassthrough
 String _field(FieldModel f) {
   if (f.isPassthrough) return 'FormidablePassthrough<${f.typeSource}>(${f.name})';
   final arguments = [
+    if (f.normalizers.isNotEmpty)
+      'normalizers: const [${f.normalizers.map((v) => v.replaceFirst('const ', '')).join(', ')}]',
     if (f.validators.isNotEmpty)
       'validators: const [${f.validators.map((v) => v.replaceFirst('const ', '')).join(', ')}]',
     if (f.isRequired) 'required: true',

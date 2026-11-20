@@ -4,15 +4,18 @@ import 'package:test/test.dart';
 
 void main() {
   group('Passthrough Fields', () {
-    test('are supplied when the Form is created and reach the output', () async {
-      final form = EditUserForm(id: 7, name: 'Angelo');
+    test(
+      'are supplied when the Form is created and reach the output',
+      () async {
+        final form = EditUserForm(id: 7, name: 'Angelo');
 
-      final valid = await form.submit() as FormidableSubmitValid<EditUser>;
+        final valid = await form.submit() as FormidableSubmitValid<EditUser>;
 
-      expect(valid.value.id, 7);
-      expect(valid.value.revision, 1);
-      expect(valid.value.parentId, isNull);
-    });
+        expect(valid.value.id, 7);
+        expect(valid.value.revision, 1);
+        expect(valid.value.parentId, isNull);
+      },
+    );
 
     test('are set from the Schema instance by the from constructor', () {
       final form = EditUserForm.from(

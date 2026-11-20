@@ -132,13 +132,13 @@ void main() {
         form.username.markAsTouched();
 
         expect(fieldNotifications, 2);
-        // The Form status is invalid before and after: nothing to report.
-        expect(formNotifications, 0);
+        // The Form became dirty once; touching changes nothing it reports.
+        expect(formNotifications, 1);
 
         form.username.setValue('angelo');
 
         expect(fieldNotifications, 3);
-        expect(formNotifications, 1);
+        expect(formNotifications, 2);
         expect(form.state.status, FormidableStatus.valid);
       });
 

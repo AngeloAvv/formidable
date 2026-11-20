@@ -384,6 +384,36 @@ class SignUp {
       ]);
     });
 
+    test('accepts @Trim() Normalizers and @Effects() on the Schema', () async {
+      final result = await _build(formBuilder, '''
+$_prelude
+@Formidable()
+@Effects([ClearCity()])
+class Address {
+  const Address({required this.country, this.city});
+
+  @Trim()
+  final String country;
+
+  final String? city;
+}
+
+class ClearCity extends FormidableEffect<AddressForm> {
+  const ClearCity();
+
+  @override
+  void apply(AddressForm form, FormidableEffectContext context) {
+    if (context.changed(form.country)) form.city.clear();
+  }
+}
+''');
+
+      expect(result.succeeded, isTrue);
+      expect(result.outputs.map((id) => id.path), [
+        'lib/schema.formidable.dart',
+      ]);
+    });
+
     test('accepts @Required() and @Passthrough() Fields', () async {
       final result = await _build(formBuilder, '''
 $_prelude

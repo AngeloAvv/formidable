@@ -33,6 +33,10 @@ class $scope extends FormidableScope<$form> {
   $scope({super.key, $form Function()? create, required super.child})
       : super(create: create ?? $form.new);
 
+  /// Exposes a [$form] that something else owns, without disposing it.
+  const $scope.value({super.key, required $form form, required super.child})
+      : super.value(form: form);
+
   /// The [$form] of the closest [$scope] above [context].
   static $form of(BuildContext context) =>
       FormidableScope.of<$form>(context);

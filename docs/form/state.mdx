@@ -1,0 +1,112 @@
+---
+title: State snapshots and reactive widgets
+description: Immutable Field and Form state, notifications, builders, listeners and selectors
+---
+
+# State snapshots and reactive widgets
+
+Every Field and every Form holds an immutable **state snapshot** and notifies its listeners synchronously when that snapshot changes. Builders have the current snapshot from the first frame, so there is no empty first build. Formidable does not depend on bloc, but the widgets work the way you would expect from `flutter_bloc`.
+
+## Field state
+
+`form.username.state` is a `FormidableFieldState<T>`:
+
+| Member | Meaning |
+| --- | --- |
+| `value` | The chosen value, or null while the Field is Unset |
+| `isSet` | Whether the Field holds a value. Tells Unset apart from a chosen null |
+| `status` | `valid` or `invalid` |
+| `errors` | Every Validation Error of the Field |
+| `touched` | The user interacted with the Field and left it |
+| `dirty` | The value or presence differs from the initial state. Going back to the initial state makes the Field clean again |
+| `enabled` | Whether the Field takes part in the Form |
+
+## Form state
+
+`form.state` is a `FormidableFormState`:
+
+| Member | Meaning |
+| --- | --- |
+| `status` | `invalid` while any Field has errors |
+| `dirty` | Any Field is dirty |
+| `pending` | Any Field is still waiting for a result |
+| `errors` | Errors of the Form as a whole, not tied to a Field |
+
+## `form.value`
+
+`form.value` is the Schema instance while the Form is valid and not pending, and null otherwise. It is computed on every read.
+
+```dart
+final signUp = form.value;
+if (signUp != null) save(signUp);
+```
+
+## Notifications
+
+A Field or a Form calls its listeners synchronously and only when its state is different from before. Both have the shape of Flutter's `ValueListenable` (`state`, `addListener`, `removeListener`); `asValueListenable()` adapts them:
+
+```dart
+ValueListenableBuilder(
+  valueListenable: form.username.asValueListenable(),
+  builder: (context, state, _) => Text('${state.value}'),
+)
+```
+
+A Form also has `addChangeListener`, which hears every change of any Field, even one that leaves the Form state equal. The Form Selector uses it, because `form.value` can change while the state does not.
+
+## Field widgets
+
+Field widgets always take the Field handle.
+
+```dart
+FormidableFieldBuilder<String>(
+  field: form.username,
+  buildWhen: (previous, current) => previous.status != current.status,
+  builder: (context, state) => Text(state.status.name),
+)
+
+FormidableFieldListener<String>(
+  field: form.username,
+  listenWhen: (previous, current) => !previous.touched && current.touched,
+  listener: (context, state) => log('left the username'),
+  child: ...,
+)
+
+FormidableFieldSelector<String, bool>(
+  field: form.username,
+  selector: (state) => state.errors.isNotEmpty,
+  builder: (context, hasErrors) => ...,
+)
+```
+
+- `buildWhen` and `listenWhen` receive the previous and the current state. The listener never fires for the state present when it is built.
+- The selector rebuilds only when the selected value changes. Its optional `buildWhen` receives the previous and the current selected value and can still veto the rebuild.
+
+## Form widgets
+
+`FormidableFormBuilder`, `FormidableFormListener` and `FormidableFormSelector` take an optional `form`. Without one they look up the closest Form Scope of their type argument, and throw an error that names the missing scope when there is none.
+
+```dart
+FormidableFormSelector<SignUpForm, bool>(
+  selector: (form) => form.value != null,
+  builder: (context, canSubmit) => FilledButton(
+    onPressed: canSubmit ? () => save(context.signUpForm.value!) : null,
+    child: const Text('Sign up'),
+  ),
+)
+```
+
+The selector receives the Form itself and runs after every change, so it can read `form.value`. This is the pattern for enabling a button when the Form is valid.
+
+## Form Scope
+
+`SignUpFormScope` creates the Form and disposes it. To expose a Form that you own, for example one created in your page state, use the `.value` constructor. The scope never disposes it:
+
+```dart
+SignUpFormScope.value(
+  form: _form,
+  child: ...,
+)
+```
+
+Inside a scope, `context.signUpForm` returns the Form. If the scope has been given another Form, the Form widgets pick it up.
