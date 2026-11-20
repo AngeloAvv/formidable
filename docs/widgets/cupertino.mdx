@@ -16,7 +16,7 @@ FormidableCupertinoSwitch(field: form.notifications)
 | --- | --- | --- |
 | `FormidableCupertinoTextField<T>` | any type with a [Codec](/widgets/codecs) | The whole API of `CupertinoTextField`. `codec:` works like the Material text field. Touched when it loses focus. |
 | `FormidableCupertinoSwitch` | `bool` | An Unset Field shows the switch off. Takes focus. |
-| `FormidableCupertinoCheckbox` | `bool` | An Unset Field shows the box unchecked, or mixed with `tristate`. Takes focus. |
+| `FormidableCupertinoCheckbox<T>` | `bool`, `bool?` | An Unset Field shows the box unchecked, or mixed with `tristate`. A nullable Field that chose null shows mixed too (see [Deselecting](#deselecting-is-a-choice)). Takes focus. |
 | `FormidableCupertinoSegmentedControl<T>` | `T` | `children` maps each value to the widget of its segment. |
 | `FormidableCupertinoSlidingSegmentedControl<T>` | `T` | Same as above. |
 | `FormidableCupertinoRadioGroup<T>` | `T` | Put `CupertinoRadio<T>` widgets anywhere under `child`. |
@@ -27,6 +27,10 @@ FormidableCupertinoSwitch(field: form.notifications)
 Every widget takes the whole API of the Cupertino widget it wraps, except what Formidable owns (the value, `onChanged`, the controller, and whether the widget is enabled) and what Flutter deprecated. Every parameter is also a public `final` field of the widget, so `widget.activeColor` reads back what you passed. A parameter whose default is private to Flutter (the thumb colour of the sliding segmented control, the item extent of the pickers) is nullable: null gives Flutter's default.
 
 A Field of a nullable type (`bool?`, `DateTime?`) works with every widget.
+
+## Deselecting is a choice
+
+With `tristate`, cycling the checkbox to the mixed state is the user deselecting. That is something the user did, not a reset, so it counts as a value whenever the Field can hold one. On a `bool?` Field, mixed means null: the Field is set to null, no longer Unset, and dirty. On a `bool` Field null cannot be written, so the Field goes back to Unset (and is touched). Either way the box is shown as mixed, so only the Field tells the two apart. The widget gets this from `control.didChange(null)`, which also works in your own [Field Widgets](/widgets/custom); call `control.clear()` to go back to Unset on purpose.
 
 ## Touched and focus
 

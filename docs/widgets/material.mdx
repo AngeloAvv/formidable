@@ -21,16 +21,16 @@ They all behave the same way:
 
 | Widget | Wraps | Field type | Notes |
 | --- | --- | --- | --- |
-| `FormidableMaterialCheckbox` | `Checkbox` | `bool`, `bool?` | `tristate: true` lets a `bool?` Field choose null. |
+| `FormidableMaterialCheckbox` | `Checkbox` | `bool`, `bool?` | `tristate: true` lets a `bool?` Field choose null (see [Deselecting](#deselecting-is-a-choice)). |
 | `FormidableMaterialCheckboxListTile` | `CheckboxListTile` | `bool`, `bool?` | The whole row is tappable. `controlAffinity` defaults to `leading`. |
 | `FormidableMaterialSwitch` | `Switch` | `bool` | |
 | `FormidableMaterialSwitchListTile` | `SwitchListTile` | `bool` | The whole row is tappable. |
-| `FormidableMaterialRadioGroup<T>` | `RadioGroup`, `RadioListTile` | any `T` | `options` are `FormidableMaterialRadioOption`s. One option can have the value `null` (see below). `toggleable` lets the user go back to Unset. |
+| `FormidableMaterialRadioGroup<T>` | `RadioGroup`, `RadioListTile` | any `T` | `options` are `FormidableMaterialRadioOption`s. One option can have the value `null` (see below). `toggleable` lets the user deselect the chosen option (see [Deselecting](#deselecting-is-a-choice)). |
 | `FormidableMaterialSlider<T>` | `Slider` | `double`, `int`, `num`, nullable or not | `min`, `max`, `divisions`, `label` or `labelBuilder`. An `int` Field gets rounded values. |
 | `FormidableMaterialDropdown<T>` | `DropdownButton` | any `T` | `items` are the usual `DropdownMenuItem`s. `hint` shows while Unset. Takes a `decoration` or a `decorationBuilder`. |
 | `FormidableMaterialDatePicker` | `showDatePicker` | `DateTime`, `DateTime?` | `firstDate`, `lastDate`, `initialDate`, `format`, `clearable`, and every other parameter of `showDatePicker`. Takes a `decoration` or a `decorationBuilder`. |
 | `FormidableMaterialTimePicker` | `showTimePicker` | `TimeOfDay`, `TimeOfDay?` | `initialTime`, `format`, `clearable`, and every other parameter of `showTimePicker`. Takes a `decoration` or a `decorationBuilder`. |
-| `FormidableMaterialSegmentedButton<T>` | `SegmentedButton` | any `T` | One segment at a time. `allowDeselect` lets the user go back to Unset. |
+| `FormidableMaterialSegmentedButton<T>` | `SegmentedButton` | any `T` | One segment at a time. `allowDeselect` lets the user deselect the chosen segment (see [Deselecting](#deselecting-is-a-choice)). |
 | `FormidableMaterialTextField<T>` | `TextField` | any `T` with a [Codec](/widgets/codecs) | See below. |
 | `FormidableMaterialErrorLine` | | | The line that shows a Validation Message under a widget that has no `errorText` of its own. Use it in your own Field Widgets. |
 
@@ -123,6 +123,17 @@ FormidableMaterialRadioGroup(
 ```
 
 While the Field is Unset no option is selected, not even the null one, and the required error shows once the Field is touched. Choosing "No preference" sets the Field to null: it is no longer Unset, so the required error goes away. The dropdown and the segmented control work the same way.
+
+## Deselecting is a choice
+
+Some widgets let the user take their choice back: a radio group with `toggleable`, a segmented button with `allowDeselect`, and a checkbox or checkbox row with `tristate`. Deselecting is something the user did, not a reset, so it counts as a value whenever the Field can hold one:
+
+| Type of the Field | After the user deselects |
+| --- | --- |
+| Admits null (`String?`, `bool?`) | The Field is set to null. It is no longer Unset, so a required error goes away, and it is dirty. |
+| Does not admit null (`String`, `bool`) | null cannot be written, so the Field goes back to Unset. It is touched. |
+
+The widgets get this from `control.didChange(null)`, which also works in your own [Field Widgets](/widgets/custom). To go back to Unset on purpose, call `control.clear()`. A date or time picker with `clearable: true` clears: its button is a reset, and the Field goes back to Unset whatever its type.
 
 ## Pickers
 
