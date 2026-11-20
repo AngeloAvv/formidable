@@ -21,9 +21,22 @@ abstract interface class FormidableNode {
     Map<FormidableField<Object?>, List<FormidableValidationError>> into,
   );
 
+  /// Marks every Field at or below this node as touched and submitted. Called
+  /// by the Form when `submit()` starts.
+  void markSubmitted();
+
   /// Gives the node the pipeline of its Form. Writes to the node run through
   /// it. Called once by the Form.
   void bindPipeline(FormidablePipeline pipeline);
+
+  /// Restores the initial value and presence, and forgets that the user
+  /// touched the node. Form Effects do not run: the initial state is already
+  /// consistent. Notifies like any other write.
+  void reset();
+
+  /// Makes the current value and presence the new initial state, so the node
+  /// is no longer dirty.
+  void commit();
 
   /// Brings the node's errors up to date with its value and notifies its
   /// listeners if its state changed. Called by the Form after Effects ran.

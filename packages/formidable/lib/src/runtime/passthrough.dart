@@ -13,12 +13,15 @@ import 'pipeline.dart';
 final class FormidablePassthrough<T>
     with FormidableNotifierMixin
     implements FormidableNode, FormidableObservable<T> {
-  FormidablePassthrough(T value) : _value = value, _initial = value;
+  FormidablePassthrough(T value)
+    : _value = value,
+      _initial = value,
+      _notified = value;
 
   T _value;
-  final T _initial;
+  T _initial;
   FormidablePipeline? _pipeline;
-  late T _notified;
+  T _notified;
 
   /// The current value.
   T get value => _value;
@@ -37,7 +40,7 @@ final class FormidablePassthrough<T>
 
     final pipeline = _pipeline;
     if (pipeline == null) {
-      if (mutate()) notifyListeners();
+      if (mutate()) revalidate();
     } else {
       pipeline.change(this, mutate);
     }
@@ -56,10 +59,30 @@ final class FormidablePassthrough<T>
   bool get isPending => false;
 
   @override
+  void reset() {
+    _value = _initial;
+    _settle();
+  }
+
+  @override
+  void commit() {
+    _initial = _value;
+    _settle();
+  }
+
+  @override
   void bindPipeline(FormidablePipeline pipeline) {
     assert(_pipeline == null, 'bindPipeline must be called once.');
     _pipeline = pipeline;
-    _notified = _value;
+  }
+
+  void _settle() {
+    final pipeline = _pipeline;
+    if (pipeline == null) {
+      revalidate();
+    } else {
+      pipeline.settle();
+    }
   }
 
   @override
@@ -68,6 +91,9 @@ final class FormidablePassthrough<T>
     _notified = _value;
     notifyListeners();
   }
+
+  @override
+  void markSubmitted() {}
 
   @override
   void collectErrors(
