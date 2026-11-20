@@ -61,6 +61,10 @@ class FormidableBinding<T> extends ChangeNotifier {
   /// Whether the Field holds a value.
   bool get isSet => field.isSet;
 
+  /// Whether an Async Validator is still checking the Field, so a widget can
+  /// show progress without a Field Builder.
+  bool get isPending => field.state.pending;
+
   /// Whether the widget accepts input.
   bool get enabled => field.state.enabled;
 
