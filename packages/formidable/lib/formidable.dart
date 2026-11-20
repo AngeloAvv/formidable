@@ -2,6 +2,7 @@
 /// Validation Errors. It has no Flutter dependency.
 library;
 
+export 'src/annotations/dynamic.dart';
 export 'src/annotations/effects.dart';
 export 'src/annotations/formidable.dart';
 export 'src/annotations/passthrough.dart';
@@ -13,6 +14,7 @@ export 'src/codecs/parse_result.dart';
 export 'src/codecs/text_codecs.dart';
 export 'src/normalizers/normalizer.dart';
 export 'src/normalizers/trim.dart';
+export 'src/runtime/dynamic_form.dart';
 export 'src/runtime/effect.dart';
 export 'src/runtime/field.dart';
 export 'src/runtime/field_state.dart';

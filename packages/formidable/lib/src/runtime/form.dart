@@ -1,5 +1,6 @@
 import '../validation/form_validator.dart';
 import '../validation/validation_error.dart';
+import 'dynamic_form.dart';
 import 'effect.dart';
 import 'field.dart';
 import 'form_state.dart';
@@ -131,7 +132,7 @@ abstract class FormidableForm<S>
   /// value because it can never be Unset. An optional Nested Form is Unset
   /// afterwards if it was Unset initially.
   void clear() => batch(() {
-    for (final node in _nodes) {
+    for (final node in _flatNodes) {
       if (node is FormidableField<Object?>) {
         node.clear();
       } else if (node is FormidableForm<Object?>) {
@@ -195,13 +196,30 @@ abstract class FormidableForm<S>
     _state = _computeState();
   }
 
-  void _follow(FormidableNode node) => node is FormidableForm<Object?>
-      ? node.addChangeListener(_onNodeChanged)
-      : node.addListener(_onNodeChanged);
+  void _follow(FormidableNode node) => switch (node) {
+    FormidableForm<Object?>() => node.addChangeListener(_onNodeChanged),
+    FormidableDynamicForm() => node.addChangeListener(_onNodeChanged),
+    _ => node.addListener(_onNodeChanged),
+  };
 
-  void _unfollow(FormidableNode node) => node is FormidableForm<Object?>
-      ? node.removeChangeListener(_onNodeChanged)
-      : node.removeListener(_onNodeChanged);
+  void _unfollow(FormidableNode node) => switch (node) {
+    FormidableForm<Object?>() => node.removeChangeListener(_onNodeChanged),
+    FormidableDynamicForm() => node.removeChangeListener(_onNodeChanged),
+    _ => node.removeListener(_onNodeChanged),
+  };
+
+  /// The children of the Form with every Dynamic Form replaced by what is
+  /// registered in it, so the walks below see Fields and Nested Forms
+  /// registered at runtime like declared ones, in registration order.
+  Iterable<FormidableNode> get _flatNodes sync* {
+    for (final node in _nodes) {
+      if (node is FormidableDynamicForm) {
+        yield* node.children;
+      } else {
+        yield node;
+      }
+    }
+  }
 
   @override
   void change(FormidableNode node, bool Function() mutate) {
@@ -223,14 +241,14 @@ abstract class FormidableForm<S>
   }
 
   @override
-  List<FormidableField<Object?>> get focusOrder => [
-    for (final node in _nodes)
-      if (node is FormidableField<Object?>) node,
-  ];
+  List<FormidableField<Object?>> get focusOrder =>
+      _parent?.focusOrder ?? _fieldsBelow().toList();
 
   @override
   void focusLayoutChanged() {
-    for (final field in focusOrder) {
+    final parent = _parent;
+    if (parent != null) return parent.focusLayoutChanged();
+    for (final field in _fieldsBelow()) {
       field.notifyFocusLayout();
     }
   }
@@ -280,7 +298,7 @@ abstract class FormidableForm<S>
   /// Forms, so the whole tree notifies once per settle.
   void _holdTree(int delta) {
     _held += delta;
-    for (final node in _nodes) {
+    for (final node in _flatNodes) {
       if (node is FormidableForm<Object?>) node._holdTree(delta);
     }
   }
@@ -290,7 +308,7 @@ abstract class FormidableForm<S>
   void _flushTree() {
     _held++;
     try {
-      for (final node in _nodes) {
+      for (final node in _flatNodes) {
         if (node is FormidableForm<Object?>) node._flushTree();
       }
     } finally {
@@ -318,7 +336,7 @@ abstract class FormidableForm<S>
 
   bool get _hasFormValidators =>
       _formValidators.isNotEmpty ||
-      _nodes.any(
+      _flatNodes.any(
         (node) => node is FormidableForm<Object?> && node._hasFormValidators,
       );
 
@@ -340,14 +358,14 @@ abstract class FormidableForm<S>
         }
       }
     }
-    for (final node in _nodes) {
+    for (final node in _flatNodes) {
       if (node is FormidableForm<Object?>) node._collectFormErrors(into);
     }
   }
 
   /// Every Field of this Form and of its Nested Forms, in declaration order.
   Iterable<FormidableField<Object?>> _fieldsBelow() sync* {
-    for (final node in _nodes) {
+    for (final node in _flatNodes) {
       if (node is FormidableField<Object?>) {
         yield node;
       } else if (node is FormidableForm<Object?>) {
@@ -376,14 +394,16 @@ abstract class FormidableForm<S>
 
   bool get _hasEffects =>
       _effects.isNotEmpty ||
-      _nodes.any((node) => node is FormidableForm<Object?> && node._hasEffects);
+      _flatNodes.any(
+        (node) => node is FormidableForm<Object?> && node._hasEffects,
+      );
 
   /// Runs the Effects of this Form, then those of its Nested Forms.
   void _applyEffects(FormidableEffectContext context) {
     for (final effect in _effects) {
       effect.apply(this, context);
     }
-    for (final node in _nodes) {
+    for (final node in _flatNodes) {
       if (node is FormidableForm<Object?>) node._applyEffects(context);
     }
   }

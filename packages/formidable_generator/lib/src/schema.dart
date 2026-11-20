@@ -21,6 +21,7 @@ const _normalizerChecker = TypeChecker.typeNamed(
   FormidableNormalizer,
   inPackage: 'formidable',
 );
+const _dynamicChecker = TypeChecker.typeNamed(Dynamic, inPackage: 'formidable');
 const _effectsChecker = TypeChecker.typeNamed(Effects, inPackage: 'formidable');
 const _validatorChecker = TypeChecker.typeNamed(
   FormidableValidator,
@@ -87,6 +88,7 @@ final class FieldModel {
     required this.isRequired,
     required this.isPassthrough,
     this.nested,
+    this.isDynamic = false,
   });
 
   final String name;
@@ -114,6 +116,9 @@ final class FieldModel {
   final NestedModel? nested;
 
   bool get isNested => nested != null;
+
+  /// Whether the Field has `@Dynamic()`: its Fields are registered at runtime.
+  final bool isDynamic;
 
   /// The type with a trailing `?`, for optional parameters.
   String get optionalTypeSource => isNullable ? typeSource : '$typeSource?';
@@ -269,6 +274,7 @@ FieldModel _readField(
   ClassElement owner,
   List<ClassElement> path,
 ) {
+  final isDynamic = _readDynamic(field, defaultSource, owner);
   final nested = _readNested(field, defaultSource, owner, path);
   final validators = <String>[];
   final normalizers = <String>[];
@@ -295,7 +301,65 @@ FieldModel _readField(
     isRequired: _requiredChecker.hasAnnotationOf(field),
     isPassthrough: _passthroughChecker.hasAnnotationOf(field),
     nested: nested,
+    isDynamic: isDynamic,
   );
+}
+
+/// Whether [field] is a Dynamic Form, after checking that `@Dynamic()` is used
+/// on a `Map<String, Object?>` Field and nothing else is declared on it.
+bool _readDynamic(
+  FieldElement field,
+  String? defaultSource,
+  ClassElement owner,
+) {
+  if (!_dynamicChecker.hasAnnotationOf(field)) return false;
+  final where = '"${field.name}" of ${owner.name}';
+  final type = field.type;
+  final isDynamicMap =
+      type is InterfaceType &&
+      type.isDartCoreMap &&
+      type.nullabilitySuffix == NullabilitySuffix.none &&
+      type.typeArguments[0].isDartCoreString &&
+      type.typeArguments[0].nullabilitySuffix == NullabilitySuffix.none &&
+      type.typeArguments[1].isDartCoreObject &&
+      type.typeArguments[1].nullabilitySuffix == NullabilitySuffix.question;
+  if (!isDynamicMap) {
+    throw InvalidGenerationSourceError(
+      '@Dynamic() can only be used on a Field of type Map<String, Object?>, '
+      'but $where is ${type.getDisplayString()}. Change the Field type, or '
+      'remove @Dynamic().',
+      element: field,
+    );
+  }
+  if (_passthroughChecker.hasAnnotationOf(field)) {
+    throw InvalidGenerationSourceError(
+      '$where is a Dynamic Form and cannot be a @Passthrough(). Its Fields '
+      'are registered at runtime.',
+      element: field,
+    );
+  }
+  final rules = [
+    for (final annotation in field.metadata.annotations)
+      if (annotation.computeConstantValue()?.type case final t?)
+        if (_normalizerChecker.isAssignableFromType(t) ||
+            _validatorChecker.isAssignableFromType(t))
+          annotation.toSource(),
+  ];
+  if (rules.isNotEmpty) {
+    throw InvalidGenerationSourceError(
+      '$where is a Dynamic Form and cannot have ${rules.first}. Pass '
+      'Validators and Normalizers when you register each Field.',
+      element: field,
+    );
+  }
+  if (defaultSource != null) {
+    throw InvalidGenerationSourceError(
+      '$where is a Dynamic Form and cannot have a default value. Its Fields '
+      'are registered at runtime.',
+      element: field,
+    );
+  }
+  return true;
 }
 
 /// The nested Schema of [field], or null when its type is not a Schema.

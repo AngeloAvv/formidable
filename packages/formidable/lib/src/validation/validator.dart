@@ -16,4 +16,11 @@ abstract class FormidableValidator<T> {
 
   /// Whether a chosen value of null is passed to [validate].
   bool get acceptsNull => null is T;
+
+  /// Whether a Field of value type [V] can use this Validator: [V] is [T] or a
+  /// subtype of it, ignoring nullability.
+  ///
+  /// The generator checks this when a Validator is an annotation. A Dynamic
+  /// Form has no annotations, so it asks the Validator at runtime instead.
+  bool fitsValueType<V>() => <V>[] is List<T?>;
 }

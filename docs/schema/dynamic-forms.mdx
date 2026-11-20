@@ -1,0 +1,92 @@
+---
+title: Dynamic Forms
+description: Register Fields at runtime, each with an explicit type, inside an otherwise typed Form
+---
+
+# Dynamic Forms
+
+Most Forms are fully described by their Schema. A **Dynamic Form** is for the edge case where part of a Form comes from the server: a questionnaire, a custom-fields section, an admin-defined profile. Mark one `Map<String, Object?>` Field with `@Dynamic()` and register its Fields at runtime. Use it only when the Fields are not known at build time; everything else should be a typed Field of the Schema.
+
+```dart
+@Formidable()
+class Survey {
+  const Survey({required this.title, required this.answers});
+
+  @MinLength(2)
+  final String title;
+
+  @Dynamic()
+  final Map<String, Object?> answers;
+}
+```
+
+`form.answers` is a `FormidableDynamicForm`. It starts empty.
+
+```dart
+final form = SurveyForm()..title.setValue('Pets');
+
+// Every Field is registered under a key, with an explicit type.
+form.answers.register<int>('age', validators: const [Min(0)]);
+form.answers.register<String?>('nickname', normalizers: const [Trim()]);
+form.answers.registerForm('home', PlaceForm());
+
+// Typed lookup by key.
+form.answers.field<int>('age').setValue(7);
+
+final result = await form.submit();
+// result.value.answers == {'age': 7, 'nickname': null, 'home': Place(...)}
+```
+
+## Registering Fields
+
+`register<T>(key, ...)` creates a `FormidableField<T>`. `T` is the exact type of the Field, nullability included, and follows the [presence rules](/schema/presence) of a Schema Field: `register<int>` is required, `register<int?>` is optional, and `defaultValue:` makes an Unset Field produce that default. `validators:` and `normalizers:` take the same instances you would use as annotations, only created at runtime. `required: true` is `@Required()`.
+
+A Validator that does not accept `T`, such as `MinLength` on an `int`, throws a `FormidableDynamicTypeError` at registration. Nothing is registered. A Validator typed for a supertype of `T` (`Min` is typed `num`, so it fits an `int`) is accepted.
+
+`registerForm(key, form)` registers a [Nested Form](/schema/nested-forms), for example to describe a dynamic section that has its own structure. Its value in the output is the Schema instance, or null while it is an Unset optional Nested Form.
+
+A key can be registered once. Registering it again throws a `FormidableDynamicKeyError`; remove it first.
+
+## Looking Fields up
+
+`field<T>(key)` returns the Field registered with exactly the type `T`. When the key is unknown, or `T` is not the registered type, it fails with an error that names the key and both types:
+
+```dart
+form.answers.field<String>('age');
+// FormidableDynamicTypeError: "age" is a Field of type int, but it was looked
+// up as a Field of type String. ...
+```
+
+`int` and `int?` are different types here, on purpose: a lookup never hands out a Field that would accept null when it does not. `form<PlaceForm>(key)` does the same for a Nested Form. `contains(key)` and `keys` tell what is registered.
+
+## Removing Fields
+
+`remove(key)` removes and disposes what is registered under the key. It throws a `FormidableDynamicKeyError` when there is nothing. A Form that was invalid because of the removed Field is valid again.
+
+## The output
+
+`form.answers.output`, and the Schema's `Map<String, Object?>` Field, hold the values of every registered Field by key, in registration order. An optional Field that is Unset contributes `null`. Like any output it exists only while the Form is valid.
+
+## Part of the pipeline
+
+A dynamic Field is a node of the Form like a declared one:
+
+- **Validation and submit.** Its errors make the Form invalid, `submit()` marks it touched and lists it in `FormidableSubmitInvalid`, and `applyErrors` accepts it.
+- **Form Effects.** An Effect can read and write dynamic Fields (`form.answers.field<String>('country')`) and react to them with `context.changed(...)`. Registering or removing a Field counts as a change: the Effects run once, then every Field is validated again.
+- **Form Validators.** A Form Validator can address a dynamic Field in its errors.
+- **Dirty, reset and commit.** A dynamic Field that differs from its initial state makes the Form dirty. `reset()` and `commit()` reach every registered Field. Registering or removing a Field is structure, not user input: it does not make the Form dirty, and neither `reset()` nor `commit()` registers or removes anything.
+- **Focus order.** Dynamic Fields follow the Fields of the Schema in registration order, and the Fields of a registered Nested Form follow their Form.
+- **Notifications.** The Form notifies once when a Field is registered or removed. `form.answers.state.keys` changes then and only then, so a widget that lists the Fields can rebuild on it (`addListener` on `form.answers`).
+
+## Initial values, patch and replace
+
+`SurveyForm.from(survey)` and `SurveyForm(answers: {...})` take values for keys that are not registered yet. A Field registered under one of those keys starts with that value, which must have the registered type (otherwise registration throws a `FormidableDynamicTypeError`). The Field starts clean.
+
+`form.patch(answers: {...})` writes the registered Fields whose key is in the map. `form.replace(survey)` also makes every registered Field that is not in the map Unset. A value for a key that is not registered waits for its Field. A value of the wrong type throws a `FormidableDynamicTypeError`. Nested Forms are not written through the map: use their own `replace` or `patch`.
+
+## Diagnostics
+
+| Problem | What to do |
+| --- | --- |
+| `@Dynamic()` on a type other than `Map<String, Object?>` (a nullable map, another value type, a list...) | Change the Field type. The map is the output of the registered values, so it has to be exactly this type. |
+| `@Dynamic()` with `@Passthrough()`, a Validator, a Normalizer or a default value | Remove it. Pass Validators and Normalizers when you register each Field. |

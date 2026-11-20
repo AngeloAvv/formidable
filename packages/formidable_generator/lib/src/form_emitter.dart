@@ -17,7 +17,7 @@ String emitForm(SchemaModel schema) {
       .join(', ');
   final fromForwards = fields
       .map(
-        (f) => f.isPassthrough || f.isNested
+        (f) => f.isPassthrough || f.isNested || f.isDynamic
             ? '${f.name}: source.${f.name}'
             : '${f.name}: (value: source.${f.name})',
       )
@@ -68,6 +68,8 @@ String emitForm(SchemaModel schema) {
     out.writeln(
       f.isNested
           ? '    if (${f.name} != null) this.${f.name}.replace(${f.name});'
+          : f.isDynamic
+          ? '    if (${f.name} != null) this.${f.name}.patch(${f.name});'
           : '    if (${f.name} != null) this.${f.name}.setValue(${f.name});',
     );
   }
@@ -76,7 +78,9 @@ String emitForm(SchemaModel schema) {
   out.writeln('  /// Writes every Field from [source], as one change.');
   out.writeln('  void replace(${schema.name} source) => batch(() {');
   for (final f in fields) {
-    if (!f.isNested) {
+    if (f.isDynamic) {
+      out.writeln('    ${f.name}.replace(source.${f.name});');
+    } else if (!f.isNested) {
       out.writeln('    ${f.name}.setValue(source.${f.name});');
     } else if (f.isNullable) {
       out.writeln(
@@ -101,6 +105,7 @@ bool _isRequiredParameter(FieldModel f) =>
     f.isPassthrough && !f.isNullable && f.defaultSource == null;
 
 String _privateParameter(FieldModel f) {
+  if (f.isDynamic) return '${f.optionalTypeSource} ${f.name}';
   if (f.isNested) {
     return f.nested!.requiresInitial
         ? 'required ${f.typeSource} ${f.name}'
@@ -120,7 +125,7 @@ String _partialParameter(FieldModel f) {
 }
 
 String _partialForward(FieldModel f) {
-  if (f.isNested) return '${f.name}: ${f.name}';
+  if (f.isNested || f.isDynamic) return '${f.name}: ${f.name}';
   if (!f.isPassthrough) {
     return '${f.name}: ${f.name} == null ? null : (value: ${f.name})';
   }
@@ -130,7 +135,9 @@ String _partialForward(FieldModel f) {
   return '${f.name}: ${f.name}';
 }
 
-String _handleType(FieldModel f) => f.isNested
+String _handleType(FieldModel f) => f.isDynamic
+    ? 'FormidableDynamicForm'
+    : f.isNested
     ? f.nested!.formName
     : f.isPassthrough
     ? 'FormidablePassthrough<${f.typeSource}>'
@@ -150,13 +157,16 @@ String _nested(FieldModel f) {
       : create;
 }
 
-String _output(FieldModel f) => f.isNested
+String _output(FieldModel f) => f.isDynamic
+    ? '${f.name}.output'
+    : f.isNested
     ? (_isOptionalNested(f)
           ? '${f.name}.outputOrNull'
           : '${f.name}.buildOutput()')
     : '${f.name}.output';
 
 String _field(FieldModel f) {
+  if (f.isDynamic) return 'FormidableDynamicForm(initial: ${f.name})';
   if (f.isNested) return _nested(f);
   if (f.isPassthrough) {
     return 'FormidablePassthrough<${f.typeSource}>(${f.name})';
