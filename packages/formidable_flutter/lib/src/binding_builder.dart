@@ -2,7 +2,9 @@ import 'package:flutter/widgets.dart';
 import 'package:formidable/formidable.dart';
 
 import 'binding.dart';
+import 'error_display.dart';
 import 'messages.dart';
+import 'scope.dart';
 
 /// Creates a [FormidableBinding] for [field] and rebuilds [builder] whenever
 /// the Field changes.
@@ -18,6 +20,7 @@ class FormidableBindingBuilder<T> extends StatefulWidget {
     this.formatText,
     this.parseText,
     this.messages,
+    this.errorDisplay,
   });
 
   final FormidableField<T> field;
@@ -42,6 +45,9 @@ class FormidableBindingBuilder<T> extends StatefulWidget {
   /// Messages for this widget only. They win over the config registry, the
   /// localizations and the string form of the error.
   final FormidableMessages? messages;
+
+  /// When errors are shown. Null follows the Form Scope, then the config.
+  final FormidableErrorDisplay? errorDisplay;
 
   @override
   State<FormidableBindingBuilder<T>> createState() =>
@@ -84,8 +90,12 @@ class _FormidableBindingBuilderState<T>
   }
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: _binding,
-    builder: (context, _) => widget.builder(context, _binding),
-  );
+  Widget build(BuildContext context) {
+    _binding.errorDisplay =
+        widget.errorDisplay ?? FormidableScope.errorDisplayOf(context);
+    return ListenableBuilder(
+      listenable: _binding,
+      builder: (context, _) => widget.builder(context, _binding),
+    );
+  }
 }

@@ -28,6 +28,7 @@ abstract class FormidableForm<S>
     status: FormidableStatus.valid,
   );
   final List<void Function()> _changeListeners = [];
+  List<FormidableValidationError> _formErrors = const [];
 
   /// The children of the Form, in Schema declaration order.
   List<FormidableNode> get nodes => _nodes;
@@ -78,6 +79,7 @@ abstract class FormidableForm<S>
   @override
   void change(FormidableNode node, bool Function() mutate) {
     if (!mutate()) return;
+    _formErrors = const [];
     _pending.add(node);
     // An Effect wrote a Field: the running pass picks the change up.
     if (!_running) _run();
@@ -128,14 +130,48 @@ abstract class FormidableForm<S>
   /// is valid. Implemented by the generated Form.
   S buildOutput();
 
+  /// Adds errors that only the caller can find, usually the answer of a
+  /// server.
+  ///
+  /// [fieldErrors] are applied to their Fields, see
+  /// [FormidableField.applyErrors]; the errors of a Field are replaced, and a
+  /// Field that is missing from the map keeps its own. [formErrors] belong to
+  /// the Form as a whole and show in [FormidableFormState.errors]; they replace
+  /// the Form errors applied before.
+  ///
+  /// Both make the Form invalid. Field errors clear on the next change to that
+  /// Field. Form errors clear on the next change to any Field, and when
+  /// `submit()` starts.
+  void applyErrors({
+    Map<FormidableField<Object?>, List<FormidableValidationError>> fieldErrors =
+        const {},
+    List<FormidableValidationError> formErrors = const [],
+  }) {
+    _formErrors = List.unmodifiable(formErrors);
+    fieldErrors.forEach((field, errors) => field.applyErrors(errors));
+    _onNodeChanged();
+  }
+
   /// Decides whether the Form is valid and builds the Schema instance.
+  ///
+  /// It first makes every Field touched and submitted, so that every error can
+  /// show. When the Form is invalid it moves the focus to the first invalid
+  /// Field in Schema declaration order that is enabled and shown by a widget.
   Future<FormidableSubmitResult<S>> submit() async {
+    if (_formErrors.isNotEmpty) {
+      _formErrors = const [];
+      _onNodeChanged();
+    }
+    for (final node in _nodes) {
+      node.markSubmitted();
+    }
     final errors =
         <FormidableField<Object?>, List<FormidableValidationError>>{};
     for (final node in _nodes) {
       node.collectErrors(errors);
     }
     if (errors.isNotEmpty) {
+      errors.keys.where((field) => field.canFocus).firstOrNull?.focus();
       return FormidableSubmitInvalid<S>(Map.unmodifiable(errors));
     }
     return FormidableSubmitValid<S>(buildOutput());
@@ -164,10 +200,11 @@ abstract class FormidableForm<S>
   }
 
   FormidableFormState _computeState() => FormidableFormState(
-    status: _nodes.every((node) => node.isValid)
+    status: _formErrors.isEmpty && _nodes.every((node) => node.isValid)
         ? FormidableStatus.valid
         : FormidableStatus.invalid,
     dirty: _nodes.any((node) => node.isDirty),
     pending: _nodes.any((node) => node.isPending),
+    errors: _formErrors,
   );
 }

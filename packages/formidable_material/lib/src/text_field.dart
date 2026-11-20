@@ -23,6 +23,7 @@ class FormidableTextField extends StatelessWidget {
     this.autofocus = false,
     this.focusNode,
     this.messages,
+    this.errorDisplay,
   });
 
   final FormidableField<String> field;
@@ -40,11 +41,15 @@ class FormidableTextField extends StatelessWidget {
   /// Messages for this field only, ahead of the config and the localizations.
   final FormidableMessages? messages;
 
+  /// When the error shows. Null follows the Form Scope, then the config.
+  final FormidableErrorDisplay? errorDisplay;
+
   @override
   Widget build(BuildContext context) => FormidableBindingBuilder<String>(
     field: field,
     focusNode: focusNode,
     messages: messages,
+    errorDisplay: errorDisplay,
     formatText: (value) => value,
     parseText: (text) => text.isEmpty ? null : text,
     builder: (context, binding) => TextField(

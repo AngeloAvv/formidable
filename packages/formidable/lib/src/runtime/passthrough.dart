@@ -70,6 +70,9 @@ final class FormidablePassthrough<T>
   }
 
   @override
+  void markSubmitted() {}
+
+  @override
   void collectErrors(
     Map<FormidableField<Object?>, List<FormidableValidationError>> into,
   ) {}
