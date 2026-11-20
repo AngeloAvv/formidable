@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import '../normalizers/normalizer.dart';
+import '../validation/async_validator.dart';
 import '../validation/required_error.dart';
 import '../validation/validation_error.dart';
 import '../validation/validator.dart';
@@ -27,6 +30,9 @@ final class FormidableField<T>
   ///   typed `Object?` because a Validator typed for a supertype of [T] fits
   ///   too, which Dart cannot express; the generator rejects a Validator that
   ///   does not fit before the Form is generated.
+  /// - [asyncValidators] run after the synchronous ones pass, once the Field
+  ///   has been unchanged for their debounce. The Field is pending until they
+  ///   answer.
   /// - [required] is `@Required()`: Unset blocks submit even if [T] allows null
   ///   or a default exists.
   /// - [defaultValue] is the constructor default of the Schema field. The Field
@@ -36,11 +42,13 @@ final class FormidableField<T>
   FormidableField({
     List<FormidableNormalizer<T>> normalizers = const [],
     List<FormidableValidator<Object?>> validators = const [],
+    List<FormidableAsyncValidator<Object?>> asyncValidators = const [],
     bool required = false,
     T? defaultValue,
     ({T value})? initial,
   }) : _normalizers = normalizers,
        _validators = validators,
+       _asyncValidators = asyncValidators,
        _required = required,
        _defaultValue = defaultValue {
     final start = initial == null
@@ -56,6 +64,7 @@ final class FormidableField<T>
 
   final List<FormidableNormalizer<T>> _normalizers;
   final List<FormidableValidator<Object?>> _validators;
+  final List<FormidableAsyncValidator<Object?>> _asyncValidators;
   List<FormidableValidationError> _formErrors = const [];
   final bool _required;
   final T? _defaultValue;
@@ -69,6 +78,16 @@ final class FormidableField<T>
   List<FormidableValidationError> _applied = const [];
   bool _stale = false;
   FormidableValidationError? _inputError;
+  Timer? _asyncTimer;
+  int _asyncToken = 0;
+  // The value the running or finished async check is about, null when no
+  // check is wanted.
+  ({T? value})? _asyncInput;
+  bool _asyncPending = false;
+  List<FormidableValidationError> _asyncErrors = const [];
+  List<FormidableValidationError> _asyncFormErrors = const [];
+  bool _asyncFormPending = false;
+  bool _readyForFormCheck = false;
   late FormidableFieldState<T> _state;
   late FormidableFieldState<T> _notified;
   late bool _initialIsSet;
@@ -218,7 +237,34 @@ final class FormidableField<T>
   bool get isDirty => _state.dirty;
 
   @override
-  bool get isPending => false;
+  bool get isPending => _state.pending;
+
+  /// Whether an asynchronous Form Validator that reads this Field may run:
+  /// the Field has a value and nothing but that check has any error to report
+  /// and no check of its own is running. Used by the Form.
+  bool get readyForFormCheck => _readyForFormCheck;
+
+  /// Replaces the result of the asynchronous Form Validators that read this
+  /// Field: the [errors] they addressed to it and whether one of them is still
+  /// [pending]. Called by the Form before it revalidates; an application has
+  /// no reason to call it.
+  void replaceAsyncFormResult(
+    List<FormidableValidationError> errors, {
+    required bool pending,
+  }) {
+    if (pending == _asyncFormPending && _sameErrors(_asyncFormErrors, errors)) {
+      return;
+    }
+    _asyncFormPending = pending;
+    _asyncFormErrors = List.unmodifiable(errors);
+    _stale = true;
+  }
+
+  @override
+  void dispose() {
+    _cancelAsync();
+    super.dispose();
+  }
 
   @override
   void collectErrors(
@@ -308,23 +354,100 @@ final class FormidableField<T>
     notifyListeners();
   }
 
-  FormidableFieldState<T> _stateFor() => FormidableFieldState<T>(
-    value: _value,
-    isSet: _isSet,
-    touched: _touched,
-    enabled: _enabled,
-    submitted: _submitted,
-    dirty: _isSet != _initialIsSet || (_isSet && _value != _initialValue),
-    errors: [
-      ...(_isSet
-          ? (_enabled ? _validate(_value) : const <FormidableValidationError>[])
-          : _inputError != null
-          ? [_inputError!]
-          : _presenceErrors()),
-      ..._formErrors,
-      if (_enabled) ..._applied,
-    ],
-  );
+  FormidableFieldState<T> _stateFor() {
+    final own = _isSet
+        ? (_enabled ? _validate(_value) : const <FormidableValidationError>[])
+        : _inputError != null
+        ? [_inputError!]
+        : _presenceErrors();
+    final passes = _isSet && _enabled && own.isEmpty && _formErrors.isEmpty;
+    _driveAsync(wanted: passes);
+    _readyForFormCheck = passes && !_asyncPending && _asyncErrors.isEmpty;
+    return FormidableFieldState<T>(
+      value: _value,
+      isSet: _isSet,
+      touched: _touched,
+      enabled: _enabled,
+      submitted: _submitted,
+      dirty: _isSet != _initialIsSet || (_isSet && _value != _initialValue),
+      pending: _asyncPending || _asyncFormPending,
+      errors: [
+        ...own,
+        ..._formErrors,
+        ..._asyncErrors,
+        ..._asyncFormErrors,
+        if (_enabled) ..._applied,
+      ],
+    );
+  }
+
+  /// The Async Validators that judge [value]: the ones that accept null are
+  /// the only ones that see it.
+  List<FormidableAsyncValidator<Object?>> _asyncFor(T? value) => [
+    for (final validator in _asyncValidators)
+      if (value != null || validator.acceptsNull) validator,
+  ];
+
+  /// Starts, keeps or cancels the async check so that it matches the current
+  /// value. [wanted] is whether the Field may be checked at all: it has a
+  /// value and every synchronous rule passes.
+  void _driveAsync({required bool wanted}) {
+    if (_asyncValidators.isEmpty) return;
+    final validators = wanted
+        ? _asyncFor(_value)
+        : const <FormidableAsyncValidator<Object?>>[];
+    if (validators.isEmpty) {
+      _cancelAsync();
+      return;
+    }
+    final input = _asyncInput;
+    if (input != null && input.value == _value) return;
+    _asyncTimer?.cancel();
+    final token = ++_asyncToken;
+    final value = _value;
+    _asyncInput = (value: value);
+    _asyncErrors = const [];
+    _asyncPending = true;
+    final debounce = validators
+        .map((v) => v.debounce)
+        .reduce((a, b) => a >= b ? a : b);
+    _asyncTimer = Timer(debounce, () => _runAsync(token, value, validators));
+  }
+
+  /// Drops the running async check and its result. The future of a running
+  /// check is not interrupted, but nobody listens to it anymore.
+  void _cancelAsync() {
+    _asyncTimer?.cancel();
+    _asyncTimer = null;
+    _asyncToken++;
+    _asyncInput = null;
+    _asyncPending = false;
+    _asyncErrors = const [];
+  }
+
+  Future<void> _runAsync(
+    int token,
+    T? value,
+    List<FormidableAsyncValidator<Object?>> validators,
+  ) async {
+    List<FormidableValidationError> errors;
+    try {
+      final results = await Future.wait([
+        for (final validator in validators)
+          Future.sync(() => validator.validate(value)),
+      ]);
+      errors = [for (final result in results) ...result];
+    } on Object catch (error) {
+      errors = [FormidableAsyncCheckFailedError(error)];
+    }
+    // A newer value, Unset, disable or dispose made this result stale.
+    if (token != _asyncToken || isDisposed) return;
+    _asyncTimer = null;
+    _asyncPending = false;
+    _asyncErrors = List.unmodifiable(errors);
+    _stale = true;
+    _settle();
+  }
 
   static bool _sameErrors(
     List<FormidableValidationError> a,

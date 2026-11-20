@@ -30,7 +30,7 @@ Every Field and every Form holds an immutable **state snapshot** and notifies it
 | --- | --- |
 | `status` | `invalid` while any Field has errors |
 | `dirty` | Any Field is dirty |
-| `pending` | Any Field is still waiting for a result |
+| `pending` | Any Field is still waiting for the result of an [Async Validator](/validation/async) |
 | `errors` | Errors of the Form as a whole, not tied to a Field |
 
 ## `form.value`
