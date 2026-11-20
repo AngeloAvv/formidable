@@ -178,8 +178,8 @@ class _EditBodyState extends State<_EditBody> {
         Row(
           spacing: 12,
           children: [
-            FormidableFormSelector<ContactForm, bool>(
-              selector: (form) => form.value != null && form.state.dirty,
+            ContactFormSelector<bool>(
+              selector: (state) => state.value != null && state.dirty,
               builder: (context, canSave) => FilledButton(
                 onPressed: canSave ? () => _save(form) : null,
                 child: const Text('Save'),

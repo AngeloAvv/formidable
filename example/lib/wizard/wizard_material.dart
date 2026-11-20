@@ -150,7 +150,7 @@ class _WizardBodyState extends State<_WizardBody> {
   ];
 
   List<Widget> _confirmStep(BookingForm form) => [
-    FormidableFormBuilder<BookingForm>(
+    BookingFormBuilder(
       builder: (context, _) => Text(describeBooking(form)),
     ),
     FormidableCheckbox(
