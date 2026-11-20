@@ -1,0 +1,92 @@
+---
+title: Messages and localization
+description: How a Validation Error becomes the text the user reads
+---
+
+# Messages and localization
+
+A Validator never produces text. It produces a typed **Validation Error** that carries data, for example `FormidableMinLengthError(minLength: 4, actualLength: 2)`. The **Validation Message** is resolved later, when a widget shows the error, so it can follow the locale of the app.
+
+## Where the message comes from
+
+When a widget shows an error, it takes the first step of this list that has a message:
+
+1. the **widget override**, a `messages:` registry passed to that one widget;
+2. the **config registry**, the `messages:` of the nearest `FormidableConfig`;
+3. the **localizations delegate**, `FormidableLocalizations`;
+4. the **string form** of the error (`error.toString()`, plain English).
+
+Locale and config are inherited dependencies. When the user switches language or you replace the config, the error text on screen is rebuilt right away.
+
+## Built-in languages
+
+Install the delegate once, next to the delegates of your app. English, Italian, Spanish, French and German are included.
+
+```dart
+MaterialApp(
+  localizationsDelegates: [
+    FormidableLocalizations.delegate,
+    ...GlobalMaterialLocalizations.delegates,
+  ],
+  supportedLocales: FormidableLocalizations.supportedLocales,
+  // ...
+)
+```
+
+Without the delegate every error falls back to its English string form, so nothing breaks.
+
+## Changing the wording
+
+Extend the class of a language, override the messages you want to change and return it from a delegate. Every message is a method named after its error, with the data of the error as typed parameters.
+
+```dart
+class MyItalian extends FormidableLocalizationsIt {
+  @override
+  String minLength(int minLength, int actualLength) =>
+      'Almeno $minLength caratteri, ne hai scritti $actualLength.';
+}
+
+class MyDelegate extends FormidableLocalizationsDelegate {
+  const MyDelegate();
+
+  @override
+  FormidableLocalizations lookup(Locale locale) =>
+      locale.languageCode == 'it' ? MyItalian() : super.lookup(locale);
+}
+```
+
+Use `MyDelegate()` in `localizationsDelegates` in place of `FormidableLocalizations.delegate`. The overridden methods can read your own ARB-backed localizations if you build the class from them.
+
+## Messages for your own errors
+
+Register a message per error type in `FormidableConfig`, with `on<E>`. The type decides the callback's parameter, so there are no string keys and no casts.
+
+```dart
+FormidableConfig(
+  messages: myMessages,
+  child: MaterialApp(/* ... */),
+)
+
+const myMessages = FormidableMessages()
+    .on<NotAdminError>((context, error) => 'That name is reserved.')
+    .on<FormidableMinLengthError>(
+      (context, error) => 'Use at least ${error.minLength} characters.',
+    );
+```
+
+The callback receives the `BuildContext` of the widget that shows the message, so it can read the locale or your own localizations. A registry matches the exact type of an error; registering the same type again replaces the earlier message. Keep the registry in a constant or a field: a new instance counts as a config change.
+
+## One-off wording
+
+Widgets accept the same registry. It wins over everything else, for that widget only.
+
+```dart
+FormidableTextField(
+  field: form.username,
+  messages: const FormidableMessages().on<FormidableRequiredError>(
+    (context, error) => 'Pick a username.',
+  ),
+)
+```
+
+`FormidableBindingBuilder` takes the same `messages:` parameter.

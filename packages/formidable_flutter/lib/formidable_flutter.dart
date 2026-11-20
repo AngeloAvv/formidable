@@ -4,5 +4,7 @@ library;
 
 export 'src/binding.dart';
 export 'src/binding_builder.dart';
+export 'src/config.dart';
+export 'src/localizations/localizations.dart';
 export 'src/messages.dart';
 export 'src/scope.dart';
