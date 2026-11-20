@@ -1,0 +1,43 @@
+name: Wait for pub.dev
+
+on:
+  workflow_call:
+    inputs:
+      package:
+        description: The name of the published package to wait for
+        required: true
+        type: string
+      working-directory:
+        description: The directory of that package, used to read its version
+        required: true
+        type: string
+
+jobs:
+  wait:
+    name: Wait for ${{ inputs.package }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Wait until the version is indexed on pub.dev
+        env:
+          PACKAGE: ${{ inputs.package }}
+          WORKING_DIRECTORY: ${{ inputs.working-directory }}
+        run: |
+          VERSION=$(grep '^version:' "$WORKING_DIRECTORY/pubspec.yaml" | awk '{print $2}')
+          echo "Waiting for $PACKAGE $VERSION to be available on pub.dev..."
+          MAX_ATTEMPTS=20
+          ATTEMPT=0
+          until [ "$ATTEMPT" -ge "$MAX_ATTEMPTS" ]; do
+            STATUS=$(curl -s --connect-timeout 5 --max-time 15 -o /dev/null -w "%{http_code}" "https://pub.dev/api/packages/$PACKAGE/versions/$VERSION" || echo "000")
+            if [ "$STATUS" = "200" ]; then
+              echo "$PACKAGE $VERSION is available on pub.dev."
+              exit 0
+            fi
+            ATTEMPT=$((ATTEMPT + 1))
+            echo "Attempt $ATTEMPT/$MAX_ATTEMPTS: pub.dev returned $STATUS. Retrying in 30 seconds..."
+            sleep 30
+          done
+          echo "::error::$PACKAGE $VERSION was not available on pub.dev after $((MAX_ATTEMPTS * 30)) seconds."
+          exit 1
