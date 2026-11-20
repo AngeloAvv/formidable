@@ -60,7 +60,7 @@ FormidableFieldArrayBuilder(
       children: [
         Expanded(
           flex: 3,
-          child: FormidableTextField(
+          child: FormidableMaterialTextField(
             key: Key('place-${item.id}'),
             field: item.node.place,
             decoration: const InputDecoration(
@@ -71,7 +71,7 @@ FormidableFieldArrayBuilder(
         ),
         Expanded(
           flex: 2,
-          child: FormidableTextField(
+          child: FormidableMaterialTextField(
             key: Key('nights-${item.id}'),
             field: item.node.nights,
             keyboardType: TextInputType.number,
@@ -160,7 +160,7 @@ FormidableFieldArrayBuilder(
       spacing: 8,
       children: [
         Expanded(
-          child: FormidableTextField(
+          child: FormidableMaterialTextField(
             key: Key('tag-${item.id}'),
             field: item.node,
             decoration: const InputDecoration(

@@ -3,9 +3,9 @@ import 'package:material_ui/material_ui.dart';
 
 import 'error_text.dart';
 
-/// One choice of a [FormidableRadioGroup].
-class FormidableRadioOption<T> {
-  const FormidableRadioOption({
+/// One choice of a [FormidableMaterialRadioGroup].
+class FormidableMaterialRadioOption<T> {
+  const FormidableMaterialRadioOption({
     required this.value,
     required this.title,
     this.subtitle,
@@ -30,11 +30,11 @@ class FormidableRadioOption<T> {
 ///
 /// It exposes the most common parameters. For everything else, build a
 /// `RadioGroup` from a [FormidableFieldWidget].
-class FormidableRadioGroup<T> extends FormidableFieldWidget<T, T> {
-  FormidableRadioGroup({
+class FormidableMaterialRadioGroup<T> extends FormidableFieldWidget<T, T> {
+  FormidableMaterialRadioGroup({
     super.key,
     required super.field,
-    required List<FormidableRadioOption<T>> options,
+    required List<FormidableMaterialRadioOption<T>> options,
     super.messages,
     super.errorDisplay,
     super.focusNode,
@@ -64,7 +64,7 @@ class FormidableRadioGroup<T> extends FormidableFieldWidget<T, T> {
                  ],
                ),
              ),
-             FormidableErrorLine(text: control.errorText),
+             FormidableMaterialErrorLine(text: control.errorText),
            ],
          ),
        );

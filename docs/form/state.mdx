@@ -164,7 +164,7 @@ Both take exactly one of `child` and `builder`. The builder receives the Form an
 SignUpFormScope(
   builder: (context, form) => Column(
     children: [
-      FormidableTextField(field: form.username),
+      FormidableMaterialTextField(field: form.username),
       // `context` is below the scope, so context.signUpForm works too.
     ],
   ),

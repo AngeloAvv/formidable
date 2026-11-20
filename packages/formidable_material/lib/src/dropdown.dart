@@ -10,8 +10,8 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// It exposes the most common parameters. For everything else, build a
 /// `DropdownButton` from a [FormidableFieldWidget].
-class FormidableDropdown<T> extends FormidableFieldWidget<T, T> {
-  FormidableDropdown({
+class FormidableMaterialDropdown<T> extends FormidableFieldWidget<T, T> {
+  FormidableMaterialDropdown({
     super.key,
     required super.field,
     required List<DropdownMenuItem<T>> items,

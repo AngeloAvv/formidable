@@ -16,8 +16,8 @@ import 'error_text.dart';
 ///
 /// It exposes the most common parameters. For everything else, build a
 /// `SegmentedButton` from a [FormidableFieldWidget].
-class FormidableSegmentedButton<T> extends FormidableFieldWidget<T, T> {
-  FormidableSegmentedButton({
+class FormidableMaterialSegmentedButton<T> extends FormidableFieldWidget<T, T> {
+  FormidableMaterialSegmentedButton({
     super.key,
     required super.field,
     required List<ButtonSegment<T>> segments,
@@ -60,7 +60,7 @@ class FormidableSegmentedButton<T> extends FormidableFieldWidget<T, T> {
                      }
                    : null,
              ),
-             FormidableErrorLine(text: control.errorText),
+             FormidableMaterialErrorLine(text: control.errorText),
            ],
          ),
        );

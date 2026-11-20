@@ -34,8 +34,8 @@ import 'package:material_ui/material_ui.dart';
 /// to "done" on the last one. A multiline field keeps its newline key. Without
 /// [onEditingComplete], pressing the action moves focus to the next Field in
 /// Schema declaration order.
-class FormidableTextField<T> extends FormidableTextFieldWidget<T> {
-  FormidableTextField({
+class FormidableMaterialTextField<T> extends FormidableTextFieldWidget<T> {
+  FormidableMaterialTextField({
     super.key,
     required super.field,
     super.codec,

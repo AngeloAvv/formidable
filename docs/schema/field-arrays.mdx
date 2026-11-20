@@ -131,7 +131,7 @@ FormidableFieldArrayBuilder(
   array: context.personForm.phones,
   itemBuilder: (context, index, item) => Row(children: [
     Expanded(
-      child: FormidableTextField<String>(
+      child: FormidableMaterialTextField<String>(
         field: item.node.number,
         decoration: const InputDecoration(labelText: 'Number'),
       ),

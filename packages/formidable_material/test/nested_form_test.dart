@@ -17,11 +17,11 @@ void main() {
       child: Builder(
         builder: (context) => Column(
           children: [
-            FormidableTextField(
+            FormidableMaterialTextField(
               field: context.checkoutForm.billing.street,
               decoration: const InputDecoration(labelText: 'Billing street'),
             ),
-            FormidableTextField(
+            FormidableMaterialTextField(
               field: context.checkoutForm.shipping.street,
               decoration: const InputDecoration(labelText: 'Shipping street'),
             ),
@@ -102,7 +102,7 @@ void main() {
         AddressFormScope.value(
           form: form.billing,
           child: Builder(
-            builder: (context) => FormidableTextField(
+            builder: (context) => FormidableMaterialTextField(
               field: context.addressForm.street,
               decoration: const InputDecoration(labelText: 'Street'),
             ),
@@ -153,7 +153,7 @@ void main() {
           child: Builder(
             builder: (context) => Column(
               children: [
-                FormidableTextField(
+                FormidableMaterialTextField(
                   field: context.checkoutForm.billing.street,
                   focusNode: billing,
                 ),

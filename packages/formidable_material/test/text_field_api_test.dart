@@ -6,7 +6,7 @@ import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:formidable_material/formidable_material.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Seam 2: `FormidableTextField` takes the whole API of `TextField`, except
+/// Seam 2: `FormidableMaterialTextField` takes the whole API of `TextField`, except
 /// what Formidable owns, and merges the decoration instead of replacing it.
 void main() {
   late FormidableField<String> name;
@@ -32,7 +32,7 @@ void main() {
       var tapped = 0;
       await tester.pumpWidget(
         app(
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: name,
             style: const TextStyle(fontSize: 31),
             textAlign: TextAlign.end,
@@ -93,7 +93,9 @@ void main() {
     });
 
     testWidgets('keep the defaults of TextField when left out', (tester) async {
-      await tester.pumpWidget(app(FormidableTextField<String>(field: name)));
+      await tester.pumpWidget(
+        app(FormidableMaterialTextField<String>(field: name)),
+      );
 
       final field = textField(tester);
       const defaults = TextField();
@@ -115,7 +117,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        app(FormidableTextField<String>(field: name, maxLength: 4)),
+        app(FormidableMaterialTextField<String>(field: name, maxLength: 4)),
       );
 
       await tester.enterText(find.byType(TextField), 'abcdefgh');
@@ -128,7 +130,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         app(
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: name,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           ),
@@ -141,7 +143,9 @@ void main() {
     });
 
     testWidgets('the Field says whether the field is enabled', (tester) async {
-      await tester.pumpWidget(app(FormidableTextField<String>(field: name)));
+      await tester.pumpWidget(
+        app(FormidableMaterialTextField<String>(field: name)),
+      );
       expect(textField(tester).enabled, isTrue);
 
       name.disable();
@@ -154,7 +158,7 @@ void main() {
       String? submitted;
       await tester.pumpWidget(
         app(
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: name,
             onSubmitted: (text) => submitted = text,
           ),
@@ -173,7 +177,7 @@ void main() {
       var completed = 0;
       await tester.pumpWidget(
         app(
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: name,
             onEditingComplete: () => completed++,
           ),
@@ -189,7 +193,7 @@ void main() {
     testWidgets('textInputAction can be chosen', (tester) async {
       await tester.pumpWidget(
         app(
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: name,
             textInputAction: TextInputAction.search,
           ),
@@ -205,7 +209,7 @@ void main() {
       name.markAsTouched();
       await tester.pumpWidget(
         app(
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: name,
             decoration: const InputDecoration(
               labelText: 'Name',
@@ -234,7 +238,7 @@ void main() {
       name.markAsTouched();
       await tester.pumpWidget(
         app(
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: name,
             decoration: const InputDecoration(errorText: 'Taken already'),
           ),
@@ -250,7 +254,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         app(
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: name,
             decoration: const InputDecoration(labelText: 'Name'),
           ),
@@ -265,7 +269,7 @@ void main() {
         app(
           FormidableFieldBuilder<String>(
             field: name,
-            builder: (context, state) => FormidableTextField<String>(
+            builder: (context, state) => FormidableMaterialTextField<String>(
               field: name,
               decoration: InputDecoration(
                 suffixIcon: state.isSet
@@ -299,7 +303,7 @@ void main() {
     testWidgets('a null decoration draws none, and no error', (tester) async {
       name.markAsTouched();
       await tester.pumpWidget(
-        app(FormidableTextField<String>(field: name, decoration: null)),
+        app(FormidableMaterialTextField<String>(field: name, decoration: null)),
       );
 
       expect(textField(tester).decoration, isNull);
@@ -313,7 +317,9 @@ void main() {
     ) async {
       final trimmed = FormidableField<String>(normalizers: const [Trim()]);
       addTearDown(trimmed.dispose);
-      await tester.pumpWidget(app(FormidableTextField<String>(field: trimmed)));
+      await tester.pumpWidget(
+        app(FormidableMaterialTextField<String>(field: trimmed)),
+      );
 
       await tester.enterText(find.byType(TextField), 'New ');
 

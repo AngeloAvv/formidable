@@ -101,7 +101,7 @@ void main() {
                   PasswordChangeForm(password: 'a', confirmation: 'b')
                     ..confirmation.markAsTouched(),
               child: Builder(
-                builder: (context) => FormidableTextField(
+                builder: (context) => FormidableMaterialTextField(
                   field: context.passwordChangeForm.confirmation,
                 ),
               ),

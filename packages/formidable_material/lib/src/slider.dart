@@ -19,8 +19,9 @@ import 'error_text.dart';
 ///
 /// It exposes the most common parameters. For everything else, build a
 /// `Slider` from a [FormidableFieldWidget].
-class FormidableSlider<T extends num?> extends FormidableFieldWidget<T, T> {
-  FormidableSlider({
+class FormidableMaterialSlider<T extends num?>
+    extends FormidableFieldWidget<T, T> {
+  FormidableMaterialSlider({
     super.key,
     required super.field,
     double min = 0,
@@ -56,7 +57,7 @@ class FormidableSlider<T extends num?> extends FormidableFieldWidget<T, T> {
                    }
                  },
                ),
-               FormidableErrorLine(text: control.errorText),
+               FormidableMaterialErrorLine(text: control.errorText),
              ],
            );
          },

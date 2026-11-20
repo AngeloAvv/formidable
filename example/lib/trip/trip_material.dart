@@ -48,7 +48,7 @@ class _TripBodyState extends State<_TripBody> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('name'),
           field: form.name,
           decoration: const InputDecoration(
@@ -67,7 +67,7 @@ class _TripBodyState extends State<_TripBody> {
               children: [
                 Expanded(
                   flex: 3,
-                  child: FormidableTextField(
+                  child: FormidableMaterialTextField(
                     key: Key('place-${item.id}'),
                     field: item.node.place,
                     decoration: const InputDecoration(
@@ -78,7 +78,7 @@ class _TripBodyState extends State<_TripBody> {
                 ),
                 Expanded(
                   flex: 2,
-                  child: FormidableTextField(
+                  child: FormidableMaterialTextField(
                     key: Key('nights-${item.id}'),
                     field: item.node.nights,
                     keyboardType: TextInputType.number,
@@ -134,7 +134,7 @@ class _TripBodyState extends State<_TripBody> {
               spacing: 8,
               children: [
                 Expanded(
-                  child: FormidableTextField(
+                  child: FormidableMaterialTextField(
                     key: Key('tag-${item.id}'),
                     field: item.node,
                     decoration: const InputDecoration(

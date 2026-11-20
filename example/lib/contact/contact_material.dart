@@ -129,7 +129,7 @@ class _EditBodyState extends State<_EditBody> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('name'),
           field: form.name,
           decoration: const InputDecoration(
@@ -138,7 +138,7 @@ class _EditBodyState extends State<_EditBody> {
           ),
         ),
         const SizedBox(height: 16),
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('email'),
           field: form.email,
           keyboardType: TextInputType.emailAddress,
@@ -149,7 +149,7 @@ class _EditBodyState extends State<_EditBody> {
         ),
         const SizedBox(height: 16),
         // A Nested Form: its Fields are typed handles like any other.
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('street'),
           field: form.address.street,
           decoration: const InputDecoration(
@@ -158,7 +158,7 @@ class _EditBodyState extends State<_EditBody> {
           ),
         ),
         const SizedBox(height: 16),
-        FormidableSegmentedButton<String>(
+        FormidableMaterialSegmentedButton<String>(
           field: form.address.country,
           segments: const [
             ButtonSegment(value: 'IT', label: Text('Italy')),
@@ -166,7 +166,7 @@ class _EditBodyState extends State<_EditBody> {
           ],
         ),
         const SizedBox(height: 16),
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('province'),
           field: form.address.province,
           decoration: const InputDecoration(

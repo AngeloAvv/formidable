@@ -40,7 +40,7 @@ void main() {
   Widget signUp({FormidableMessages? messages}) => SignUpFormScope(
     create: () => SignUpForm()..username.markAsTouched(),
     child: Builder(
-      builder: (context) => FormidableTextField(
+      builder: (context) => FormidableMaterialTextField(
         field: context.signUpForm.username,
         messages: messages,
       ),
@@ -50,7 +50,7 @@ void main() {
   Widget account({FormidableMessages? messages}) => AccountFormScope(
     create: () => AccountForm(username: 'admin')..username.markAsTouched(),
     child: Builder(
-      builder: (context) => FormidableTextField(
+      builder: (context) => FormidableMaterialTextField(
         field: context.accountForm.username,
         messages: messages,
       ),
@@ -93,8 +93,9 @@ void main() {
               create: () =>
                   SignUpForm(username: 'ab')..username.markAsTouched(),
               child: Builder(
-                builder: (context) =>
-                    FormidableTextField(field: context.signUpForm.username),
+                builder: (context) => FormidableMaterialTextField(
+                  field: context.signUpForm.username,
+                ),
               ),
             ),
           ),
@@ -179,8 +180,9 @@ void main() {
           child: SignUpFormScope(
             create: () => SignUpForm(username: 'ab')..username.markAsTouched(),
             child: Builder(
-              builder: (context) =>
-                  FormidableTextField(field: context.signUpForm.username),
+              builder: (context) => FormidableMaterialTextField(
+                field: context.signUpForm.username,
+              ),
             ),
           ),
         ),
@@ -332,8 +334,9 @@ void main() {
               create: () =>
                   ContactForm(reference: 'ab')..reference.markAsTouched(),
               child: Builder(
-                builder: (context) =>
-                    FormidableTextField(field: context.contactForm.reference),
+                builder: (context) => FormidableMaterialTextField(
+                  field: context.contactForm.reference,
+                ),
               ),
             ),
           ),

@@ -18,9 +18,9 @@ import 'picker_field.dart';
 ///
 /// It exposes the most common parameters. For everything else, call
 /// `showDatePicker` from a [FormidableFieldWidget].
-class FormidableDatePicker<T extends DateTime?>
+class FormidableMaterialDatePicker<T extends DateTime?>
     extends FormidableFieldWidget<T, T> {
-  FormidableDatePicker({
+  FormidableMaterialDatePicker({
     super.key,
     required super.field,
     InputDecoration decoration = const InputDecoration(),
@@ -45,7 +45,7 @@ class FormidableDatePicker<T extends DateTime?>
            final value = control.value;
            final formatter =
                format ?? MaterialLocalizations.of(context).formatMediumDate;
-           return FormidablePickerField(
+           return FormidableMaterialPickerField(
              focusNode: control.focusNode,
              enabled: control.enabled,
              errorText: control.errorText,

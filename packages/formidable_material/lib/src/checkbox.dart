@@ -13,8 +13,9 @@ import 'error_text.dart';
 ///
 /// It exposes the most common parameters. For everything else, build a
 /// `Checkbox` from a [FormidableFieldWidget].
-class FormidableCheckbox<T extends bool?> extends FormidableFieldWidget<T, T> {
-  FormidableCheckbox({
+class FormidableMaterialCheckbox<T extends bool?>
+    extends FormidableFieldWidget<T, T> {
+  FormidableMaterialCheckbox({
     super.key,
     required super.field,
     Widget? title,
@@ -53,7 +54,7 @@ class FormidableCheckbox<T extends bool?> extends FormidableFieldWidget<T, T> {
              mainAxisSize: MainAxisSize.min,
              children: [
                box,
-               FormidableErrorLine(text: control.errorText),
+               FormidableMaterialErrorLine(text: control.errorText),
              ],
            );
          },

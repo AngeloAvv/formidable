@@ -45,41 +45,50 @@ class _ProfileBodyState extends State<_ProfileBody> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        FormidableCheckbox(
+        FormidableMaterialCheckbox(
           field: form.acceptedTerms,
           title: const Text('I accept the terms'),
         ),
-        FormidableSwitch(
+        FormidableMaterialSwitch(
           field: form.notifications,
           title: const Text('Notifications'),
         ),
         const _Heading('Plan'),
-        FormidableRadioGroup(
+        FormidableMaterialRadioGroup(
           field: form.plan,
           options: const [
-            FormidableRadioOption(value: Plan.free, title: Text('Free')),
-            FormidableRadioOption(value: Plan.plus, title: Text('Plus')),
-            FormidableRadioOption(value: Plan.pro, title: Text('Pro')),
+            FormidableMaterialRadioOption(
+              value: Plan.free,
+              title: Text('Free'),
+            ),
+            FormidableMaterialRadioOption(
+              value: Plan.plus,
+              title: Text('Plus'),
+            ),
+            FormidableMaterialRadioOption(value: Plan.pro, title: Text('Pro')),
           ],
         ),
         const _Heading('Contact by email'),
-        FormidableRadioGroup(
+        FormidableMaterialRadioGroup(
           field: form.contactByEmail,
           options: const [
-            FormidableRadioOption(value: null, title: Text('No preference')),
-            FormidableRadioOption(value: true, title: Text('Yes')),
-            FormidableRadioOption(value: false, title: Text('No')),
+            FormidableMaterialRadioOption(
+              value: null,
+              title: Text('No preference'),
+            ),
+            FormidableMaterialRadioOption(value: true, title: Text('Yes')),
+            FormidableMaterialRadioOption(value: false, title: Text('No')),
           ],
         ),
         const _Heading('Volume'),
-        FormidableSlider(
+        FormidableMaterialSlider(
           field: form.volume,
           max: 10,
           divisions: 10,
           labelBuilder: (value) => '$value',
         ),
         const SizedBox(height: 16),
-        FormidableDropdown<String>(
+        FormidableMaterialDropdown<String>(
           field: form.country,
           decoration: const InputDecoration(
             labelText: 'Country',
@@ -92,7 +101,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
           ],
         ),
         const SizedBox(height: 16),
-        FormidableDatePicker(
+        FormidableMaterialDatePicker(
           field: form.birthday,
           decoration: const InputDecoration(
             labelText: 'Birthday',
@@ -101,7 +110,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
           initialDate: DateTime(2000),
         ),
         const SizedBox(height: 16),
-        FormidableTimePicker(
+        FormidableMaterialTimePicker(
           field: form.reminder,
           decoration: const InputDecoration(
             labelText: 'Reminder',
@@ -110,7 +119,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
           initialTime: const TimeOfDay(hour: 9, minute: 0),
         ),
         const _Heading('Layout'),
-        FormidableSegmentedButton(
+        FormidableMaterialSegmentedButton(
           field: form.layout,
           segments: const [
             ButtonSegment(value: Layout.grid, label: Text('Grid')),
@@ -136,7 +145,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                 onChanged: (position) =>
                     control.didChange(position, touch: true),
               ),
-              FormidableErrorLine(text: control.errorText),
+              FormidableMaterialErrorLine(text: control.errorText),
             ],
           ),
         ),

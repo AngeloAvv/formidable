@@ -16,9 +16,9 @@ void main() {
       preferencesApp(field, onCreated: (created) => form = created);
 
   const plans = [
-    FormidableRadioOption(value: Plan.free, title: Text('Free')),
-    FormidableRadioOption(value: Plan.plus, title: Text('Plus')),
-    FormidableRadioOption(value: Plan.pro, title: Text('Pro')),
+    FormidableMaterialRadioOption(value: Plan.free, title: Text('Free')),
+    FormidableMaterialRadioOption(value: Plan.plus, title: Text('Plus')),
+    FormidableMaterialRadioOption(value: Plan.pro, title: Text('Pro')),
   ];
 
   // Whether the radio next to [label] is shown as selected.
@@ -30,11 +30,14 @@ void main() {
           .isChecked ==
       CheckedState.isTrue;
 
-  group('FormidableRadioGroup', () {
+  group('FormidableMaterialRadioGroup', () {
     testWidgets('selects nothing while the Field is Unset', (tester) async {
       final handle = tester.ensureSemantics();
       await tester.pumpWidget(
-        app((form) => FormidableRadioGroup(field: form.size, options: plans)),
+        app(
+          (form) =>
+              FormidableMaterialRadioGroup(field: form.size, options: plans),
+        ),
       );
 
       expect(
@@ -51,7 +54,10 @@ void main() {
     ) async {
       final handle = tester.ensureSemantics();
       await tester.pumpWidget(
-        app((form) => FormidableRadioGroup(field: form.size, options: plans)),
+        app(
+          (form) =>
+              FormidableMaterialRadioGroup(field: form.size, options: plans),
+        ),
       );
 
       form.size.setValue(Plan.plus);
@@ -66,7 +72,10 @@ void main() {
       'sets the Field and marks it touched when an option is tapped',
       (tester) async {
         await tester.pumpWidget(
-          app((form) => FormidableRadioGroup(field: form.size, options: plans)),
+          app(
+            (form) =>
+                FormidableMaterialRadioGroup(field: form.size, options: plans),
+          ),
         );
         expect(form.size.state.touched, isFalse);
 
@@ -82,7 +91,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableRadioGroup(field: form.size, options: plans)),
+        app(
+          (form) =>
+              FormidableMaterialRadioGroup(field: form.size, options: plans),
+        ),
       );
       expect(find.text('This field is required.'), findsNothing);
 
@@ -94,9 +106,12 @@ void main() {
 
     group('with an option that represents null', () {
       const choices = [
-        FormidableRadioOption(value: null, title: Text('No preference')),
-        FormidableRadioOption(value: true, title: Text('Yes')),
-        FormidableRadioOption(value: false, title: Text('No')),
+        FormidableMaterialRadioOption(
+          value: null,
+          title: Text('No preference'),
+        ),
+        FormidableMaterialRadioOption(value: true, title: Text('Yes')),
+        FormidableMaterialRadioOption(value: false, title: Text('No')),
       ];
 
       testWidgets('an Unset Field selects no option, not even the null one', (
@@ -105,8 +120,10 @@ void main() {
         final handle = tester.ensureSemantics();
         await tester.pumpWidget(
           app(
-            (form) =>
-                FormidableRadioGroup(field: form.contact, options: choices),
+            (form) => FormidableMaterialRadioGroup(
+              field: form.contact,
+              options: choices,
+            ),
           ),
         );
 
@@ -121,8 +138,10 @@ void main() {
         final handle = tester.ensureSemantics();
         await tester.pumpWidget(
           app(
-            (form) =>
-                FormidableRadioGroup(field: form.contact, options: choices),
+            (form) => FormidableMaterialRadioGroup(
+              field: form.contact,
+              options: choices,
+            ),
           ),
         );
         form.contact.markAsTouched();
@@ -146,8 +165,10 @@ void main() {
         final handle = tester.ensureSemantics();
         await tester.pumpWidget(
           app(
-            (form) =>
-                FormidableRadioGroup(field: form.contact, options: choices),
+            (form) => FormidableMaterialRadioGroup(
+              field: form.contact,
+              options: choices,
+            ),
           ),
         );
 

@@ -11,8 +11,8 @@ import 'error_text.dart';
 ///
 /// It exposes the most common parameters. For everything else, build a
 /// `Switch` from a [FormidableFieldWidget].
-class FormidableSwitch extends FormidableFieldWidget<bool, bool> {
-  FormidableSwitch({
+class FormidableMaterialSwitch extends FormidableFieldWidget<bool, bool> {
+  FormidableMaterialSwitch({
     super.key,
     required super.field,
     Widget? title,
@@ -47,7 +47,7 @@ class FormidableSwitch extends FormidableFieldWidget<bool, bool> {
              mainAxisSize: MainAxisSize.min,
              children: [
                toggle,
-               FormidableErrorLine(text: control.errorText),
+               FormidableMaterialErrorLine(text: control.errorText),
              ],
            );
          },

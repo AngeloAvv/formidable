@@ -17,9 +17,9 @@ import 'picker_field.dart';
 ///
 /// It exposes the most common parameters. For everything else, call
 /// `showTimePicker` from a [FormidableFieldWidget].
-class FormidableTimePicker<T extends TimeOfDay?>
+class FormidableMaterialTimePicker<T extends TimeOfDay?>
     extends FormidableFieldWidget<T, T> {
-  FormidableTimePicker({
+  FormidableMaterialTimePicker({
     super.key,
     required super.field,
     InputDecoration decoration = const InputDecoration(),
@@ -36,7 +36,7 @@ class FormidableTimePicker<T extends TimeOfDay?>
            final value = control.value;
            final formatter =
                format ?? MaterialLocalizations.of(context).formatTimeOfDay;
-           return FormidablePickerField(
+           return FormidableMaterialPickerField(
              focusNode: control.focusNode,
              enabled: control.enabled,
              errorText: control.errorText,

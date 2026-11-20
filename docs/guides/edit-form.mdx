@@ -95,7 +95,7 @@ The Fields of a Nested Form are typed handles reached through the parent Form:
 ```dart
 // example/lib/contact/contact_material.dart
 // A Nested Form: its Fields are typed handles like any other.
-FormidableTextField(
+FormidableMaterialTextField(
   key: const Key('street'),
   field: form.address.street,
   decoration: const InputDecoration(
@@ -104,7 +104,7 @@ FormidableTextField(
   ),
 ),
 // ...
-FormidableSegmentedButton<String>(
+FormidableMaterialSegmentedButton<String>(
   field: form.address.country,
   segments: const [
     ButtonSegment(value: 'IT', label: Text('Italy')),

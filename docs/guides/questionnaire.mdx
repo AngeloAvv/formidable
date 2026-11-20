@@ -90,7 +90,7 @@ void removeQuestions(SurveyForm form) {
 ```dart
 // example/lib/survey/survey_material.dart
 Widget _answer(SurveyForm form, Question question) => switch (question) {
-  NumberQuestion(:final key, :final label) => FormidableTextField<int>(
+  NumberQuestion(:final key, :final label) => FormidableMaterialTextField<int>(
     key: Key('answer-$key'),
     field: form.answers.field<int>(key),
     keyboardType: TextInputType.number,
@@ -101,7 +101,7 @@ Widget _answer(SurveyForm form, Question question) => switch (question) {
   ),
   TextQuestion(:final key, :final label, :final required) =>
     required
-        ? FormidableTextField<String>(
+        ? FormidableMaterialTextField<String>(
             key: Key('answer-$key'),
             field: form.answers.field<String>(key),
             decoration: InputDecoration(
@@ -109,7 +109,7 @@ Widget _answer(SurveyForm form, Question question) => switch (question) {
               border: const OutlineInputBorder(),
             ),
           )
-        : FormidableTextField<String?>(
+        : FormidableMaterialTextField<String?>(
             key: Key('answer-$key'),
             field: form.answers.field<String?>(key),
             decoration: InputDecoration(
@@ -117,7 +117,7 @@ Widget _answer(SurveyForm form, Question question) => switch (question) {
               border: const OutlineInputBorder(),
             ),
           ),
-  YesNoQuestion(:final key, :final label) => FormidableSwitch(
+  YesNoQuestion(:final key, :final label) => FormidableMaterialSwitch(
     key: Key('answer-$key'),
     field: form.answers.field<bool>(key),
     title: Text(label),

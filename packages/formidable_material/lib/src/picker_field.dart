@@ -6,8 +6,8 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// Internal: it is not exported from the package, so it is not part of its
 /// public API.
-class FormidablePickerField extends StatelessWidget {
-  const FormidablePickerField({
+class FormidableMaterialPickerField extends StatelessWidget {
+  const FormidableMaterialPickerField({
     super.key,
     required this.focusNode,
     required this.enabled,

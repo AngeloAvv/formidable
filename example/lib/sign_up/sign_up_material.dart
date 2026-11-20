@@ -55,7 +55,7 @@ class _SignUpBodyState extends State<_SignUpBody> {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 16,
       children: [
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('username'),
           field: form.username,
           decoration: const InputDecoration(
@@ -64,7 +64,7 @@ class _SignUpBodyState extends State<_SignUpBody> {
           ),
         ),
         _Checking(form.username),
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('password'),
           field: form.password,
           obscureText: true,
@@ -73,7 +73,7 @@ class _SignUpBodyState extends State<_SignUpBody> {
             border: OutlineInputBorder(),
           ),
         ),
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('confirmation'),
           field: form.confirmation,
           obscureText: true,
@@ -82,14 +82,14 @@ class _SignUpBodyState extends State<_SignUpBody> {
             border: OutlineInputBorder(),
           ),
         ),
-        FormidableSegmentedButton<AccountType>(
+        FormidableMaterialSegmentedButton<AccountType>(
           field: form.type,
           segments: const [
             ButtonSegment(value: AccountType.personal, label: Text('Personal')),
             ButtonSegment(value: AccountType.company, label: Text('Company')),
           ],
         ),
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('vat'),
           field: form.vat,
           decoration: const InputDecoration(

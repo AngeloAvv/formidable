@@ -12,12 +12,12 @@ void main() {
   Widget app(Widget Function(PreferencesForm form) field) =>
       preferencesApp(field, onCreated: (created) => form = created);
 
-  group('FormidableSwitch', () {
+  group('FormidableMaterialSwitch', () {
     testWidgets('shows an Unset Field as off and the value once set', (
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableSwitch(field: form.notifications)),
+        app((form) => FormidableMaterialSwitch(field: form.notifications)),
       );
       expect(tester.widget<Switch>(find.byType(Switch)).value, isFalse);
 
@@ -31,7 +31,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableSwitch(field: form.notifications)),
+        app((form) => FormidableMaterialSwitch(field: form.notifications)),
       );
       expect(form.notifications.state.touched, isFalse);
 
@@ -46,7 +46,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableSwitch(field: form.notifications)),
+        app((form) => FormidableMaterialSwitch(field: form.notifications)),
       );
       expect(find.text('This field is required.'), findsNothing);
 
@@ -61,7 +61,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         app(
-          (form) => FormidableSwitch(
+          (form) => FormidableMaterialSwitch(
             field: form.notifications,
             title: const Text('Notify me'),
           ),

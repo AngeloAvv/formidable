@@ -33,15 +33,15 @@ void main() {
   Widget threeFields() => app(
     (context) => Column(
       children: [
-        FormidableTextField<String>(
+        FormidableMaterialTextField<String>(
           field: context.shippingForm.name,
           decoration: const InputDecoration(labelText: 'Name'),
         ),
-        FormidableTextField<String>(
+        FormidableMaterialTextField<String>(
           field: context.shippingForm.street,
           decoration: const InputDecoration(labelText: 'Street'),
         ),
-        FormidableTextField<String>(
+        FormidableMaterialTextField<String>(
           field: context.shippingForm.city,
           decoration: const InputDecoration(labelText: 'City'),
         ),
@@ -72,7 +72,7 @@ void main() {
     return Column(
       children: [
         for (final name in names)
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             key: Key(name),
             field: byName[name]!,
             focusNode: focusNodes?.call(name),
@@ -169,12 +169,12 @@ void main() {
         app(
           (context) => Column(
             children: [
-              FormidableTextField<String>(
+              FormidableMaterialTextField<String>(
                 field: context.shippingForm.name,
                 textInputAction: TextInputAction.search,
                 decoration: const InputDecoration(labelText: 'Name'),
               ),
-              FormidableTextField<String>(
+              FormidableMaterialTextField<String>(
                 field: context.shippingForm.street,
                 decoration: const InputDecoration(labelText: 'Street'),
               ),
@@ -194,12 +194,12 @@ void main() {
         app(
           (context) => Column(
             children: [
-              FormidableTextField<String>(
+              FormidableMaterialTextField<String>(
                 field: context.shippingForm.name,
                 onEditingComplete: () => completed++,
                 decoration: const InputDecoration(labelText: 'Name'),
               ),
-              FormidableTextField<String>(
+              FormidableMaterialTextField<String>(
                 field: context.shippingForm.street,
                 decoration: const InputDecoration(labelText: 'Street'),
               ),
@@ -220,15 +220,15 @@ void main() {
     Widget twoOnName() => app(
       (context) => Column(
         children: [
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: context.shippingForm.name,
             decoration: const InputDecoration(labelText: 'First'),
           ),
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: context.shippingForm.name,
             decoration: const InputDecoration(labelText: 'Second'),
           ),
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: context.shippingForm.street,
             decoration: const InputDecoration(labelText: 'Street'),
           ),
@@ -333,12 +333,12 @@ void main() {
       app(
         (context) => Column(
           children: [
-            FormidableTextField<String>(
+            FormidableMaterialTextField<String>(
               field: context.shippingForm.name,
               maxLines: 3,
               decoration: const InputDecoration(labelText: 'Name'),
             ),
-            FormidableTextField<String>(
+            FormidableMaterialTextField<String>(
               field: context.shippingForm.street,
               decoration: const InputDecoration(labelText: 'Street'),
             ),

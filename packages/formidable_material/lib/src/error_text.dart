@@ -6,8 +6,8 @@ import 'package:material_ui/material_ui.dart';
 /// Pass it `control.errorText` when you build your own widget on a
 /// `FormidableFieldWidget`, so that it shows the Validation Message like the
 /// widgets of this package do.
-class FormidableErrorLine extends StatelessWidget {
-  const FormidableErrorLine({super.key, required this.text});
+class FormidableMaterialErrorLine extends StatelessWidget {
+  const FormidableMaterialErrorLine({super.key, required this.text});
 
   final String? text;
 

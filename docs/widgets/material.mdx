@@ -8,7 +8,7 @@ description: Checkbox, switch, radio group, slider, dropdown, date and time pick
 `formidable_material` ships one widget for each common input. Every one is a [Field Widget](/widgets), built on `material_ui`, and binds to a Field with no glue code:
 
 ```dart
-FormidableCheckbox(field: form.acceptedTerms, title: const Text('I accept the terms'))
+FormidableMaterialCheckbox(field: form.acceptedTerms, title: const Text('I accept the terms'))
 ```
 
 They all behave the same way:
@@ -20,21 +20,21 @@ They all behave the same way:
 
 | Widget | Field type | Notes |
 | --- | --- | --- |
-| `FormidableCheckbox` | `bool`, `bool?` | `title` makes the whole row tappable. `tristate: true` lets a `bool?` Field choose null. |
-| `FormidableSwitch` | `bool` | `title` makes the whole row tappable. |
-| `FormidableRadioGroup<T>` | any `T` | `options` are `FormidableRadioOption(value:, title:)`. One option can have the value `null` (see below). |
-| `FormidableSlider<T>` | `double`, `int`, `num`, nullable or not | `min`, `max`, `divisions`, `labelBuilder`. An `int` Field gets rounded values. |
-| `FormidableDropdown<T>` | any `T` | `items` are the usual `DropdownMenuItem`s. `hint` shows while Unset. |
-| `FormidableDatePicker` | `DateTime`, `DateTime?` | Opens `showDatePicker`. `firstDate`, `lastDate`, `initialDate`, `format`, `clearable`. |
-| `FormidableTimePicker` | `TimeOfDay`, `TimeOfDay?` | Opens `showTimePicker`. `initialTime`, `format`, `clearable`. |
-| `FormidableSegmentedButton<T>` | any `T` | One segment at a time. `allowDeselect` lets the user go back to Unset. |
+| `FormidableMaterialCheckbox` | `bool`, `bool?` | `title` makes the whole row tappable. `tristate: true` lets a `bool?` Field choose null. |
+| `FormidableMaterialSwitch` | `bool` | `title` makes the whole row tappable. |
+| `FormidableMaterialRadioGroup<T>` | any `T` | `options` are `FormidableMaterialRadioOption(value:, title:)`. One option can have the value `null` (see below). |
+| `FormidableMaterialSlider<T>` | `double`, `int`, `num`, nullable or not | `min`, `max`, `divisions`, `labelBuilder`. An `int` Field gets rounded values. |
+| `FormidableMaterialDropdown<T>` | any `T` | `items` are the usual `DropdownMenuItem`s. `hint` shows while Unset. |
+| `FormidableMaterialDatePicker` | `DateTime`, `DateTime?` | Opens `showDatePicker`. `firstDate`, `lastDate`, `initialDate`, `format`, `clearable`. |
+| `FormidableMaterialTimePicker` | `TimeOfDay`, `TimeOfDay?` | Opens `showTimePicker`. `initialTime`, `format`, `clearable`. |
+| `FormidableMaterialSegmentedButton<T>` | any `T` | One segment at a time. `allowDeselect` lets the user go back to Unset. |
 
 ## The text field
 
-`FormidableTextField` takes every parameter of Flutter's `TextField`: `style`, `textAlign`, `textAlignVertical`, `inputFormatters`, `maxLength`, `autofillHints`, `onTap`, `onSubmitted`, `contextMenuBuilder` and the rest. Formidable owns four things, so they are not parameters: the `controller` (the Field is the source of truth), `enabled` (the Field says it), `onChanged` (follow the Field instead, with a `FormidableFieldListener`) and the deprecated parameters.
+`FormidableMaterialTextField` takes every parameter of Flutter's `TextField`: `style`, `textAlign`, `textAlignVertical`, `inputFormatters`, `maxLength`, `autofillHints`, `onTap`, `onSubmitted`, `contextMenuBuilder` and the rest. Formidable owns four things, so they are not parameters: the `controller` (the Field is the source of truth), `enabled` (the Field says it), `onChanged` (follow the Field instead, with a `FormidableFieldListener`) and the deprecated parameters.
 
 ```dart
-FormidableTextField<String>(
+FormidableMaterialTextField<String>(
   field: form.username,
   style: const TextStyle(fontWeight: FontWeight.w600),
   textAlignVertical: TextAlignVertical.center,
@@ -54,7 +54,7 @@ For a decoration that depends on the value, build the widget inside a `Formidabl
 ```dart
 FormidableFieldBuilder<String>(
   field: form.search,
-  builder: (context, state) => FormidableTextField<String>(
+  builder: (context, state) => FormidableMaterialTextField<String>(
     field: form.search,
     decoration: InputDecoration(
       suffixIcon: state.isSet
@@ -81,12 +81,12 @@ final bool? contactByEmail;
 ```
 
 ```dart
-FormidableRadioGroup(
+FormidableMaterialRadioGroup(
   field: form.contactByEmail,
   options: const [
-    FormidableRadioOption(value: null, title: Text('No preference')),
-    FormidableRadioOption(value: true, title: Text('Yes')),
-    FormidableRadioOption(value: false, title: Text('No')),
+    FormidableMaterialRadioOption(value: null, title: Text('No preference')),
+    FormidableMaterialRadioOption(value: true, title: Text('Yes')),
+    FormidableMaterialRadioOption(value: false, title: Text('No')),
   ],
 )
 ```

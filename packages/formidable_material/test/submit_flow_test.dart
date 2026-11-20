@@ -58,12 +58,12 @@ void main() {
       child: Builder(
         builder: (context) => Column(
           children: [
-            FormidableTextField(
+            FormidableMaterialTextField(
               field: context.loginForm.username,
               focusNode: usernameFocus,
               decoration: const InputDecoration(labelText: 'Username'),
             ),
-            FormidableTextField(
+            FormidableMaterialTextField(
               field: context.loginForm.password,
               focusNode: passwordFocus,
               decoration: const InputDecoration(labelText: 'Password'),

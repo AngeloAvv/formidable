@@ -15,12 +15,15 @@ void main() {
   double thumb(WidgetTester tester) =>
       tester.widget<Slider>(find.byType(Slider)).value;
 
-  group('FormidableSlider', () {
+  group('FormidableMaterialSlider', () {
     testWidgets('rests at min while the Field is Unset, and stays Unset', (
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableSlider(field: form.volume, min: 2, max: 8)),
+        app(
+          (form) =>
+              FormidableMaterialSlider(field: form.volume, min: 2, max: 8),
+        ),
       );
 
       expect(thumb(tester), 2);
@@ -31,7 +34,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableSlider(field: form.volume, max: 10)),
+        app((form) => FormidableMaterialSlider(field: form.volume, max: 10)),
       );
 
       form.volume.setValue(4);
@@ -47,7 +50,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableSlider(field: form.volume, max: 10)),
+        app((form) => FormidableMaterialSlider(field: form.volume, max: 10)),
       );
       expect(form.volume.state.touched, isFalse);
 
@@ -61,7 +64,7 @@ void main() {
 
     testWidgets('writes a whole number to an int Field', (tester) async {
       await tester.pumpWidget(
-        app((form) => FormidableSlider(field: form.rating, max: 5)),
+        app((form) => FormidableMaterialSlider(field: form.rating, max: 5)),
       );
 
       tester.widget<Slider>(find.byType(Slider)).onChanged!(2.6);
@@ -75,7 +78,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableSlider(field: form.volume)),
+        app((form) => FormidableMaterialSlider(field: form.volume)),
       );
       expect(find.text('This field is required.'), findsNothing);
 
@@ -88,7 +91,7 @@ void main() {
     testWidgets('labels the thumb with labelBuilder', (tester) async {
       await tester.pumpWidget(
         app(
-          (form) => FormidableSlider(
+          (form) => FormidableMaterialSlider(
             field: form.rating,
             max: 5,
             divisions: 5,
