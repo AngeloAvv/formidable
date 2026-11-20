@@ -1,5 +1,5 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
-import 'package:formidable/formidable.dart';
+import 'package:formidable/formidable.dart' hide Color;
 import 'package:formidable_flutter/formidable_flutter.dart';
 
 import 'error_caption.dart';

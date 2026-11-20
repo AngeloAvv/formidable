@@ -33,6 +33,8 @@
         { "title": "Number Validators", "href": "/validation/numbers" },
         { "title": "Date Validators", "href": "/validation/dates" },
         { "title": "Choice and equality Validators", "href": "/validation/choices" },
+        { "title": "String Validators", "href": "/validation/strings" },
+        { "title": "Format Validators", "href": "/validation/formats" },
         { "title": "Custom Validators", "href": "/validation/custom" },
         { "title": "Normalizers", "href": "/validation/normalizers" },
         { "title": "Messages and localization", "href": "/validation/messages" }

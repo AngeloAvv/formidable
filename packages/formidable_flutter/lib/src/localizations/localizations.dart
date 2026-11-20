@@ -5,6 +5,7 @@ import 'package:formidable/formidable.dart';
 import 'categories/choices.dart';
 import 'categories/combinators.dart';
 import 'categories/dates.dart';
+import 'categories/formats.dart';
 import 'categories/numbers.dart';
 import 'categories/parsing.dart';
 import 'categories/presence.dart';
@@ -25,6 +26,7 @@ abstract class FormidableLocalizations
         FormidableChoiceMessages,
         FormidableCombinatorMessages,
         FormidableDateMessages,
+        FormidableFormatMessages,
         FormidableNumberMessages,
         FormidableParsingMessages,
         FormidablePresenceMessages,
@@ -68,6 +70,7 @@ abstract class FormidableLocalizations
   String? messageOf(FormidableValidationError error) =>
       presenceMessageOf(error) ??
       stringMessageOf(error) ??
+      formatMessageOf(error) ??
       combinatorMessageOf(error) ??
       parsingMessageOf(error) ??
       numberMessageOf(error) ??
@@ -81,6 +84,7 @@ class FormidableLocalizationsEn extends FormidableLocalizations
         FormidableChoiceMessagesEn,
         FormidableCombinatorMessagesEn,
         FormidableDateMessagesEn,
+        FormidableFormatMessagesEn,
         FormidableNumberMessagesEn,
         FormidableParsingMessagesEn,
         FormidablePresenceMessagesEn,
@@ -94,6 +98,7 @@ class FormidableLocalizationsIt extends FormidableLocalizations
         FormidableChoiceMessagesIt,
         FormidableCombinatorMessagesIt,
         FormidableDateMessagesIt,
+        FormidableFormatMessagesIt,
         FormidableNumberMessagesIt,
         FormidableParsingMessagesIt,
         FormidablePresenceMessagesIt,
@@ -107,6 +112,7 @@ class FormidableLocalizationsEs extends FormidableLocalizations
         FormidableChoiceMessagesEs,
         FormidableCombinatorMessagesEs,
         FormidableDateMessagesEs,
+        FormidableFormatMessagesEs,
         FormidableNumberMessagesEs,
         FormidableParsingMessagesEs,
         FormidablePresenceMessagesEs,
@@ -120,6 +126,7 @@ class FormidableLocalizationsFr extends FormidableLocalizations
         FormidableChoiceMessagesFr,
         FormidableCombinatorMessagesFr,
         FormidableDateMessagesFr,
+        FormidableFormatMessagesFr,
         FormidableNumberMessagesFr,
         FormidableParsingMessagesFr,
         FormidablePresenceMessagesFr,
@@ -133,6 +140,7 @@ class FormidableLocalizationsDe extends FormidableLocalizations
         FormidableChoiceMessagesDe,
         FormidableCombinatorMessagesDe,
         FormidableDateMessagesDe,
+        FormidableFormatMessagesDe,
         FormidableNumberMessagesDe,
         FormidableParsingMessagesDe,
         FormidablePresenceMessagesDe,
