@@ -133,6 +133,6 @@ To rebuild when anything in the Form changes, use the generated `SignUpFormBuild
 - the Field becomes **touched** when the text field loses focus;
 - the Validation Message is shown once the Field is touched. When there are several errors, the first one in the order of the annotations is shown.
 
-It takes every parameter of `TextField`, and merges your `decoration` with the Validation Message instead of replacing it. Under the hood it is a `FormidableFieldWidget`, the base of every Formidable widget, which works with any widget. See [Field Widgets](/widgets).
+It takes every parameter of `TextField`, and merges your `decoration` (or the one your `decorationBuilder` returns for the state of the widget) with the Validation Message instead of replacing it. Under the hood it is a `FormidableFieldWidget`, the base of every Formidable widget, which works with any widget. See [Field Widgets](/widgets).
 
 The `example` folder of the repository contains this flow, and every other feature, as a runnable app that shows Material and Cupertino side by side. Continue with the [guides](/guides): a sign-up form, an edit form, dynamic lists and a multi-step wizard.
