@@ -18,11 +18,10 @@ typedef FormidableCupertinoTextFieldDecorationBuilder<T> =
 
 /// Builds the [TextStyle] of a [FormidableCupertinoTextField] from its
 /// [control]. Null gives the default style of [CupertinoTextField].
-typedef FormidableCupertinoTextFieldStyleBuilder<T> =
-    TextStyle? Function(
-      BuildContext context,
-      FormidableFieldWidgetState<T, String> control,
-    );
+typedef FormidableCupertinoTextFieldStyleBuilder<T> = TextStyle? Function(
+  BuildContext context,
+  FormidableFieldWidgetState<T, String> control,
+);
 
 /// Builds a widget of a [FormidableCupertinoTextField], such as its prefix or
 /// suffix, from its [control]. Null shows nothing.
