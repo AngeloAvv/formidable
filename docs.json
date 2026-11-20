@@ -30,6 +30,7 @@
       "pages": [
         { "title": "Validators", "href": "/validation" },
         { "title": "Custom Validators", "href": "/validation/custom" },
+        { "title": "Cross-field rules", "href": "/validation/cross-field" },
         { "title": "Normalizers", "href": "/validation/normalizers" },
         { "title": "Messages and localization", "href": "/validation/messages" }
       ]

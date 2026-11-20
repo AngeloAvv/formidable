@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:formidable/formidable.dart';
 
 import 'categories/combinators.dart';
+import 'categories/cross_field.dart';
 import 'categories/parsing.dart';
 import 'categories/presence.dart';
 import 'categories/strings.dart';
@@ -20,6 +21,7 @@ import 'categories/strings.dart';
 abstract class FormidableLocalizations
     with
         FormidableCombinatorMessages,
+        FormidableCrossFieldMessages,
         FormidableParsingMessages,
         FormidablePresenceMessages,
         FormidableStringMessages {
@@ -63,6 +65,7 @@ abstract class FormidableLocalizations
       presenceMessageOf(error) ??
       stringMessageOf(error) ??
       combinatorMessageOf(error) ??
+      crossFieldMessageOf(error) ??
       parsingMessageOf(error);
 }
 
@@ -70,6 +73,7 @@ abstract class FormidableLocalizations
 class FormidableLocalizationsEn extends FormidableLocalizations
     with
         FormidableCombinatorMessagesEn,
+        FormidableCrossFieldMessagesEn,
         FormidableParsingMessagesEn,
         FormidablePresenceMessagesEn,
         FormidableStringMessagesEn {
@@ -80,6 +84,7 @@ class FormidableLocalizationsEn extends FormidableLocalizations
 class FormidableLocalizationsIt extends FormidableLocalizations
     with
         FormidableCombinatorMessagesIt,
+        FormidableCrossFieldMessagesIt,
         FormidableParsingMessagesIt,
         FormidablePresenceMessagesIt,
         FormidableStringMessagesIt {
@@ -90,6 +95,7 @@ class FormidableLocalizationsIt extends FormidableLocalizations
 class FormidableLocalizationsEs extends FormidableLocalizations
     with
         FormidableCombinatorMessagesEs,
+        FormidableCrossFieldMessagesEs,
         FormidableParsingMessagesEs,
         FormidablePresenceMessagesEs,
         FormidableStringMessagesEs {
@@ -100,6 +106,7 @@ class FormidableLocalizationsEs extends FormidableLocalizations
 class FormidableLocalizationsFr extends FormidableLocalizations
     with
         FormidableCombinatorMessagesFr,
+        FormidableCrossFieldMessagesFr,
         FormidableParsingMessagesFr,
         FormidablePresenceMessagesFr,
         FormidableStringMessagesFr {
@@ -110,6 +117,7 @@ class FormidableLocalizationsFr extends FormidableLocalizations
 class FormidableLocalizationsDe extends FormidableLocalizations
     with
         FormidableCombinatorMessagesDe,
+        FormidableCrossFieldMessagesDe,
         FormidableParsingMessagesDe,
         FormidablePresenceMessagesDe,
         FormidableStringMessagesDe {

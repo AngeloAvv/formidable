@@ -52,7 +52,18 @@ String emitForm(SchemaModel schema) {
   final validators = schema.formValidators.isEmpty
       ? ''
       : ', formValidators: [${schema.formValidators.join(', ')}]';
-  out.writeln('    attach<$form>([$nodes]$effects$validators);');
+  final rules = [
+    for (final f in fields)
+      for (final rule in f.crossFieldRules)
+        'FormidableCrossFieldBinding(${rule.source}, this.${f.name}, '
+            '[${rule.references.map((r) => 'this.$r').join(', ')}])',
+  ];
+  final crossFieldRules = rules.isEmpty
+      ? ''
+      : ', crossFieldRules: [${rules.join(', ')}]';
+  out.writeln(
+    '    attach<$form>([$nodes]$effects$validators$crossFieldRules);',
+  );
   out.writeln('  }');
   for (final f in fields) {
     out.writeln();
