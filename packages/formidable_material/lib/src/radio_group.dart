@@ -1,4 +1,3 @@
-import 'package:formidable/formidable.dart';
 import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -30,50 +29,43 @@ class FormidableRadioOption<T> {
 /// shows below the group from then on.
 ///
 /// It exposes the most common parameters. For everything else, build a
-/// `RadioGroup` from a [FormidableBindingBuilder].
-class FormidableRadioGroup<T> extends StatelessWidget {
-  const FormidableRadioGroup({
+/// `RadioGroup` from a [FormidableFieldWidget].
+class FormidableRadioGroup<T> extends FormidableFieldWidget<T, T> {
+  FormidableRadioGroup({
     super.key,
-    required this.field,
-    required this.options,
-    this.messages,
-  });
-
-  final FormidableField<T> field;
-  final List<FormidableRadioOption<T>> options;
-
-  /// Messages for this widget only, ahead of the config and the localizations.
-  final FormidableMessages? messages;
-
-  @override
-  Widget build(BuildContext context) => FormidableBindingBuilder<T>(
-    field: field,
-    messages: messages,
-    builder: (context, binding) => Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Values are boxed in a record so that "nothing selected" (a null
-        // group value) is different from the option whose value is null.
-        RadioGroup<(T,)>(
-          groupValue: binding.isSet ? (binding.value as T,) : null,
-          onChanged: (choice) {
-            if (binding.enabled && choice != null) binding.onPicked(choice.$1);
-          },
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final option in options)
-                RadioListTile<(T,)>(
-                  value: (option.value,),
-                  title: option.title,
-                  subtitle: option.subtitle,
-                ),
-            ],
-          ),
-        ),
-        FormidableErrorLine(text: binding.errorText),
-      ],
-    ),
-  );
+    required super.field,
+    required List<FormidableRadioOption<T>> options,
+    super.messages,
+    super.errorDisplay,
+    super.focusNode,
+  }) : super(
+         builder: (context, control) => Column(
+           crossAxisAlignment: CrossAxisAlignment.start,
+           mainAxisSize: MainAxisSize.min,
+           children: [
+             // Values are boxed in a record so that "nothing selected" (a null
+             // group value) is different from the option whose value is null.
+             RadioGroup<(T,)>(
+               groupValue: control.isSet ? (control.value as T,) : null,
+               onChanged: (choice) {
+                 if (control.enabled && choice != null) {
+                   control.didChange(choice.$1, touch: true);
+                 }
+               },
+               child: Column(
+                 mainAxisSize: MainAxisSize.min,
+                 children: [
+                   for (final option in options)
+                     RadioListTile<(T,)>(
+                       value: (option.value,),
+                       title: option.title,
+                       subtitle: option.subtitle,
+                     ),
+                 ],
+               ),
+             ),
+             FormidableErrorLine(text: control.errorText),
+           ],
+         ),
+       );
 }

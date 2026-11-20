@@ -1,8 +1,8 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
-import 'package:formidable/formidable.dart';
 import 'package:formidable_flutter/formidable_flutter.dart';
 
 import 'error_caption.dart';
+import 'wheels.dart';
 
 /// A Cupertino date and time picker bound to a `DateTime` Field.
 ///
@@ -16,77 +16,44 @@ import 'error_caption.dart';
 /// widget start the wheels again on it. Changes made by the user never do.
 ///
 /// For everything else, build a `CupertinoDatePicker` from a
-/// [FormidableBindingBuilder].
-class FormidableCupertinoDatePicker extends StatefulWidget {
-  const FormidableCupertinoDatePicker({
+/// [FormidableFieldWidget].
+class FormidableCupertinoDatePicker
+    extends FormidableFieldWidget<DateTime?, DateTime?> {
+  FormidableCupertinoDatePicker({
     super.key,
-    required this.field,
-    this.mode = CupertinoDatePickerMode.dateAndTime,
-    this.minimumDate,
-    this.maximumDate,
-    this.minuteInterval = 1,
-    this.use24hFormat = false,
-    this.height = 216,
-    this.messages,
-  });
-
-  final FormidableField<DateTime?> field;
-  final CupertinoDatePickerMode mode;
-  final DateTime? minimumDate;
-  final DateTime? maximumDate;
-  final int minuteInterval;
-  final bool use24hFormat;
-
-  /// The height of the wheels. A picker has no height of its own.
-  final double height;
-
-  /// Messages for this widget only, ahead of the config and the localizations.
-  final FormidableMessages? messages;
-
-  @override
-  State<FormidableCupertinoDatePicker> createState() =>
-      _FormidableCupertinoDatePickerState();
-}
-
-class _FormidableCupertinoDatePickerState
-    extends State<FormidableCupertinoDatePicker> {
-  // What the wheels last reported. A different Field value came from code, and
-  // the wheels start again on it (a new key), because they never follow their
-  // initial value on their own.
-  DateTime? _reported;
-  int _revision = 0;
+    required super.field,
+    CupertinoDatePickerMode mode = CupertinoDatePickerMode.dateAndTime,
+    DateTime? minimumDate,
+    DateTime? maximumDate,
+    int minuteInterval = 1,
+    bool use24hFormat = false,
+    double height = 216,
+    super.messages,
+    super.errorDisplay,
+    super.focusNode,
+  }) : super(
+         builder: (context, control) {
+           final wheels = control as FormidableWheelsState<DateTime>;
+           return FormidableCupertinoErrorCaption(
+             errorText: control.errorText,
+             child: SizedBox(
+               height: height,
+               child: CupertinoDatePicker(
+                 key: wheels.keyFor(control.value),
+                 mode: mode,
+                 initialDateTime: control.value,
+                 minimumDate: minimumDate,
+                 maximumDate: maximumDate,
+                 minuteInterval: minuteInterval,
+                 use24hFormat: use24hFormat,
+                 onDateTimeChanged: wheels.wheelsChanged,
+               ),
+             ),
+           );
+         },
+       );
 
   @override
-  Widget build(BuildContext context) => FormidableBindingBuilder<DateTime?>(
-    field: widget.field,
-    messages: widget.messages,
-    builder: (context, binding) {
-      final value = binding.value;
-      if (value != null && value != _reported) {
-        _reported = value;
-        _revision++;
-      }
-      return FormidableCupertinoErrorCaption(
-        binding: binding,
-        child: SizedBox(
-          height: widget.height,
-          child: CupertinoDatePicker(
-            key: ValueKey(_revision),
-            mode: widget.mode,
-            initialDateTime: value,
-            minimumDate: widget.minimumDate,
-            maximumDate: widget.maximumDate,
-            minuteInterval: widget.minuteInterval,
-            use24hFormat: widget.use24hFormat,
-            onDateTimeChanged: (date) {
-              if (!binding.enabled) return;
-              _reported = date;
-              binding.onTouched();
-              binding.onChanged(date);
-            },
-          ),
-        ),
-      );
-    },
-  );
+  State<FormidableFieldWidget<DateTime?, DateTime?>> createState() =>
+      FormidableWheelsState<DateTime>();
 }

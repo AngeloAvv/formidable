@@ -1,5 +1,4 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
-import 'package:formidable/formidable.dart';
 import 'package:formidable_flutter/formidable_flutter.dart';
 
 import 'error_caption.dart';
@@ -12,37 +11,29 @@ import 'error_caption.dart';
 /// first interaction.
 ///
 /// For everything else, build a `CupertinoSegmentedControl` from a
-/// [FormidableBindingBuilder].
+/// [FormidableFieldWidget].
 class FormidableCupertinoSegmentedControl<T extends Object>
-    extends StatelessWidget {
-  const FormidableCupertinoSegmentedControl({
+    extends FormidableFieldWidget<T?, T?> {
+  FormidableCupertinoSegmentedControl({
     super.key,
-    required this.field,
-    required this.children,
-    this.messages,
-  });
-
-  final FormidableField<T?> field;
-  final Map<T, Widget> children;
-
-  /// Messages for this widget only, ahead of the config and the localizations.
-  final FormidableMessages? messages;
-
-  @override
-  Widget build(BuildContext context) => FormidableBindingBuilder<T?>(
-    field: field,
-    messages: messages,
-    builder: (context, binding) => FormidableCupertinoErrorCaption(
-      binding: binding,
-      child: CupertinoSegmentedControl<T>(
-        children: children,
-        groupValue: children.containsKey(binding.value) ? binding.value : null,
-        onValueChanged: (value) {
-          if (!binding.enabled) return;
-          binding.onTouched();
-          binding.onChanged(value);
-        },
-      ),
-    ),
-  );
+    required super.field,
+    required Map<T, Widget> children,
+    super.messages,
+    super.errorDisplay,
+    super.focusNode,
+  }) : super(
+         builder: (context, control) => FormidableCupertinoErrorCaption(
+           errorText: control.errorText,
+           child: CupertinoSegmentedControl<T>(
+             children: children,
+             groupValue: children.containsKey(control.value)
+                 ? control.value
+                 : null,
+             onValueChanged: (value) {
+               if (!control.enabled) return;
+               control.didChange(value, touch: true);
+             },
+           ),
+         ),
+       );
 }

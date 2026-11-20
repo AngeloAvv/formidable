@@ -1,8 +1,8 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
-import 'package:formidable/formidable.dart';
 import 'package:formidable_flutter/formidable_flutter.dart';
 
 import 'error_caption.dart';
+import 'wheels.dart';
 
 /// A Cupertino timer picker bound to a `Duration` Field.
 ///
@@ -14,70 +14,40 @@ import 'error_caption.dart';
 /// widget start the wheels again on it. Changes made by the user never do.
 ///
 /// For everything else, build a `CupertinoTimerPicker` from a
-/// [FormidableBindingBuilder].
-class FormidableCupertinoTimerPicker extends StatefulWidget {
-  const FormidableCupertinoTimerPicker({
+/// [FormidableFieldWidget].
+class FormidableCupertinoTimerPicker
+    extends FormidableFieldWidget<Duration?, Duration?> {
+  FormidableCupertinoTimerPicker({
     super.key,
-    required this.field,
-    this.mode = CupertinoTimerPickerMode.hms,
-    this.minuteInterval = 1,
-    this.secondInterval = 1,
-    this.height = 216,
-    this.messages,
-  });
-
-  final FormidableField<Duration?> field;
-  final CupertinoTimerPickerMode mode;
-  final int minuteInterval;
-  final int secondInterval;
-
-  /// The height of the wheels. A picker has no height of its own.
-  final double height;
-
-  /// Messages for this widget only, ahead of the config and the localizations.
-  final FormidableMessages? messages;
-
-  @override
-  State<FormidableCupertinoTimerPicker> createState() =>
-      _FormidableCupertinoTimerPickerState();
-}
-
-class _FormidableCupertinoTimerPickerState
-    extends State<FormidableCupertinoTimerPicker> {
-  // See the date picker: a Field value that the wheels did not report came
-  // from code, and the wheels start again on it.
-  Duration? _reported;
-  int _revision = 0;
+    required super.field,
+    CupertinoTimerPickerMode mode = CupertinoTimerPickerMode.hms,
+    int minuteInterval = 1,
+    int secondInterval = 1,
+    double height = 216,
+    super.messages,
+    super.errorDisplay,
+    super.focusNode,
+  }) : super(
+         builder: (context, control) {
+           final wheels = control as FormidableWheelsState<Duration>;
+           return FormidableCupertinoErrorCaption(
+             errorText: control.errorText,
+             child: SizedBox(
+               height: height,
+               child: CupertinoTimerPicker(
+                 key: wheels.keyFor(control.value),
+                 mode: mode,
+                 initialTimerDuration: control.value ?? Duration.zero,
+                 minuteInterval: minuteInterval,
+                 secondInterval: secondInterval,
+                 onTimerDurationChanged: wheels.wheelsChanged,
+               ),
+             ),
+           );
+         },
+       );
 
   @override
-  Widget build(BuildContext context) => FormidableBindingBuilder<Duration?>(
-    field: widget.field,
-    messages: widget.messages,
-    builder: (context, binding) {
-      final value = binding.value;
-      if (value != null && value != _reported) {
-        _reported = value;
-        _revision++;
-      }
-      return FormidableCupertinoErrorCaption(
-        binding: binding,
-        child: SizedBox(
-          height: widget.height,
-          child: CupertinoTimerPicker(
-            key: ValueKey(_revision),
-            mode: widget.mode,
-            initialTimerDuration: value ?? Duration.zero,
-            minuteInterval: widget.minuteInterval,
-            secondInterval: widget.secondInterval,
-            onTimerDurationChanged: (duration) {
-              if (!binding.enabled) return;
-              _reported = duration;
-              binding.onTouched();
-              binding.onChanged(duration);
-            },
-          ),
-        ),
-      );
-    },
-  );
+  State<FormidableFieldWidget<Duration?, Duration?>> createState() =>
+      FormidableWheelsState<Duration>();
 }

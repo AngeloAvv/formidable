@@ -1,5 +1,5 @@
 /// Cupertino convenience widgets for Formidable, built on `cupertino_ui` and
-/// the headless Binding of `formidable_flutter`.
+/// the field widget base of `formidable_flutter`.
 library;
 
 export 'src/checkbox.dart';

@@ -1,5 +1,4 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
-import 'package:formidable/formidable.dart';
 import 'package:formidable_flutter/formidable_flutter.dart';
 
 import 'error_caption.dart';
@@ -10,37 +9,25 @@ import 'error_caption.dart';
 /// Field becomes touched on the first interaction.
 ///
 /// For everything else, build a `CupertinoCheckbox` from a
-/// [FormidableBindingBuilder].
-class FormidableCupertinoCheckbox extends StatelessWidget {
-  const FormidableCupertinoCheckbox({
+/// [FormidableFieldWidget].
+class FormidableCupertinoCheckbox extends FormidableFieldWidget<bool?, bool?> {
+  FormidableCupertinoCheckbox({
     super.key,
-    required this.field,
-    this.activeColor,
-    this.messages,
-  });
-
-  final FormidableField<bool?> field;
-  final Color? activeColor;
-
-  /// Messages for this widget only, ahead of the config and the localizations.
-  final FormidableMessages? messages;
-
-  @override
-  Widget build(BuildContext context) => FormidableBindingBuilder<bool?>(
-    field: field,
-    messages: messages,
-    builder: (context, binding) => FormidableCupertinoErrorCaption(
-      binding: binding,
-      child: CupertinoCheckbox(
-        value: binding.value ?? false,
-        activeColor: activeColor,
-        onChanged: binding.enabled
-            ? (value) {
-                binding.onTouched();
-                binding.onChanged(value ?? false);
-              }
-            : null,
-      ),
-    ),
-  );
+    required super.field,
+    Color? activeColor,
+    super.messages,
+    super.errorDisplay,
+    super.focusNode,
+  }) : super(
+         builder: (context, control) => FormidableCupertinoErrorCaption(
+           errorText: control.errorText,
+           child: CupertinoCheckbox(
+             value: control.value ?? false,
+             activeColor: activeColor,
+             onChanged: control.enabled
+                 ? (value) => control.didChange(value ?? false, touch: true)
+                 : null,
+           ),
+         ),
+       );
 }
