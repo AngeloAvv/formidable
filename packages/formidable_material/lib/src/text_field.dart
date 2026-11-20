@@ -7,6 +7,7 @@ import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'decoration.dart';
+import 'style.dart';
 
 /// A Material text field bound to a Field of type [T].
 ///
@@ -35,6 +36,12 @@ import 'decoration.dart';
 /// the same way. A null [decoration] draws no decoration, and so no Validation
 /// Message either, like [TextField].
 ///
+/// The [style] has a builder too: a [styleBuilder] receives the control and
+/// returns the text style, so it can depend on the state of the Field, for
+/// example red text while it has an error. It runs again whenever the Field
+/// changes, and returning null gives the default style. Pass [style] or
+/// [styleBuilder], not both.
+///
 /// The [textInputAction] defaults to "next" while another Field follows, and
 /// to "done" on the last one. A multiline field keeps its newline key. Without
 /// [onEditingComplete], pressing the action moves focus to the next Field in
@@ -55,6 +62,7 @@ class FormidableMaterialTextField<T> extends FormidableTextFieldWidget<T> {
     this.textInputAction,
     this.textCapitalization = TextCapitalization.none,
     this.style,
+    this.styleBuilder,
     this.strutStyle,
     this.textAlign = TextAlign.start,
     this.textAlignVertical,
@@ -119,6 +127,10 @@ class FormidableMaterialTextField<T> extends FormidableTextFieldWidget<T> {
              identical(decoration, const InputDecoration()),
          'Pass either decoration or decorationBuilder, not both.',
        ),
+       assert(
+         style == null || styleBuilder == null,
+         'Pass either style or styleBuilder, not both.',
+       ),
        super(
          builder: (context, control) => TextField(
            groupId: groupId,
@@ -138,7 +150,7 @@ class FormidableMaterialTextField<T> extends FormidableTextFieldWidget<T> {
                textInputAction ??
                (maxLines == 1 ? control.textInputAction : null),
            textCapitalization: textCapitalization,
-           style: style,
+           style: styleBuilder?.call(context, control) ?? style,
            strutStyle: strutStyle,
            textAlign: textAlign,
            textAlignVertical: textAlignVertical,
@@ -230,8 +242,12 @@ class FormidableMaterialTextField<T> extends FormidableTextFieldWidget<T> {
   /// See [TextField.textCapitalization].
   final TextCapitalization textCapitalization;
 
-  /// See [TextField.style].
+  /// See [TextField.style]. Not together with [styleBuilder].
   final TextStyle? style;
+
+  /// Builds the [style] from the control, so that it can depend on the value,
+  /// the focus or the error. Replaces [style]; null gives the default style.
+  final FormidableMaterialStyleBuilder<T, String>? styleBuilder;
 
   /// See [TextField.strutStyle].
   final StrutStyle? strutStyle;

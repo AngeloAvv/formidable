@@ -16,6 +16,14 @@ typedef FormidableCupertinoTextFieldDecorationBuilder<T> =
       FormidableFieldWidgetState<T, String> control,
     );
 
+/// Builds the [TextStyle] of a [FormidableCupertinoTextField] from its
+/// [control]. Null gives the default style of [CupertinoTextField].
+typedef FormidableCupertinoTextFieldStyleBuilder<T> =
+    TextStyle? Function(
+      BuildContext context,
+      FormidableFieldWidgetState<T, String> control,
+    );
+
 /// Builds a widget of a [FormidableCupertinoTextField], such as its prefix or
 /// suffix, from its [control]. Null shows nothing.
 typedef FormidableCupertinoTextFieldWidgetBuilder<T> = Widget? Function(
@@ -74,6 +82,7 @@ class FormidableCupertinoTextField<T> extends FormidableTextFieldWidget<T> {
     this.textInputAction,
     this.textCapitalization = TextCapitalization.none,
     this.style,
+    this.styleBuilder,
     this.strutStyle,
     this.textAlign = TextAlign.start,
     this.textAlignVertical,
@@ -131,6 +140,10 @@ class FormidableCupertinoTextField<T> extends FormidableTextFieldWidget<T> {
          'Pass either decoration or decorationBuilder, not both.',
        ),
        assert(
+         style == null || styleBuilder == null,
+         'Pass either style or styleBuilder, not both.',
+       ),
+       assert(
          prefix == null || prefixBuilder == null,
          'Pass either prefix or prefixBuilder, not both.',
        ),
@@ -167,7 +180,7 @@ class FormidableCupertinoTextField<T> extends FormidableTextFieldWidget<T> {
                    textInputAction ??
                    (maxLines == 1 ? control.textInputAction : null),
                textCapitalization: textCapitalization,
-               style: style,
+               style: styleBuilder?.call(context, control) ?? style,
                strutStyle: strutStyle,
                textAlign: textAlign,
                textAlignVertical: textAlignVertical,
@@ -274,8 +287,13 @@ class FormidableCupertinoTextField<T> extends FormidableTextFieldWidget<T> {
   /// See [CupertinoTextField.textCapitalization].
   final TextCapitalization textCapitalization;
 
-  /// See [CupertinoTextField.style].
+  /// See [CupertinoTextField.style]. Not together with [styleBuilder].
   final TextStyle? style;
+
+  /// Builds the [style] from the control, to follow the state of the Field
+  /// (the error, the value). Replaces [style]; pass one or the other.
+  /// Returning null gives the default of [CupertinoTextField].
+  final FormidableCupertinoTextFieldStyleBuilder<T>? styleBuilder;
 
   /// See [CupertinoTextField.strutStyle].
   final StrutStyle? strutStyle;

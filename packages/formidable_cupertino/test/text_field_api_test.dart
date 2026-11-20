@@ -230,6 +230,16 @@ void main() {
       expect(widget.suffixMode, OverlayVisibilityMode.always);
       expect(widget.cursorWidth, 2.0);
     });
+
+    testWidgets('the styleBuilder can be read back', (tester) async {
+      TextStyle? build(BuildContext context, control) => null;
+      final widget = FormidableCupertinoTextField<String>(
+        field: name,
+        styleBuilder: build,
+      );
+
+      expect(widget.styleBuilder, same(build));
+    });
   });
 
   group('state dependent parts', () {
@@ -323,6 +333,56 @@ void main() {
       );
     });
 
+    testWidgets('a styleBuilder turns the text red while there is an error', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        app(
+          FormidableCupertinoTextField<String>(
+            field: name,
+            styleBuilder: (context, control) => control.errorText == null
+                ? null
+                : const TextStyle(color: CupertinoColors.destructiveRed),
+          ),
+        ),
+      );
+      TextStyle? style() => tester
+          .widget<CupertinoTextField>(find.byType(CupertinoTextField))
+          .style;
+      expect(style(), isNull);
+
+      await tester.enterText(find.byType(CupertinoTextField), 'ab');
+      name.markAsTouched();
+      await tester.pump();
+      expect(style()?.color, CupertinoColors.destructiveRed);
+
+      await tester.enterText(find.byType(CupertinoTextField), 'abcd');
+      await tester.pump();
+      expect(style(), isNull);
+    });
+
+    testWidgets('a styleBuilder sees the value of the control', (tester) async {
+      await tester.pumpWidget(
+        app(
+          FormidableCupertinoTextField<String>(
+            field: name,
+            styleBuilder: (context, control) => TextStyle(
+              fontSize: (control.value ?? '').length.toDouble() + 10,
+            ),
+          ),
+        ),
+      );
+      TextStyle? style() => tester
+          .widget<CupertinoTextField>(find.byType(CupertinoTextField))
+          .style;
+      expect(style()?.fontSize, 10);
+
+      await tester.enterText(find.byType(CupertinoTextField), 'abcd');
+      await tester.pump();
+
+      expect(style()?.fontSize, 14);
+    });
+
     test('a static value and its builder can not both be given', () {
       expect(
         () => FormidableCupertinoTextField<String>(
@@ -345,6 +405,14 @@ void main() {
           field: name,
           suffix: const Text('a'),
           suffixBuilder: (context, control) => const Text('b'),
+        ),
+        throwsAssertionError,
+      );
+      expect(
+        () => FormidableCupertinoTextField<String>(
+          field: name,
+          style: const TextStyle(fontSize: 22),
+          styleBuilder: (context, control) => null,
         ),
         throwsAssertionError,
       );

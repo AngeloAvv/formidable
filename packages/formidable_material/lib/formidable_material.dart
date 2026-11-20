@@ -11,6 +11,7 @@ export 'src/error_text.dart';
 export 'src/radio_group.dart';
 export 'src/segmented_button.dart';
 export 'src/slider.dart';
+export 'src/style.dart' show FormidableMaterialStyleBuilder;
 export 'src/switch.dart';
 export 'src/switch_list_tile.dart';
 export 'src/text_field.dart';
