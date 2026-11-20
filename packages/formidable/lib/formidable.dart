@@ -14,6 +14,7 @@ export 'src/runtime/passthrough.dart';
 export 'src/runtime/notifier.dart';
 export 'src/runtime/status.dart';
 export 'src/runtime/submit_result.dart';
+export 'src/validation/form_validator.dart';
 export 'src/validation/required_error.dart';
 export 'src/validation/validation_error.dart';
 export 'src/validation/validator.dart';

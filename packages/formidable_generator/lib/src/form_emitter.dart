@@ -45,9 +45,11 @@ String emitForm(SchemaModel schema) {
   out.write('      : ');
   out.write(fields.map((f) => '${f.name} = ${_field(f)}').join(',\n        '));
   out.writeln(' {');
-  out.writeln(
-    '    attach([${fields.map((f) => 'this.${f.name}').join(', ')}]);',
-  );
+  final nodes = fields.map((f) => 'this.${f.name}').join(', ');
+  final validators = schema.formValidators.isEmpty
+      ? ''
+      : ', formValidators: [${schema.formValidators.join(', ')}]';
+  out.writeln('    attach<$form>([$nodes]$validators);');
   out.writeln('  }');
   for (final f in fields) {
     out.writeln();

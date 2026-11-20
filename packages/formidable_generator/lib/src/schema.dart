@@ -21,6 +21,11 @@ const _validatorChecker = TypeChecker.typeNamed(
   inPackage: 'formidable',
 );
 
+const _formValidatorChecker = TypeChecker.typeNamed(
+  FormidableFormValidator,
+  inPackage: 'formidable',
+);
+
 /// Whether [element] is annotated with `@Formidable()`.
 bool isSchema(Element element) => _schemaChecker.hasAnnotationOf(element);
 
@@ -30,6 +35,7 @@ final class SchemaModel {
     required this.name,
     required this.fields,
     required this.constructorArguments,
+    this.formValidators = const [],
     this.warnings = const [],
   });
 
@@ -41,6 +47,9 @@ final class SchemaModel {
 
   /// How the Schema constructor is called, in parameter order.
   final List<ConstructorArgument> constructorArguments;
+
+  /// Const expressions that rebuild the Form Validators, in annotation order.
+  final List<String> formValidators;
 
   /// Problems that do not stop the build, reported by the Form builder only.
   final List<String> warnings;
@@ -170,6 +179,11 @@ SchemaModel readSchema(Element element) {
       for (final p in parameters)
         ConstructorArgument(field: models[p.name]!, isNamed: p.isNamed),
     ],
+    formValidators: [
+      for (final annotation in element.metadata.annotations)
+        if (_isFormValidator(annotation))
+          'const ${annotation.toSource().substring(1)}',
+    ],
     warnings: warnings,
   );
 }
@@ -244,4 +258,9 @@ void _checkValidatorFits(FieldElement field, DartType validatorType) {
     '${field.type.getDisplayString()}, or change the Field type.',
     element: field,
   );
+}
+
+bool _isFormValidator(ElementAnnotation annotation) {
+  final type = annotation.computeConstantValue()?.type;
+  return type != null && _formValidatorChecker.isAssignableFromType(type);
 }

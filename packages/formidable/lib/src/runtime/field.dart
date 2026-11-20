@@ -17,7 +17,10 @@ final class FormidableField<T>
     implements FormidableNode, FormidableObservable<FormidableFieldState<T>> {
   /// Creates a Field.
   ///
-  /// - [validators] run in order, only while the Field has a value.
+  /// - [validators] run in order, only while the Field has a value. They are
+  ///   typed `Object?` because a Validator typed for a supertype of [T] fits
+  ///   too, which Dart cannot express; the generator rejects a Validator that
+  ///   does not fit before the Form is generated.
   /// - [required] is `@Required()`: Unset blocks submit even if [T] allows null
   ///   or a default exists.
   /// - [defaultValue] is the constructor default of the Schema field. The Field
@@ -25,7 +28,7 @@ final class FormidableField<T>
   /// - [initial] is the starting value. A null record starts the Field Unset
   ///   (or at its default).
   FormidableField({
-    List<FormidableValidator<T>> validators = const [],
+    List<FormidableValidator<Object?>> validators = const [],
     bool required = false,
     T? defaultValue,
     ({T value})? initial,
@@ -41,10 +44,11 @@ final class FormidableField<T>
     );
   }
 
-  final List<FormidableValidator<T>> _validators;
+  final List<FormidableValidator<Object?>> _validators;
   final bool _required;
   final T? _defaultValue;
   late FormidableFieldState<T> _state;
+  List<FormidableValidationError> _formErrors = const [];
 
   @override
   FormidableFieldState<T> get state => _state;
@@ -66,6 +70,16 @@ final class FormidableField<T>
 
   /// Makes the Field Unset.
   void clear() => _update(isSet: false, value: null);
+
+  /// Replaces the errors that the Form Validators address to this Field.
+  ///
+  /// They are added after the Field's own errors. Called by the Form; an
+  /// application has no reason to call it.
+  void replaceFormErrors(List<FormidableValidationError> errors) {
+    if (_sameErrors(_formErrors, errors)) return;
+    _formErrors = List.unmodifiable(errors);
+    _update();
+  }
 
   /// Records that the user interacted with the Field and left it.
   void markAsTouched() => _update(touched: true);
@@ -107,8 +121,22 @@ final class FormidableField<T>
     value: value,
     isSet: isSet,
     touched: touched,
-    errors: isSet ? _validate(value) : _presenceErrors(),
+    errors: [
+      ...(isSet ? _validate(value) : _presenceErrors()),
+      ..._formErrors,
+    ],
   );
+
+  static bool _sameErrors(
+    List<FormidableValidationError> a,
+    List<FormidableValidationError> b,
+  ) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
 
   /// Errors of an Unset Field: required unless something supplies the output.
   List<FormidableValidationError> _presenceErrors() {
@@ -121,6 +149,6 @@ final class FormidableField<T>
   List<FormidableValidationError> _validate(T? value) => [
     for (final validator in _validators)
       if (value != null || validator.acceptsNull)
-        ...validator.validate(value as T),
+        ...validator.validate(value),
   ];
 }
