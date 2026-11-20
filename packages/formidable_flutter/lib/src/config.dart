@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:formidable/formidable.dart';
 
 import 'messages.dart';
 
@@ -14,12 +15,19 @@ class FormidableConfig extends InheritedWidget {
   const FormidableConfig({
     super.key,
     this.messages = const FormidableMessages(),
+    this.codecs = FormidableCodecs.defaults,
     required super.child,
   });
 
   /// The messages for custom errors, or for built-in errors whose wording
   /// should differ from the localizations.
   final FormidableMessages messages;
+
+  /// The Codecs widgets pick from, by the type of the Field and the type the
+  /// widget shows. Extend the built-in ones with
+  /// `FormidableCodecs.defaults.add(codec)`. Two registries with the same
+  /// Codecs are equal, so rebuilding the config does not notify.
+  final FormidableCodecs codecs;
 
   /// The nearest config, or null when there is none.
   static FormidableConfig? maybeOf(BuildContext context) =>
@@ -39,5 +47,5 @@ class FormidableConfig extends InheritedWidget {
 
   @override
   bool updateShouldNotify(FormidableConfig oldWidget) =>
-      messages != oldWidget.messages;
+      messages != oldWidget.messages || codecs != oldWidget.codecs;
 }
