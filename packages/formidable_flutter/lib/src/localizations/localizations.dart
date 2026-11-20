@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:formidable/formidable.dart';
 
+import 'categories/combinators.dart';
+import 'categories/parsing.dart';
 import 'categories/presence.dart';
 import 'categories/strings.dart';
 
@@ -16,7 +18,11 @@ import 'categories/strings.dart';
 /// The class stays abstract on purpose: a language that misses a message does
 /// not compile.
 abstract class FormidableLocalizations
-    with FormidablePresenceMessages, FormidableStringMessages {
+    with
+        FormidableCombinatorMessages,
+        FormidableParsingMessages,
+        FormidablePresenceMessages,
+        FormidableStringMessages {
   const FormidableLocalizations();
 
   /// The delegate that loads the built-in languages.
@@ -54,36 +60,59 @@ abstract class FormidableLocalizations
 
   /// The message for [error], or null when this class has no message for it.
   String? messageOf(FormidableValidationError error) =>
-      presenceMessageOf(error) ?? stringMessageOf(error);
+      presenceMessageOf(error) ??
+      stringMessageOf(error) ??
+      combinatorMessageOf(error) ??
+      parsingMessageOf(error);
 }
 
 /// English.
 class FormidableLocalizationsEn extends FormidableLocalizations
-    with FormidablePresenceMessagesEn, FormidableStringMessagesEn {
+    with
+        FormidableCombinatorMessagesEn,
+        FormidableParsingMessagesEn,
+        FormidablePresenceMessagesEn,
+        FormidableStringMessagesEn {
   const FormidableLocalizationsEn();
 }
 
 /// Italian.
 class FormidableLocalizationsIt extends FormidableLocalizations
-    with FormidablePresenceMessagesIt, FormidableStringMessagesIt {
+    with
+        FormidableCombinatorMessagesIt,
+        FormidableParsingMessagesIt,
+        FormidablePresenceMessagesIt,
+        FormidableStringMessagesIt {
   const FormidableLocalizationsIt();
 }
 
 /// Spanish.
 class FormidableLocalizationsEs extends FormidableLocalizations
-    with FormidablePresenceMessagesEs, FormidableStringMessagesEs {
+    with
+        FormidableCombinatorMessagesEs,
+        FormidableParsingMessagesEs,
+        FormidablePresenceMessagesEs,
+        FormidableStringMessagesEs {
   const FormidableLocalizationsEs();
 }
 
 /// French.
 class FormidableLocalizationsFr extends FormidableLocalizations
-    with FormidablePresenceMessagesFr, FormidableStringMessagesFr {
+    with
+        FormidableCombinatorMessagesFr,
+        FormidableParsingMessagesFr,
+        FormidablePresenceMessagesFr,
+        FormidableStringMessagesFr {
   const FormidableLocalizationsFr();
 }
 
 /// German.
 class FormidableLocalizationsDe extends FormidableLocalizations
-    with FormidablePresenceMessagesDe, FormidableStringMessagesDe {
+    with
+        FormidableCombinatorMessagesDe,
+        FormidableParsingMessagesDe,
+        FormidablePresenceMessagesDe,
+        FormidableStringMessagesDe {
   const FormidableLocalizationsDe();
 }
 

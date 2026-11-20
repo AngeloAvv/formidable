@@ -1,0 +1,92 @@
+---
+title: Codecs
+description: Show a Field whose type is not text, and keep input that can't be parsed
+---
+
+# Codecs
+
+A widget often shows a different type than the Field holds: an `int` shown as text, a `DateTime` shown as a formatted date. A **Codec** is the pure, stateless conversion between the two.
+
+```dart
+abstract class FormidableCodec<T, V> {
+  V format(T value);
+  FormidableParseResult<T> parse(V input);
+}
+```
+
+`format` writes a Field value for the view. `parse` reads what the view produced, and returns one of three results:
+
+| Result | Meaning | Effect on the Field |
+| --- | --- | --- |
+| `FormidableParsedValue(value)` | the input is a value | `setValue(value)` |
+| `FormidableParsedUnset()` | the input says "no value", such as a blank text | `clear()` (Unset) |
+| `FormidableParseFailure(error)` | the input can't be read | the Field is rejected with `error` |
+
+## Built-in Codecs
+
+The default registry covers these pairs, all to and from text. A Field of a nullable type (`int?`) uses the Codec of its non-nullable type.
+
+| Field type | Text |
+| --- | --- |
+| `String` | the identity; an empty text is Unset (whitespace is a value) |
+| `int` | `42`; blank text is Unset; `12a` and `1.5` are parse errors |
+| `double` | `1.5`; blank text is Unset; text that is not a finite number is a parse error |
+| `num` | whole numbers parse to `int`, anything else to `double` |
+| `DateTime` | ISO 8601: `2024-01-31` at midnight, a full ISO string otherwise |
+
+`FormidableTextField` and `FormidableBindingBuilder` pick the Codec for you:
+
+```dart
+FormidableTextField(field: form.age)        // FormidableField<int>
+FormidableTextField(field: form.birthDate)  // FormidableField<DateTime?>
+```
+
+## Input that can't be parsed
+
+When `parse` returns a failure, the text the user typed stays in the widget so it can be fixed. The Field becomes **Unset and invalid** with the typed parse error, even when the Field is optional, so bad input never turns into a `null` silently, and `submit()` reports the error.
+
+The error is a `FormidableParseError` that carries the raw `input`. The built-in ones are `FormidableNumberParseError` and `FormidableDateParseError`. Both are localized in English, Italian, Spanish, French and German, and the message appears through the usual [message lookup](/validation/messages) once the Field is touched.
+
+The rejection is lifted by the next value: the user typing something valid, or code calling `setValue` or `clear` on the Field. In code, `field.reject(error)` does the same as a failed parse, and `field.inputError` tells the current rejection.
+
+## Your own Codec
+
+Extend `FormidableCodec` and pass it to the widget. A Codec passed to a widget wins over everything else.
+
+```dart
+class MoneyTextCodec extends FormidableCodec<Money, String> {
+  const MoneyTextCodec();
+
+  @override
+  String format(Money value) => (value.cents / 100).toStringAsFixed(2);
+
+  @override
+  FormidableParseResult<Money> parse(String input) {
+    final text = input.trim();
+    if (text.isEmpty) return const FormidableParsedUnset();
+    final euros = double.tryParse(text);
+    return euros == null
+        ? FormidableParseFailure(FormidableNumberParseError(input: input))
+        : FormidableParsedValue(Money((euros * 100).round()));
+  }
+}
+
+FormidableTextField(field: form.price, codec: const MoneyTextCodec())
+```
+
+Return your own `FormidableParseError` subclass for a failure that needs its own message, and register the message with `FormidableMessages.on<E>`.
+
+## Registering Codecs for the whole app
+
+Add Codecs to the registry of the `FormidableConfig`. A Codec added later wins over an earlier one for the same pair of types, so you can also replace a built-in one.
+
+```dart
+FormidableConfig(
+  codecs: FormidableCodecs.defaults.add(const MoneyTextCodec()),
+  child: const MyApp(),
+)
+```
+
+The registry is chosen by the pair of types, the Field type and the type the widget shows. Two registries holding the same Codecs are equal, so rebuilding the config with the same registry does not rebuild the widgets.
+
+The order of precedence is: the Codec passed to the widget, then the registry of the config, then the built-in Codecs.

@@ -2,15 +2,21 @@ import 'package:formidable/formidable.dart';
 import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// A Material text field bound to a `String` Field.
+/// A Material text field bound to a Field of type [T].
 ///
 /// It shows the value, updates the Field as the user types, makes the Field
 /// touched when it loses focus and shows the Validation Message once the Field
-/// is touched. A completely empty text leaves the Field Unset.
+/// is touched.
+///
+/// A Codec converts between [T] and the text. It is the [codec] of the widget,
+/// else the one registered for [T] in the `FormidableConfig`, else a built-in
+/// one: `String`, `int`, `double`, `num` and `DateTime`, also when nullable.
+/// Blank text leaves the Field Unset. Text that can't be parsed stays visible
+/// and makes the Field invalid with a parse error, even when it is optional.
 ///
 /// It exposes the most common parameters. For everything else, build a
 /// `TextField` from a [FormidableBindingBuilder].
-class FormidableTextField extends StatelessWidget {
+class FormidableTextField<T> extends StatelessWidget {
   const FormidableTextField({
     super.key,
     required this.field,
@@ -22,11 +28,12 @@ class FormidableTextField extends StatelessWidget {
     this.maxLines = 1,
     this.autofocus = false,
     this.focusNode,
+    this.codec,
     this.messages,
     this.errorDisplay,
   });
 
-  final FormidableField<String> field;
+  final FormidableField<T> field;
   final InputDecoration decoration;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
@@ -38,6 +45,9 @@ class FormidableTextField extends StatelessWidget {
   /// Used instead of the focus node owned by the Binding. Never disposed here.
   final FocusNode? focusNode;
 
+  /// Converts between the Field and the text. Wins over the config registry.
+  final FormidableCodec<T, String>? codec;
+
   /// Messages for this field only, ahead of the config and the localizations.
   final FormidableMessages? messages;
 
@@ -45,13 +55,12 @@ class FormidableTextField extends StatelessWidget {
   final FormidableErrorDisplay? errorDisplay;
 
   @override
-  Widget build(BuildContext context) => FormidableBindingBuilder<String>(
+  Widget build(BuildContext context) => FormidableBindingBuilder<T>(
     field: field,
     focusNode: focusNode,
+    codec: codec,
     messages: messages,
     errorDisplay: errorDisplay,
-    formatText: (value) => value,
-    parseText: (text) => text.isEmpty ? null : text,
     builder: (context, binding) => TextField(
       controller: binding.textController,
       focusNode: binding.focusNode,

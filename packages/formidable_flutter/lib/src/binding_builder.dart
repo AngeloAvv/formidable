@@ -3,6 +3,7 @@ import 'package:formidable/formidable.dart';
 
 import 'binding.dart';
 import 'error_display.dart';
+import 'config.dart';
 import 'messages.dart';
 import 'scope.dart';
 
@@ -17,8 +18,7 @@ class FormidableBindingBuilder<T> extends StatefulWidget {
     required this.builder,
     this.focusNode,
     this.textController,
-    this.formatText,
-    this.parseText,
+    this.codec,
     this.messages,
     this.errorDisplay,
   });
@@ -35,12 +35,10 @@ class FormidableBindingBuilder<T> extends StatefulWidget {
   /// it.
   final TextEditingController? textController;
 
-  /// How a value is written in a text widget. Needed for text widgets.
-  final String Function(T value)? formatText;
-
-  /// How text is read back into a value, or null for Unset. Needed for text
-  /// widgets.
-  final T? Function(String text)? parseText;
+  /// The Codec between the Field and the text of a text widget. It wins over
+  /// the registry of the nearest [FormidableConfig]. Without it, the registry
+  /// picks one by the type of the Field.
+  final FormidableCodec<T, String>? codec;
 
   /// Messages for this widget only. They win over the config registry, the
   /// localizations and the string form of the error.
@@ -62,10 +60,23 @@ class _FormidableBindingBuilderState<T>
     field: widget.field,
     focusNode: widget.focusNode,
     textController: widget.textController,
-    formatText: widget.formatText,
-    parseText: widget.parseText,
+    codec: _resolveCodec(),
     resolveMessage: _resolveMessage,
   );
+
+  // The codec of the widget, else the one of the config registry, else a
+  // built-in one. Reading the config makes this widget depend on it.
+  FormidableCodec<T, String>? _resolveCodec() {
+    final registry =
+        FormidableConfig.maybeOf(context)?.codecs ?? FormidableCodecs.defaults;
+    return widget.codec ?? registry.find<T, String>();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _binding.updateCodec(_resolveCodec());
+  }
 
   // Looked up when an error is shown, so that this widget depends on the
   // locale and the config only while there is an error to explain.
@@ -80,6 +91,8 @@ class _FormidableBindingBuilderState<T>
         oldWidget.textController != widget.textController) {
       _binding.dispose();
       _binding = _createBinding();
+    } else if (oldWidget.codec != widget.codec) {
+      _binding.updateCodec(_resolveCodec());
     }
   }
 

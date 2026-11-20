@@ -49,7 +49,10 @@ String emitForm(SchemaModel schema) {
   final effects = schema.effects.isEmpty
       ? ''
       : ', effects: [${schema.effects.map((e) => '...$e.effects').join(', ')}]';
-  out.writeln('    attach([$nodes]$effects);');
+  final validators = schema.formValidators.isEmpty
+      ? ''
+      : ', formValidators: [${schema.formValidators.join(', ')}]';
+  out.writeln('    attach<$form>([$nodes]$effects$validators);');
   out.writeln('  }');
   for (final f in fields) {
     out.writeln();
