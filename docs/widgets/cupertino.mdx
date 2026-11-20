@@ -1,0 +1,65 @@
+---
+title: Cupertino widgets
+description: Convenience widgets for iOS-style apps, built on cupertino_ui
+---
+
+# Cupertino widgets
+
+`formidable_cupertino` gives every common Cupertino input a Field to bind to, with no glue code. The widgets are thin layers over the [headless Binding](/widgets) and use `cupertino_ui`.
+
+```dart
+FormidableCupertinoTextField(field: form.age, placeholder: 'Age')
+FormidableCupertinoSwitch(field: form.notifications)
+```
+
+| Widget | Field type | Notes |
+| --- | --- | --- |
+| `FormidableCupertinoTextField<T>` | any type with a [Codec](/widgets/codecs) | `codec:` works like the Material text field. Touched when it loses focus. |
+| `FormidableCupertinoSwitch` | `bool` | An Unset Field shows the switch off. |
+| `FormidableCupertinoCheckbox` | `bool` | An Unset Field shows the box unchecked. |
+| `FormidableCupertinoSegmentedControl<T>` | `T` | `children` maps each value to the widget of its segment. |
+| `FormidableCupertinoSlidingSegmentedControl<T>` | `T` | Same as above. |
+| `FormidableCupertinoRadioGroup<T>` | `T` | Put `CupertinoRadio<T>` widgets anywhere under `child`. |
+| `FormidableCupertinoSlider` | `double` | `min`, `max` and `divisions`. An Unset Field shows `min`. |
+| `FormidableCupertinoDatePicker` | `DateTime` | `mode` picks a date, a time of the day, both, or a month and year. |
+| `FormidableCupertinoTimerPicker` | `Duration` | `mode` picks hours, minutes and seconds, or fewer. |
+
+A Field of a nullable type (`bool?`, `DateTime?`) works with every widget.
+
+## Touched
+
+A text field is touched when it loses focus. The other widgets can't take focus, so the Field becomes touched on the first interaction: the first tap, the first drag of the slider, the first change of a wheel. The Validation Message shows under the widget from then on.
+
+## Text fields and Codecs
+
+`FormidableCupertinoTextField<T>` picks a Codec the same way the Material text field does: the `codec:` of the widget, else the one registered for `T` in `FormidableConfig`, else a built-in one. Text that can't be parsed stays on screen and makes the Field invalid.
+
+```dart
+FormidableCupertinoTextField<Money>(
+  field: form.price,
+  codec: const MoneyTextCodec(prefix: r'$'),
+)
+```
+
+## Pickers and Unset Fields
+
+A picker always has to show something. An Unset Field shows the current time (date picker) or a duration of zero (timer picker) on the wheels, and stays Unset until the user moves them. A value set in code starts the wheels again on the new value; a value picked by the user never does.
+
+## Dropping down to the Binding
+
+The widgets expose the most common parameters. For everything else, build the widget from `FormidableBindingBuilder`, as with any third-party widget:
+
+```dart
+FormidableBindingBuilder<bool?>(
+  field: form.notifications,
+  builder: (context, binding) => CupertinoSwitch(
+    value: binding.value ?? false,
+    onChanged: (value) {
+      binding.onTouched();
+      binding.onChanged(value);
+    },
+  ),
+)
+```
+
+The example app has a page that shows every widget.

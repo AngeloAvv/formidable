@@ -14,7 +14,15 @@ class SignUpPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SignUpFormScope(
     child: Scaffold(
-      appBar: AppBar(title: const Text('Sign up')),
+      appBar: AppBar(
+        title: const Text('Sign up'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pushNamed('/cupertino'),
+            child: const Text('Cupertino widgets'),
+          ),
+        ],
+      ),
       body: const Padding(padding: EdgeInsets.all(16), child: _SignUpBody()),
     ),
   );
