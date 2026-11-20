@@ -45,6 +45,11 @@ const _asyncFormValidatorChecker = TypeChecker.typeNamed(
   inPackage: 'formidable',
 );
 
+const _notEmptyChecker = TypeChecker.typeNamed(
+  NotEmpty,
+  inPackage: 'formidable',
+);
+
 const _eachChecker = TypeChecker.typeNamed(Each, inPackage: 'formidable');
 const _formValidatorChecker = TypeChecker.typeNamed(
   FormidableFormValidator,
@@ -302,6 +307,17 @@ SchemaModel readSchema(Element element, [List<ClassElement> path = const []]) {
     }
   }
 
+  final reserved = _reservedFieldNames(element);
+  for (final field in fields) {
+    if (reserved.contains(field.name)) {
+      throw InvalidGenerationSourceError(
+        'Field "${field.name}" of $name has the name of a member of the '
+        'generated ${name}Form, which would hide it. Rename the field.',
+        element: field,
+      );
+    }
+  }
+
   final defaults = {
     for (final p in parameters)
       if (p.defaultValueCode != null) p.name!: p.defaultValueCode!,
@@ -352,6 +368,44 @@ SchemaModel readSchema(Element element, [List<ClassElement> path = const []]) {
   );
 }
 
+/// The public instance members that every generated Form has, which a Schema
+/// field must not reuse: the members of `FormidableForm` (and of `Object`),
+/// found through the libraries [element] sees, and the ones the emitter writes.
+Set<String> _reservedFieldNames(ClassElement element) {
+  final names = <String>{'patch', 'replace'};
+  final seen = <LibraryElement>{};
+  final queue = [...element.library.firstFragment.importedLibraries];
+  ClassElement? form;
+  while (queue.isNotEmpty && form == null) {
+    final library = queue.removeLast();
+    if (!seen.add(library)) continue;
+    if (!library.uri.toString().startsWith('package:formidable/')) continue;
+    form = library.getClass('FormidableForm');
+    queue.addAll(library.exportedLibraries);
+  }
+  if (form == null) return names;
+  for (final type in [form.thisType, ...form.allSupertypes]) {
+    final interface = type.element;
+    for (final member in [
+      ...interface.getters,
+      ...interface.setters,
+      ...interface.methods,
+    ]) {
+      final name = member.name;
+      if (name != null &&
+          !member.isStatic &&
+          !member.isPrivate &&
+          name != 'noSuchMethod' &&
+          name != '==') {
+        names.add(
+          name.endsWith('=') ? name.substring(0, name.length - 1) : name,
+        );
+      }
+    }
+  }
+  return names;
+}
+
 /// The `@Effects(...)` annotations of [element], rebuilt as const expressions.
 ///
 /// The annotation is matched by its constructor, not by its evaluated value:
@@ -395,6 +449,7 @@ FieldModel _readField(
   final array = nested == null
       ? _readArray(field, defaultSource, owner, path)
       : null;
+  final isPassthrough = _passthroughChecker.hasAnnotationOf(field);
   final validators = <String>[];
   final normalizers = <String>[];
   final crossFieldRules = <CrossFieldRuleModel>[];
@@ -403,6 +458,27 @@ FieldModel _readField(
     final value = annotation.computeConstantValue();
     final type = value?.type;
     if (type == null) continue;
+    if (isPassthrough && _requiredChecker.isExactlyType(type)) {
+      throw InvalidGenerationSourceError(
+        'Field "${field.name}" of ${owner.name} is a @Passthrough() Field and '
+        'cannot have ${annotation.toSource()}: a Passthrough Field is never '
+        'validated and always has a value. Remove the annotation, or the '
+        '@Passthrough().',
+        element: field,
+      );
+    }
+    if (isPassthrough &&
+        (_normalizerChecker.isAssignableFromType(type) ||
+            _validatorChecker.isAssignableFromType(type) ||
+            _asyncValidatorChecker.isExactlyType(type))) {
+      throw InvalidGenerationSourceError(
+        'Field "${field.name}" of ${owner.name} is a @Passthrough() Field and '
+        'cannot have ${annotation.toSource()}: a Passthrough Field is never '
+        'validated or normalized. Remove the annotation, or the '
+        '@Passthrough().',
+        element: field,
+      );
+    }
     if (_asyncValidatorChecker.isExactlyType(type) && type is InterfaceType) {
       if (array != null || isDynamic) {
         throw InvalidGenerationSourceError(
@@ -449,7 +525,7 @@ FieldModel _readField(
     asyncValidators: asyncValidators,
     defaultSource: defaultSource,
     isRequired: _requiredChecker.hasAnnotationOf(field),
-    isPassthrough: _passthroughChecker.hasAnnotationOf(field),
+    isPassthrough: isPassthrough,
     nested: nested,
     isDynamic: isDynamic,
     array: array,
@@ -493,7 +569,8 @@ bool _readDynamic(
     for (final annotation in field.metadata.annotations)
       if (annotation.computeConstantValue()?.type case final t?)
         if (_normalizerChecker.isAssignableFromType(t) ||
-            _validatorChecker.isAssignableFromType(t))
+            _validatorChecker.isAssignableFromType(t) ||
+            _asyncValidatorChecker.isExactlyType(t))
           annotation.toSource(),
   ];
   if (rules.isNotEmpty) {
@@ -715,13 +792,14 @@ NestedModel? _readNested(
     for (final annotation in field.metadata.annotations)
       if (annotation.computeConstantValue()?.type case final t?)
         if (_normalizerChecker.isAssignableFromType(t) ||
-            _validatorChecker.isAssignableFromType(t))
+            _validatorChecker.isAssignableFromType(t) ||
+            _asyncValidatorChecker.isExactlyType(t))
           annotation.toSource(),
   ];
   if (rules.isNotEmpty) {
     throw InvalidGenerationSourceError(
-      '$where is a Nested Form and cannot have ${rules.first}. Put Validators '
-      'and Normalizers on the Fields of ${target.name}.',
+      '$where is a Nested Form and cannot have ${rules.first}. Put Validators, '
+      'Normalizers and Async Validators on the Fields of ${target.name}.',
       element: field,
     );
   }
@@ -908,6 +986,18 @@ void _checkValidatorFits(
       element: field,
     );
   }
+  if (_notEmptyChecker.isExactlyType(validatorType) &&
+      !_isCollectionOrString(fieldType, field.library)) {
+    final subject = what ?? (valueType == null ? 'the Field' : 'the elements');
+    throw InvalidGenerationSourceError(
+      '@NotEmpty cannot be used on "${field.name}" of '
+      '${field.enclosingElement.name}: it judges an Iterable, a Map or a '
+      'String, but $subject is ${receivedType.getDisplayString()}. Use a '
+      'Validator that accepts ${receivedType.getDisplayString()}, or change '
+      'the Field type.',
+      element: field,
+    );
+  }
   var memberValueType = valueType;
   if (_eachChecker.isExactlyType(validatorType)) {
     // The Field type fits `Iterable<Object?>`, so it has an element type.
@@ -927,6 +1017,25 @@ void _checkValidatorFits(
       }
     }
   }
+}
+
+/// Whether [type] is an `Iterable`, a `Map` or a `String`, which is what
+/// `NotEmpty` can judge.
+bool _isCollectionOrString(DartType type, LibraryElement library) {
+  final typeSystem = library.typeSystem;
+  final provider = library.typeProvider;
+  return typeSystem.isAssignableTo(
+        type,
+        provider.iterableType(provider.objectQuestionType),
+      ) ||
+      typeSystem.isAssignableTo(
+        type,
+        provider.mapType(
+          provider.objectQuestionType,
+          provider.objectQuestionType,
+        ),
+      ) ||
+      typeSystem.isAssignableTo(type, provider.stringType);
 }
 
 bool _isFormValidator(ElementAnnotation annotation) {

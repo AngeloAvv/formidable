@@ -195,10 +195,10 @@ $_prelude
 $declarations
 @Formidable()
 class Account {
-  const Account({required this.value});
+  const Account({required this.amount});
 
   $annotations
-  final $type value;
+  final $type amount;
 }
 ''');
 
@@ -210,7 +210,7 @@ class Account {
         result.errors.join('\n'),
         allOf(
           contains('MinLength'),
-          contains('"value"'),
+          contains('"amount"'),
           contains('int'),
           contains('String'),
         ),
@@ -838,5 +838,170 @@ class EmailAndName extends FormidableAsyncFormValidator<SignUpForm> {
 
       expect(result.succeeded, isTrue);
     });
+  });
+  group('Passthrough diagnostics', () {
+    Future<TestBuilderResult> build(String fieldSource) =>
+        _build(formBuilder, '''
+$_prelude
+@Formidable()
+class EditUser {
+  const EditUser({required this.id});
+
+$fieldSource
+}
+''');
+
+    for (final (annotation, type) in [
+      ('@Required()', 'int?'),
+      ('@MinLength(3)', 'String'),
+      ('@Trim()', 'String'),
+      ('@Min(1)', 'int'),
+    ]) {
+      test('fails when a Passthrough Field has $annotation', () async {
+        final result = await build('''
+  @Passthrough()
+  $annotation
+  final $type id;
+''');
+
+        expect(result.succeeded, isFalse);
+        expect(
+          result.errors.join('\n'),
+          allOf(
+            contains('"id"'),
+            contains('Passthrough'),
+            contains(annotation),
+          ),
+        );
+      });
+    }
+
+    test('accepts a Passthrough Field with a default value', () async {
+      final result = await build('''
+  @Passthrough()
+  final int id = 1;
+''');
+
+      expect(result.succeeded, isTrue);
+    });
+  });
+
+  group('Field names that collide with the Form', () {
+    Future<TestBuilderResult> build(String name) => _build(formBuilder, '''
+$_prelude
+@Formidable()
+class SignUp {
+  const SignUp({required this.$name});
+
+  final String $name;
+}
+''');
+
+    for (final name in [
+      'patch',
+      'replace',
+      'reset',
+      'commit',
+      'clear',
+      'batch',
+      'value',
+      'submit',
+      'state',
+      'applyErrors',
+      'dispose',
+      'focusOrder',
+      'isSet',
+      'isValid',
+      'isDirty',
+      'buildOutput',
+      'hashCode',
+      'toString',
+    ]) {
+      test('fails for a Field named $name', () async {
+        final result = await build(name);
+
+        expect(result.succeeded, isFalse);
+        expect(
+          result.errors.join('\n'),
+          allOf(contains('"$name"'), contains('SignUp'), contains('Form')),
+        );
+      });
+    }
+
+    test('accepts an ordinary name', () async {
+      final result = await build('email');
+
+      expect(result.succeeded, isTrue);
+    });
+  });
+
+  group('Nested Form with an Async Validator', () {
+    test('fails', () async {
+      final result = await _build(formBuilder, '''
+$_prelude
+class Taken extends FormidableAsyncValidator<Object> {
+  @override
+  Future<List<FormidableValidationError>> validate(Object value) async =>
+      const [];
+}
+
+@Formidable()
+class Address {
+  const Address({required this.street});
+
+  final String street;
+}
+
+@Formidable()
+class SignUp {
+  const SignUp({required this.home});
+
+  @AsyncValidator<Taken>()
+  final Address home;
+}
+''');
+
+      expect(result.succeeded, isFalse);
+      expect(
+        result.errors.join('\n'),
+        allOf(contains('"home"'), contains('Nested Form'), contains('Async')),
+      );
+    });
+  });
+
+  group('NotEmpty fit', () {
+    Future<TestBuilderResult> build(String type) => _build(formBuilder, '''
+$_prelude
+@Formidable()
+class Form1 {
+  const Form1({required this.items});
+
+  @NotEmpty()
+  final $type items;
+}
+''');
+
+    for (final type in [
+      'String',
+      'List<int>',
+      'Set<String>',
+      'Map<String, int>',
+    ]) {
+      test('accepts $type', () async {
+        expect((await build(type)).succeeded, isTrue);
+      });
+    }
+
+    for (final type in ['int', 'bool', 'DateTime']) {
+      test('rejects $type', () async {
+        final result = await build(type);
+
+        expect(result.succeeded, isFalse);
+        expect(
+          result.errors.join('\n'),
+          allOf(contains('@NotEmpty'), contains('"items"'), contains(type)),
+        );
+      });
+    }
   });
 }
