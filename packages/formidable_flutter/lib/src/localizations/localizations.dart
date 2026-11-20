@@ -4,10 +4,15 @@ import 'package:formidable/formidable.dart';
 
 import 'categories/asynchronous.dart';
 import 'categories/choices.dart';
+import 'categories/collections.dart';
 import 'categories/combinators.dart';
 import 'categories/cross_field.dart';
 import 'categories/dates.dart';
+import 'categories/files.dart';
+import 'categories/finance.dart';
 import 'categories/formats.dart';
+import 'categories/locale.dart';
+import 'categories/network.dart';
 import 'categories/numbers.dart';
 import 'categories/parsing.dart';
 import 'categories/presence.dart';
@@ -27,10 +32,15 @@ abstract class FormidableLocalizations
     with
         FormidableAsyncMessages,
         FormidableChoiceMessages,
+        FormidableCollectionMessages,
         FormidableCombinatorMessages,
         FormidableCrossFieldMessages,
         FormidableDateMessages,
+        FormidableFileMessages,
+        FormidableFinanceMessages,
         FormidableFormatMessages,
+        FormidableLocaleMessages,
+        FormidableNetworkMessages,
         FormidableNumberMessages,
         FormidableParsingMessages,
         FormidablePresenceMessages,
@@ -77,6 +87,11 @@ abstract class FormidableLocalizations
       formatMessageOf(error) ??
       combinatorMessageOf(error) ??
       crossFieldMessageOf(error) ??
+      collectionMessageOf(error) ??
+      fileMessageOf(error) ??
+      networkMessageOf(error) ??
+      financeMessageOf(error) ??
+      localeMessageOf(error) ??
       parsingMessageOf(error) ??
       asyncMessageOf(error) ??
       numberMessageOf(error) ??
@@ -89,10 +104,15 @@ class FormidableLocalizationsEn extends FormidableLocalizations
     with
         FormidableAsyncMessagesEn,
         FormidableChoiceMessagesEn,
+        FormidableCollectionMessagesEn,
         FormidableCombinatorMessagesEn,
         FormidableCrossFieldMessagesEn,
         FormidableDateMessagesEn,
+        FormidableFileMessagesEn,
+        FormidableFinanceMessagesEn,
         FormidableFormatMessagesEn,
+        FormidableLocaleMessagesEn,
+        FormidableNetworkMessagesEn,
         FormidableNumberMessagesEn,
         FormidableParsingMessagesEn,
         FormidablePresenceMessagesEn,
@@ -105,10 +125,15 @@ class FormidableLocalizationsIt extends FormidableLocalizations
     with
         FormidableAsyncMessagesIt,
         FormidableChoiceMessagesIt,
+        FormidableCollectionMessagesIt,
         FormidableCombinatorMessagesIt,
         FormidableCrossFieldMessagesIt,
         FormidableDateMessagesIt,
+        FormidableFileMessagesIt,
+        FormidableFinanceMessagesIt,
         FormidableFormatMessagesIt,
+        FormidableLocaleMessagesIt,
+        FormidableNetworkMessagesIt,
         FormidableNumberMessagesIt,
         FormidableParsingMessagesIt,
         FormidablePresenceMessagesIt,
@@ -121,10 +146,15 @@ class FormidableLocalizationsEs extends FormidableLocalizations
     with
         FormidableAsyncMessagesEs,
         FormidableChoiceMessagesEs,
+        FormidableCollectionMessagesEs,
         FormidableCombinatorMessagesEs,
         FormidableCrossFieldMessagesEs,
         FormidableDateMessagesEs,
+        FormidableFileMessagesEs,
+        FormidableFinanceMessagesEs,
         FormidableFormatMessagesEs,
+        FormidableLocaleMessagesEs,
+        FormidableNetworkMessagesEs,
         FormidableNumberMessagesEs,
         FormidableParsingMessagesEs,
         FormidablePresenceMessagesEs,
@@ -137,10 +167,15 @@ class FormidableLocalizationsFr extends FormidableLocalizations
     with
         FormidableAsyncMessagesFr,
         FormidableChoiceMessagesFr,
+        FormidableCollectionMessagesFr,
         FormidableCombinatorMessagesFr,
         FormidableCrossFieldMessagesFr,
         FormidableDateMessagesFr,
+        FormidableFileMessagesFr,
+        FormidableFinanceMessagesFr,
         FormidableFormatMessagesFr,
+        FormidableLocaleMessagesFr,
+        FormidableNetworkMessagesFr,
         FormidableNumberMessagesFr,
         FormidableParsingMessagesFr,
         FormidablePresenceMessagesFr,
@@ -153,10 +188,15 @@ class FormidableLocalizationsDe extends FormidableLocalizations
     with
         FormidableAsyncMessagesDe,
         FormidableChoiceMessagesDe,
+        FormidableCollectionMessagesDe,
         FormidableCombinatorMessagesDe,
         FormidableCrossFieldMessagesDe,
         FormidableDateMessagesDe,
+        FormidableFileMessagesDe,
+        FormidableFinanceMessagesDe,
         FormidableFormatMessagesDe,
+        FormidableLocaleMessagesDe,
+        FormidableNetworkMessagesDe,
         FormidableNumberMessagesDe,
         FormidableParsingMessagesDe,
         FormidablePresenceMessagesDe,

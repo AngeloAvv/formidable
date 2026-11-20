@@ -306,6 +306,42 @@ class Account {
         expect(result.errors.join('\n'), contains('MinLength'));
       },
     );
+
+    test('checks the Validators of Each against the element type', () async {
+      final result = await build(
+        annotations: '@Each([MinLength(3)])',
+        type: 'List<int>',
+      );
+
+      expect(result.succeeded, isFalse);
+      final errors = result.errors.join('\n');
+      expect(errors, allOf(contains('MinLength'), contains('elements')));
+      expect(errors, contains('int'));
+    });
+
+    test('accepts Each whose Validators fit the elements', () async {
+      final strings = await build(
+        annotations: '@Each([MinLength(3)])',
+        type: 'List<String>',
+      );
+      final nullable = await build(
+        annotations: '@Each([MinLength(3)])',
+        type: 'Set<String?>?',
+      );
+
+      expect(strings.succeeded, isTrue);
+      expect(nullable.succeeded, isTrue);
+    });
+
+    test('rejects Each on a Field that is not a collection', () async {
+      final result = await build(
+        annotations: '@Each([MinLength(3)])',
+        type: 'String',
+      );
+
+      expect(result.succeeded, isFalse);
+      expect(result.errors.join('\n'), contains('Each'));
+    });
   });
 
   group('Required warning', () {

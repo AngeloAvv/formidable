@@ -40,6 +40,7 @@ const _asyncFormValidatorChecker = TypeChecker.typeNamed(
   inPackage: 'formidable',
 );
 
+const _eachChecker = TypeChecker.typeNamed(Each, inPackage: 'formidable');
 const _formValidatorChecker = TypeChecker.typeNamed(
   FormidableFormValidator,
   inPackage: 'formidable',
@@ -567,8 +568,16 @@ List<AsyncParameter> _collectAsyncParameters(
 /// `MinLength` (a `String` Validator) fits both `String` and `String?`.
 ///
 /// A combinator such as `AnyOf` holds other Validators in its fields. They are
-/// called with the same value, so each of them has to fit too.
-void _checkValidatorFits(FieldElement field, DartObject object) {
+/// called with the same value, so each of them has to fit too. The members of
+/// `Each` judge the elements, so they are checked against the element type of
+/// the Field instead.
+///
+/// [valueType] is the type the Validator receives, the Field type by default.
+void _checkValidatorFits(
+  FieldElement field,
+  DartObject object, [
+  DartType? valueType,
+]) {
   final validatorType = object.type;
   if (validatorType is! InterfaceType) return;
   final accepted = validatorType.allSupertypes
@@ -581,17 +590,27 @@ void _checkValidatorFits(FieldElement field, DartObject object) {
       .firstOrNull;
   if (accepted == null) return;
   final typeSystem = field.library.typeSystem;
-  final fieldType = typeSystem.promoteToNonNull(field.type);
+  final receivedType = valueType ?? field.type;
+  final fieldType = typeSystem.promoteToNonNull(receivedType);
   if (!typeSystem.isAssignableTo(fieldType, accepted)) {
     final validator = validatorType.element.name;
+    final what = valueType == null ? 'the Field' : 'the elements';
     throw InvalidGenerationSourceError(
       '@$validator cannot be used on "${field.name}" of '
       '${field.enclosingElement.name}: it validates '
-      '${accepted.getDisplayString()}, but the Field is '
-      '${field.type.getDisplayString()}. Use a Validator that accepts '
-      '${field.type.getDisplayString()}, or change the Field type.',
+      '${accepted.getDisplayString()}, but $what is '
+      '${receivedType.getDisplayString()}. Use a Validator that accepts '
+      '${receivedType.getDisplayString()}, or change the Field type.',
       element: field,
     );
+  }
+  var memberValueType = valueType;
+  if (_eachChecker.isExactlyType(validatorType)) {
+    // The Field type fits `Iterable<Object?>`, so it has an element type.
+    memberValueType = (fieldType as InterfaceType)
+        .asInstanceOf(field.library.typeProvider.iterableElement)
+        ?.typeArguments
+        .single;
   }
   for (final member in validatorType.element.fields) {
     if (member.isStatic) continue;
@@ -600,7 +619,7 @@ void _checkValidatorFits(FieldElement field, DartObject object) {
       final nestedType = nested.type;
       if (nestedType != null &&
           _validatorChecker.isAssignableFromType(nestedType)) {
-        _checkValidatorFits(field, nested);
+        _checkValidatorFits(field, nested, memberValueType);
       }
     }
   }

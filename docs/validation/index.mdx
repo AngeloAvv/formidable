@@ -7,12 +7,7 @@ description: Rules attached to Fields as annotations
 
 A Validator is a synchronous rule declared as an annotation on a Field. It returns zero or more typed Validation Errors and runs only while the Field has a value.
 
-The built-in catalog has one reference page per category:
-
-- [String Validators](/validation/strings): length, content, character classes, passwords and words.
-- [Format Validators](/validation/formats): email, URL, identifiers, colors, encodings and checksums.
-
-The other categories arrive in later releases.
+The built-in catalog has one reference page per category, listed below.
 
 Rules that span several Fields, such as `@MustMatch(#password)`, are covered in [Cross-field rules](/validation/cross-field).
 
@@ -24,8 +19,15 @@ How an error turns into the text the user reads, in five languages, is covered i
 
 ## Built-in catalog
 
+- [String Validators](/validation/strings): length, content, character classes, passwords and words.
+- [Format Validators](/validation/formats): email, URL, identifiers, colors, encodings and checksums.
 - [Number Validators](/validation/numbers)
 - [Date Validators](/validation/dates)
 - [Choice and equality Validators](/validation/choices)
+- [Collection Validators](/validation/collections)
+- [File Validators](/validation/files)
+- [Network Validators](/validation/network)
+- [Finance Validators](/validation/finance)
+- [Locale Validators](/validation/locale)
 
 Rules that call a service run through [Asynchronous validation](/validation/async).
