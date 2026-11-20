@@ -2,4 +2,12 @@
 /// headless Binding of `formidable_flutter`.
 library;
 
+export 'src/checkbox.dart';
+export 'src/date_picker.dart';
+export 'src/dropdown.dart';
+export 'src/radio_group.dart';
+export 'src/segmented_button.dart';
+export 'src/slider.dart';
+export 'src/switch.dart';
 export 'src/text_field.dart';
+export 'src/time_picker.dart';

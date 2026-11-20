@@ -1,6 +1,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:formidable/formidable.dart';
 
+import 'error_display.dart';
+
 /// The link between one Field and one widget.
 ///
 /// It keeps the value the widget shows, its focus and its errors in sync with
@@ -17,12 +19,16 @@ class FormidableBinding<T> extends ChangeNotifier {
     FocusNode? focusNode,
     TextEditingController? textController,
     this._codec,
+    this.errorDisplay = FormidableErrorDisplay.touched,
   }) : _ownsFocusNode = focusNode == null,
        _ownsTextController = textController == null,
        focusNode = focusNode ?? FocusNode(),
        _textController = textController {
     field.addListener(_onFieldChanged);
     this.focusNode.addListener(_onFocusChanged);
+    _unregisterFocus = field.registerFocusTarget(
+      _FocusNodeTarget(this.focusNode),
+    );
     _hadFocus = this.focusNode.hasFocus;
     if (_textController != null) _syncText();
   }
@@ -32,6 +38,10 @@ class FormidableBinding<T> extends ChangeNotifier {
 
   /// Turns a Validation Error into the text shown for it.
   final String Function(FormidableValidationError error) resolveMessage;
+  late final void Function() _unregisterFocus;
+
+  /// When errors are shown. The builder keeps it current.
+  FormidableErrorDisplay errorDisplay;
   final bool _ownsFocusNode;
   final bool _ownsTextController;
   TextEditingController? _textController;
@@ -48,15 +58,21 @@ class FormidableBinding<T> extends ChangeNotifier {
   bool get isSet => field.isSet;
 
   /// Whether the widget accepts input.
-  bool get enabled => true;
+  bool get enabled => field.state.enabled;
 
   /// The Validation Message to show, or null when no error should be shown.
   ///
-  /// Errors are shown once the Field is touched, and the first error in the
-  /// order of the annotations wins.
+  /// Errors are shown according to [errorDisplay], and the first error in the
+  /// order of the annotations wins. A disabled Field has none.
   String? get errorText {
     final state = field.state;
-    if (!state.touched || state.errors.isEmpty) return null;
+    if (state.errors.isEmpty) return null;
+    final shown = errorDisplay.shows(
+      touched: state.touched,
+      dirty: state.dirty,
+      submitted: state.submitted,
+    );
+    if (!shown) return null;
     return resolveMessage(state.errors.first);
   }
 
@@ -94,6 +110,26 @@ class FormidableBinding<T> extends ChangeNotifier {
 
   /// The widget has no value any more.
   void onCleared() => field.clear();
+
+  /// The user chose [value] in a widget that is not a text input, such as a
+  /// checkbox, a switch or a picker.
+  ///
+  /// Sets the Field and marks it touched: such a widget has no moment where it
+  /// "loses focus", so the first interaction is what counts. [value] can be
+  /// null when the type of the Field allows it, because choosing null is a
+  /// value and not an Unset Field.
+  void onPicked(T value) {
+    field.setValue(value);
+    field.markAsTouched();
+  }
+
+  /// The user removed the value of a widget that is not a text input.
+  ///
+  /// Clears the Field (it becomes Unset) and marks it touched.
+  void onUnpicked() {
+    field.clear();
+    field.markAsTouched();
+  }
 
   /// The user typed [text] into a text widget.
   ///
@@ -152,9 +188,22 @@ class FormidableBinding<T> extends ChangeNotifier {
   @override
   void dispose() {
     field.removeListener(_onFieldChanged);
+    _unregisterFocus();
     focusNode.removeListener(_onFocusChanged);
     if (_ownsFocusNode) focusNode.dispose();
     if (_ownsTextController) _textController?.dispose();
     super.dispose();
   }
+}
+
+class _FocusNodeTarget implements FormidableFocusTarget {
+  _FocusNodeTarget(this._focusNode);
+
+  final FocusNode _focusNode;
+
+  @override
+  void focus() => _focusNode.requestFocus();
+
+  @override
+  void unfocus() => _focusNode.unfocus();
 }

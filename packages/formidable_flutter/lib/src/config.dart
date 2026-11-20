@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:formidable/formidable.dart';
 
+import 'error_display.dart';
 import 'messages.dart';
 
 /// App-wide configuration of Formidable.
@@ -15,6 +16,7 @@ class FormidableConfig extends InheritedWidget {
   const FormidableConfig({
     super.key,
     this.messages = const FormidableMessages(),
+    this.errorDisplay = FormidableErrorDisplay.touched,
     this.codecs = FormidableCodecs.defaults,
     required super.child,
   });
@@ -22,6 +24,9 @@ class FormidableConfig extends InheritedWidget {
   /// The messages for custom errors, or for built-in errors whose wording
   /// should differ from the localizations.
   final FormidableMessages messages;
+
+  /// When errors are shown, for every Form below. A Form Scope can set its own.
+  final FormidableErrorDisplay errorDisplay;
 
   /// The Codecs widgets pick from, by the type of the Field and the type the
   /// widget shows. Extend the built-in ones with
@@ -47,5 +52,7 @@ class FormidableConfig extends InheritedWidget {
 
   @override
   bool updateShouldNotify(FormidableConfig oldWidget) =>
-      messages != oldWidget.messages || codecs != oldWidget.codecs;
+      messages != oldWidget.messages ||
+      codecs != oldWidget.codecs ||
+      errorDisplay != oldWidget.errorDisplay;
 }
