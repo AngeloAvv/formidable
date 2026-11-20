@@ -8,6 +8,7 @@ String emitScopeLibrary(
 }) {
   final out = StringBuffer()
     ..writeln('// GENERATED CODE - DO NOT MODIFY BY HAND')
+    ..writeln('// ignore_for_file: type=lint')
     ..writeln()
     ..writeln("import 'package:flutter/widgets.dart';")
     ..writeln("import 'package:formidable_flutter/formidable_flutter.dart';")

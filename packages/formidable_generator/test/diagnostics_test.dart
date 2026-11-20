@@ -14,10 +14,7 @@ Future<TestBuilderResult> _build(
   await readerWriter.testing.loadIsolateSources();
   return testBuilder(
     builder,
-    {
-      'app|lib/schema.dart': schema,
-      'app|pubspec.yaml': ?pubspec,
-    },
+    {'app|lib/schema.dart': schema, 'app|pubspec.yaml': ?pubspec},
     rootPackage: 'app',
     readerWriter: readerWriter,
     generateFor: {'app|lib/schema.dart'},
@@ -97,7 +94,9 @@ class SignUp {
 ''');
 
       expect(result.succeeded, isTrue);
-      expect(result.outputs.map((id) => id.path), ['lib/schema.formidable.dart']);
+      expect(result.outputs.map((id) => id.path), [
+        'lib/schema.formidable.dart',
+      ]);
     });
   });
 
@@ -113,20 +112,21 @@ class SignUp {
 }
 ''';
 
-    test('writes the scope library when the package uses the bindings',
-        () async {
-      final result = await _build(
-        scopeBuilder,
-        schema,
-        pubspec: 'name: app\ndependencies:\n  formidable_flutter: ^0.1.0\n',
-      );
+    test(
+      'writes the scope library when the package uses the bindings',
+      () async {
+        final result = await _build(
+          scopeBuilder,
+          schema,
+          pubspec: 'name: app\ndependencies:\n  formidable_flutter: ^0.1.0\n',
+        );
 
-      expect(result.succeeded, isTrue);
-      expect(
-        result.outputs.map((id) => id.path),
-        ['lib/schema.formidable_scope.dart'],
-      );
-    });
+        expect(result.succeeded, isTrue);
+        expect(result.outputs.map((id) => id.path), [
+          'lib/schema.formidable_scope.dart',
+        ]);
+      },
+    );
 
     test('writes nothing when the package does not use the bindings', () async {
       final result = await _build(
