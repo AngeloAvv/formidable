@@ -1,0 +1,77 @@
+---
+title: Nested Forms
+description: Use a Schema as a Field of another Schema and reach its Fields through typed handles
+---
+
+# Nested Forms
+
+A Field whose type is another Schema (a class annotated with `@Formidable()`) becomes a **Nested Form**. You reach it through its parent Form, and its Fields are typed handles like any other.
+
+```dart
+@Formidable()
+class Address {
+  const Address({required this.street, this.zip});
+
+  @MinLength(2)
+  final String street;
+  final String? zip;
+}
+
+@Formidable()
+class Contact {
+  const Contact({required this.name, required this.home, this.work});
+
+  final String name;
+  final Address home;   // always present
+  final Address? work;  // optional: Unset until the user fills it
+}
+```
+
+```dart
+final form = ContactForm();
+
+form.home.street.setValue('Via Roma'); // a FormidableField<String>
+form.work.zip.setValue('00100');       // work is now set, so work.street is required
+
+final result = await form.submit();
+```
+
+`form.home` is the generated `AddressForm`, the same class you get for a Schema used on its own. It has its own `state`, listeners and `value`, and it works with the [reactive widgets](/form/state) (`FormidableFormBuilder<AddressForm>(form: form.home, ...)`) and with its own Form Scope (`AddressFormScope.value(form: form.home, child: ...)`). Nesting has no depth limit.
+
+## What works through nested levels
+
+- **Validation.** Every nested Field runs its own Validators. The parent is invalid while any Field below it is invalid, and `form.value` is null until every level is valid.
+- **Submit.** `submit()` collects the errors of every level. A `FormidableSubmitInvalid` addresses each error by the handle of the Field it belongs to, for example `form.home.street`. A valid submit builds the nested Schema instances into the output.
+- **Dirty.** A nested Field that differs from its initial state makes its Nested Form and every ancestor dirty. Going back makes them clean.
+- **Notifications.** A parent notifies its listeners of a state change below it. A `FormidableFormSelector` or `addChangeListener` also fires when a nested value changes and the state stays equal.
+- **Form Effects.** A Schema's Effects run for changes in its own Fields, and the Effects of a parent also see changes in nested Fields (`context.changed(form.home.street)`). They all settle together before validation.
+- **Disposal.** Disposing the parent disposes every Nested Form.
+
+## Creating a Form with initial values
+
+A Nested Form is created together with its parent:
+
+- `ContactForm()` creates every Nested Form with all its Fields Unset (or at their defaults).
+- `ContactForm(home: Address(street: 'Via Roma'))` takes a Schema instance for the Nested Form and prefills its Fields. The Fields start clean.
+- `ContactForm.from(contact)` prefills everything from a Schema instance.
+
+## Presence of a nullable Nested Form
+
+The rules of [required and optional Fields](/schema/presence) apply to a Nested Form:
+
+| Schema field | Presence |
+| --- | --- |
+| `final Address home;` | Required: always present, so its Fields always count. |
+| `final Address? work;` | Optional: **Unset** until the user fills it. |
+| `@Required() final Address? work;` | Required: always present. The user has to fill it in. |
+
+An Unset optional Nested Form is valid, does not block submit and contributes `null` to the output. It is set (`form.work.isSet`) as soon as one of its Fields differs from its initial state, and from then on its Fields' rules apply. When every Field goes back to its initial state, it is Unset again. Because that is derived from dirty, reset and patch need no special handling. A Nested Form created from a Schema instance (`ContactForm.from(...)` with a non-null `work`) starts set.
+
+There is nothing to mark Unset by hand: to take an optional Nested Form out of the output, put its Fields back to their initial state.
+
+## Rules and diagnostics
+
+- Put Validators, Normalizers and defaults on the Fields of the nested Schema, not on the Field that nests it. The generator fails the build if a Nested Form has them, or `@Passthrough()`.
+- A Schema cannot contain itself, directly or through other Schemas (`Chicken -> Egg -> Chicken`), because a Nested Form is always created with its parent.
+- A nested Schema with a `@Passthrough()` Field that must be supplied (for example an id) cannot be created empty. A non-nullable Nested Form of that Schema is then a `required` parameter of the parent's constructor, and a nullable one is rejected by the generator.
+- The nested Schema must be visible in the Schema's library (import it without `show`), because the generated parent refers to the generated `AddressForm`.

@@ -309,6 +309,172 @@ class EditUser {
     });
   });
 
+  group('Nested Form diagnostics', () {
+    const address = '''
+@Formidable()
+class Address {
+  const Address({required this.street});
+
+  final String street;
+}
+''';
+
+    test('a Schema nested in another Schema builds', () async {
+      final result = await _build(formBuilder, '''
+$_prelude
+$address
+@Formidable()
+class Contact {
+  const Contact({required this.home, this.work});
+
+  final Address home;
+  final Address? work;
+}
+''');
+
+      expect(result.succeeded, isTrue);
+    });
+
+    test('a Schema that contains itself fails', () async {
+      final result = await _build(formBuilder, '''
+$_prelude
+@Formidable()
+class Node {
+  const Node({this.next});
+
+  final Node? next;
+}
+''');
+
+      expect(result.succeeded, isFalse);
+      expect(
+        result.errors.join('\n'),
+        allOf(contains('Node'), contains('nests itself')),
+      );
+    });
+
+    test('two Schemas that contain each other fail', () async {
+      final result = await _build(formBuilder, '''
+$_prelude
+@Formidable()
+class Chicken {
+  const Chicken({this.egg});
+
+  final Egg? egg;
+}
+
+@Formidable()
+class Egg {
+  const Egg({this.chicken});
+
+  final Chicken? chicken;
+}
+''');
+
+      expect(result.succeeded, isFalse);
+      expect(result.errors.join('\n'), contains('Chicken -> Egg -> Chicken'));
+    });
+
+    test('a Nested Form cannot be a @Passthrough()', () async {
+      final result = await _build(formBuilder, '''
+$_prelude
+$address
+@Formidable()
+class Contact {
+  const Contact({required this.home});
+
+  @Passthrough()
+  final Address home;
+}
+''');
+
+      expect(result.succeeded, isFalse);
+      expect(
+        result.errors.join('\n'),
+        allOf(contains('home'), contains('cannot be a @Passthrough()')),
+      );
+    });
+
+    test('a Nested Form cannot have a Validator', () async {
+      final result = await _build(formBuilder, '''
+$_prelude
+$address
+@Formidable()
+class Contact {
+  const Contact({required this.home});
+
+  @MinLength(2)
+  final Address home;
+}
+''');
+
+      expect(result.succeeded, isFalse);
+      expect(
+        result.errors.join('\n'),
+        allOf(contains('home'), contains('Nested Form'), contains('MinLength')),
+      );
+    });
+
+    test('a Nested Form cannot have a default', () async {
+      final result = await _build(formBuilder, '''
+$_prelude
+$address
+@Formidable()
+class Contact {
+  const Contact({this.home = const Address(street: 'x')});
+
+  final Address home;
+}
+''');
+
+      expect(result.succeeded, isFalse);
+      expect(
+        result.errors.join('\n'),
+        allOf(contains('home'), contains('default value')),
+      );
+    });
+
+    test('a nullable Nested Form that needs a Passthrough fails', () async {
+      final result = await _build(formBuilder, '''
+$_prelude
+@Formidable()
+class Record {
+  const Record({required this.id});
+
+  @Passthrough()
+  final int id;
+}
+
+@Formidable()
+class Editor {
+  const Editor({this.record});
+
+  final Record? record;
+}
+''');
+
+      expect(result.succeeded, isFalse);
+      expect(
+        result.errors.join('\n'),
+        allOf(contains('record'), contains('@Passthrough()')),
+      );
+    });
+
+    test('the Scope builder fails on a cyclic Schema too', () async {
+      final result = await _build(scopeBuilder, '''
+$_prelude
+@Formidable()
+class Node {
+  const Node({this.next});
+
+  final Node? next;
+}
+''', pubspec: 'name: app\ndependencies:\n  formidable_flutter: any\n');
+
+      expect(result.succeeded, isFalse);
+    });
+  });
+
   group('Form Scope builder', () {
     const schema = '''
 import 'package:formidable/formidable.dart';
