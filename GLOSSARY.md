@@ -49,7 +49,7 @@ A part of a Form whose Fields are registered at runtime under string keys rather
 _Avoid_: Untyped form, free form
 
 **State**:
-The immutable snapshot that a Field, a Field Array or a Form publishes, and that listeners and widgets follow. The state of a Form holds the state of every child (Fields, Nested Forms, Field Arrays, Dynamic Forms) and the Schema value, so it differs from the previous one whenever anything below the Form changes. The generator types it after the Schema, for example `SignUpFormState`.
+The immutable snapshot that a Field, a Field Array or a Form publishes, and that listeners and widgets follow. The state of a Form holds the state of every child (Fields, Nested Forms, Field Arrays, Dynamic Forms), one member per Schema field, and its own metadata (status, dirty, pending, errors and the Schema value) under `state.form`. It differs from the previous one whenever anything below the Form changes. The Schema value is built lazily, from the states, on the first read. The generator types the state after the Schema, for example `SignUpFormState`.
 _Avoid_: Model, view model, store
 
 **Form Scope**:

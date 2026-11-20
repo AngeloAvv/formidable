@@ -56,5 +56,6 @@ When a Schema cannot become a Form, the build fails with a message that names th
 | A constructor parameter has no matching final field | Declare a final field with the same name as the parameter. |
 | The Schema is generic | Remove the type parameters. Generic Schemas are not supported. |
 | `@Formidable()` is on something other than a class | Move it to a class. |
+| A field has the name of a member of the generated Form (`value`, `state`, `isSet`, `submit`, `patch`, `replace`, `reset` and so on) or of its state (`form`) | Rename the field. The metadata of the state is under `state.form`, so `status`, `dirty`, `pending` and `errors` are free names. |
 
 One diagnostic is a warning, not an error: `@Required()` on a non-nullable Field. A non-nullable Field without a default is already required, so the annotation does nothing. The build still succeeds. Use `@Required()` only on nullable Fields, where it forces the user to make a choice.
