@@ -10,7 +10,7 @@ Two layers connect a Field to a widget:
 - **The headless Binding** (`FormidableBinding`, created by `FormidableBindingBuilder`) keeps the value, the focus and the errors of one Field in sync with one widget. It draws nothing, so it works with any widget, including third-party ones. It owns its focus node and text controller unless you pass your own, and it never disposes the ones you pass.
 - **Convenience widgets** for Material (`formidable_material`) and Cupertino (`formidable_cupertino`) are thin layers over the Binding.
 
-Material widgets for every common input are described in [Material widgets](/widgets/material). Build any other widget from `FormidableBindingBuilder`:
+Material widgets for every common input are described in [Material widgets](/widgets/material), and their Cupertino counterparts in [Cupertino widgets](/widgets/cupertino). Build any other widget from `FormidableBindingBuilder`:
 
 ```dart
 FormidableBindingBuilder<String>(

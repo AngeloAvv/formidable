@@ -24,6 +24,10 @@ class SignUpPage extends StatelessWidget {
             ),
             child: const Text('Material widgets'),
           ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pushNamed('/cupertino'),
+            child: const Text('Cupertino widgets'),
+          ),
         ],
       ),
       body: const Padding(padding: EdgeInsets.all(16), child: _SignUpBody()),
