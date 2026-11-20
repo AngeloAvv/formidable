@@ -129,13 +129,13 @@ void main() {
         form.username.markAsTouched();
 
         expect(fieldNotifications, 2);
-        // The Form became dirty once; touching changes nothing it reports.
-        expect(formNotifications, 1);
+        // The Form state holds the state of the Field: it follows it.
+        expect(formNotifications, 2);
 
         form.username.setValue('angelo');
 
         expect(fieldNotifications, 3);
-        expect(formNotifications, 2);
+        expect(formNotifications, 3);
         expect(form.state.status, FormidableStatus.valid);
       });
 

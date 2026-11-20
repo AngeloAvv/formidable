@@ -47,8 +47,9 @@ abstract interface class FormidableNode {
   /// listeners if its state changed. Called by the Form after Effects ran.
   void revalidate();
 
-  /// Calls [listener] whenever the node changes. A Form calls it only when its
-  /// state changed; its parent follows it with `addChangeListener` instead.
+  /// Calls [listener] whenever the state of the node changes. The state of a
+  /// node that has others below it holds their states, so this is also called
+  /// for every change below it.
   void addListener(void Function() listener);
 
   void removeListener(void Function() listener);

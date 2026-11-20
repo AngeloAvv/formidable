@@ -47,11 +47,11 @@ class Trip {
 
 ## 2. Build the rows
 
-`FormidableFieldArrayBuilder` rebuilds when the array changes and keys every row with the item's stable `id`, so the text, focus and scroll state of a row stay with its item when rows are added, removed or moved. `itemBuilder` builds one row; `builder` lays the rows out and receives the state of the array.
+`FormidableFieldArrayBuilder` rebuilds when the array or one of its items changes and keys every row with the item's stable `id`, so the text, focus and scroll state of a row stay with its item when rows are added, removed or moved. `itemBuilder` builds one row; `builder` lays the rows out and receives the state of the array.
 
 ```dart
 // example/lib/trip/trip_material.dart
-FormidableFieldArrayBuilder<StopForm, Stop>(
+FormidableFieldArrayBuilder(
   array: form.stops,
   itemBuilder: (context, index, item) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),
@@ -152,7 +152,7 @@ The errors of the array itself (too many stops, none at all) are in `state.error
 
 ```dart
 // example/lib/trip/trip_material.dart
-FormidableFieldArrayBuilder<FormidableField<String>, String>(
+FormidableFieldArrayBuilder(
   array: form.tags,
   itemBuilder: (context, index, item) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),

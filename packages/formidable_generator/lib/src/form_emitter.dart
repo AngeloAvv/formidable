@@ -146,9 +146,116 @@ String emitForm(SchemaModel schema) {
   out.writeln();
   out.writeln('  @override');
   out.writeln('  ${schema.name} buildOutput() => ${_construct(schema)};');
+  out.writeln();
+  out.writeln('  @override');
+  out.writeln(
+    '  ${schema.stateName} get state => super.state as ${schema.stateName};',
+  );
+  out.writeln();
+  out.writeln('  @override');
+  out.writeln('  ${schema.stateName} buildState({');
+  out.writeln('    required FormidableStatus status,');
+  out.writeln('    required bool dirty,');
+  out.writeln('    required bool pending,');
+  out.writeln('    required bool isSet,');
+  out.writeln('    required List<FormidableValidationError> errors,');
+  out.writeln('    required ${schema.name}? value,');
+  out.writeln('  }) => ${schema.stateName}(');
+  out.writeln('    status: status,');
+  out.writeln('    dirty: dirty,');
+  out.writeln('    pending: pending,');
+  out.writeln('    isSet: isSet,');
+  out.writeln('    errors: errors,');
+  out.writeln('    value: value,');
+  for (final f in fields) {
+    out.writeln('    ${f.name}: ${f.name}.state,');
+  }
+  out.writeln('  );');
   out.writeln('}');
+  out.writeln();
+  out.write(_state(schema));
   return out.toString().trimRight();
 }
+
+/// The immutable state of a Form: the generic Form state plus the state of
+/// every child, with deep equality.
+String _state(SchemaModel schema) {
+  final fields = schema.fields;
+  final name = schema.stateName;
+  final out = StringBuffer()
+    ..writeln(
+      '/// The state of a [${schema.formName}]: its status and the state of',
+    )
+    ..writeln(
+      '/// every Field, Nested Form and Field Array below it, as one immutable',
+    )
+    ..writeln('/// snapshot with deep equality.')
+    ..writeln('final class $name extends FormidableFormState {')
+    ..writeln('  $name({')
+    ..writeln('    required super.status,')
+    ..writeln('    required super.dirty,')
+    ..writeln('    required super.pending,')
+    ..writeln('    required super.isSet,')
+    ..writeln('    required super.errors,')
+    ..writeln('    required ${schema.name}? value,');
+  for (final f in fields) {
+    out.writeln('    required this.${f.name},');
+  }
+  out
+    ..writeln('  }) : super(value: value);')
+    ..writeln()
+    ..writeln(
+      '  /// The Schema instance while the Form is valid, not pending and set,',
+    )
+    ..writeln('  /// null otherwise. It does not take part in equality.')
+    ..writeln('  @override')
+    ..writeln('  ${schema.name}? get value => super.value as ${schema.name}?;');
+  for (final f in fields) {
+    out
+      ..writeln()
+      ..writeln('  final ${_stateType(f)} ${f.name};');
+  }
+  out
+    ..writeln()
+    ..writeln('  @override')
+    ..writeln('  bool operator ==(Object other) =>')
+    ..write('      super == other && other is $name');
+  for (final f in fields) {
+    out.write(' && other.${f.name} == ${f.name}');
+  }
+  out
+    ..writeln(';')
+    ..writeln()
+    ..writeln('  @override')
+    ..writeln(
+      '  int get hashCode => Object.hashAll([super.hashCode'
+      '${fields.map((f) => ', ${f.name}').join()}]);',
+    )
+    ..writeln()
+    ..writeln('  @override')
+    ..writeln(
+      "  String toString() => '$name(status: \$status, dirty: \$dirty, '",
+    )
+    ..writeln("      'pending: \$pending, isSet: \$isSet, errors: \$errors'");
+  for (final f in fields) {
+    out.writeln("      ', ${f.name}: \$${f.name}'");
+  }
+  out
+    ..writeln("      ')';")
+    ..writeln('}');
+  return out.toString();
+}
+
+/// The type of the state of [f] in the state of its Form.
+String _stateType(FieldModel f) => f.isDynamic
+    ? 'FormidableDynamicFormState'
+    : f.isNested
+    ? f.nested!.stateName
+    : f.isArray
+    ? 'FormidableFieldArrayState<${f.array!.itemStateType}>'
+    : f.isPassthrough
+    ? f.typeSource
+    : 'FormidableFieldState<${f.typeSource}>';
 
 /// A Passthrough Field must be given when it is non-nullable and has no
 /// default. Otherwise it is optional.
@@ -191,7 +298,7 @@ String _handleType(FieldModel f) => f.isDynamic
     : f.isNested
     ? f.nested!.formName
     : f.isArray
-    ? 'FormidableFieldArray<${f.array!.nodeType}, ${f.array!.elementTypeSource}>'
+    ? 'FormidableFieldArray<${f.array!.nodeType}, ${f.array!.elementTypeSource}, ${f.array!.itemStateType}>'
     : f.isPassthrough
     ? 'FormidablePassthrough<${f.typeSource}>'
     : 'FormidableField<${f.typeSource}>';
@@ -255,6 +362,7 @@ String _array(FieldModel f) {
   final arguments = [
     'create: (initial) => $create',
     'read: (item) => $read',
+    'itemState: (item) => item.state',
     if (f.validators.isNotEmpty)
       'validators: const [${f.validators.map((v) => v.replaceFirst('const ', '')).join(', ')}]',
     if (f.isRequired) 'required: true',
@@ -262,8 +370,8 @@ String _array(FieldModel f) {
     if (f.defaultSource != null) 'defaultValue: ${f.defaultSource}',
     'initial: ${f.name}',
   ];
-  return 'FormidableFieldArray<${array.nodeType}, $element>'
-      '(${arguments.join(', ')})';
+  return 'FormidableFieldArray<${array.nodeType}, $element, '
+      '${array.itemStateType}>(${arguments.join(', ')})';
 }
 
 String _field(FieldModel f) {

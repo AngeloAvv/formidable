@@ -99,7 +99,7 @@ void main() {
       expect(form.state.dirty, isFalse);
     });
 
-    test('notifies when status or dirty change, not otherwise', () {
+    test('notifies on every change of the Form, in order', () {
       final form = SignUpForm();
       final seen = <FormidableFormState>[];
       form.addListener(() => seen.add(form.state));
@@ -107,10 +107,12 @@ void main() {
       form.username.setValue('ab'); // dirty changes
       form.username.setValue('abc'); // still dirty and invalid
       form.username.setValue('angelo'); // valid
-      form.username.markAsTouched(); // nothing the Form reports
+      form.username.markAsTouched(); // touched is part of the state now
 
       expect(seen.map((s) => (s.status, s.dirty)), [
         (FormidableStatus.invalid, true),
+        (FormidableStatus.invalid, true),
+        (FormidableStatus.valid, true),
         (FormidableStatus.valid, true),
       ]);
     });
@@ -128,23 +130,6 @@ void main() {
         throwsUnsupportedError,
       );
     });
-
-    test(
-      'change listeners hear every change, even when the state is equal',
-      () {
-        final form = SignUpForm(username: 'angelo');
-        var changes = 0;
-        var states = 0;
-        form.addChangeListener(() => changes++);
-        form.addListener(() => states++);
-
-        form.username.setValue('angelo2'); // valid -> valid, dirty changes
-        form.username.setValue('angelo3'); // nothing in the state changes
-
-        expect(changes, 2);
-        expect(states, 1);
-      },
-    );
 
     test('notifications are synchronous', () {
       final form = SignUpForm();

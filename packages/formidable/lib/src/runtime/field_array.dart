@@ -25,20 +25,26 @@ final class FormidableFieldArrayItem<N extends FormidableNode> {
 
 /// An ordered collection of Nested Forms or Fields that can grow and shrink.
 ///
-/// [N] is the type of every item (a generated Form or a [FormidableField]) and
-/// [T] is the type of the value of an item, so the output is a `List<T>`.
+/// [N] is the type of every item (a generated Form or a [FormidableField]), [T]
+/// is the type of the value of an item, so the output is a `List<T>`, and [S]
+/// is the type of the state of an item (the generated state of a Nested Form or
+/// a [FormidableFieldState]), which the array state holds.
 ///
 /// An empty array is Unset, like a Field: it is required unless it is nullable
 /// or has a default. It is a [FormidableNode] and follows the same rules as a
 /// Nested Form: its writes run through the pipeline of its Form.
-final class FormidableFieldArray<N extends FormidableNode, T>
+final class FormidableFieldArray<N extends FormidableNode, T, S>
     with FormidableNotifierMixin
-    implements FormidableNode, FormidableObservable<FormidableFieldArrayState> {
+    implements
+        FormidableNode,
+        FormidableObservable<FormidableFieldArrayState<S>> {
   /// Creates a Field Array.
   ///
   /// - [create] makes an item, from a value or, when it is null, empty.
   /// - [read] returns the value of an item. It is called only when the item is
   ///   valid.
+  /// - [itemState] returns the current state of an item, which the state of
+  ///   the array holds.
   /// - [validators] judge the array as a whole while it has items. They receive
   ///   one entry per item: its value, or null while the item has none (an Unset
   ///   Field or a Nested Form that is not valid yet).
@@ -51,6 +57,7 @@ final class FormidableFieldArray<N extends FormidableNode, T>
   FormidableFieldArray({
     required N Function(T? initial) create,
     required T Function(N node) read,
+    required S Function(N node) itemState,
     List<FormidableValidator<Object?>> validators = const [],
     bool required = false,
     bool nullable = false,
@@ -58,6 +65,7 @@ final class FormidableFieldArray<N extends FormidableNode, T>
     List<T>? initial,
   }) : _create = create,
        _read = read,
+       _itemState = itemState,
        _validators = validators,
        _required = required,
        _nullable = nullable,
@@ -75,23 +83,23 @@ final class FormidableFieldArray<N extends FormidableNode, T>
 
   final N Function(T? initial) _create;
   final T Function(N node) _read;
+  final S Function(N node) _itemState;
   final List<FormidableValidator<Object?>> _validators;
   final bool _required;
   final bool _nullable;
   final List<T>? _defaultValue;
   final List<FormidableFieldArrayItem<N>> _items = [];
   late List<FormidableFieldArrayItem<N>> _initialItems;
-  final List<void Function()> _changeListeners = [];
   FormidablePipeline? _pipeline;
   int _nextId = 0;
   bool _touched = false;
   bool _submitted = false;
   bool _stale = false;
-  late FormidableFieldArrayState _state;
-  late FormidableFieldArrayState _notified;
+  late FormidableFieldArrayState<S> _state;
+  late FormidableFieldArrayState<S> _notified;
 
   @override
-  FormidableFieldArrayState get state => _state;
+  FormidableFieldArrayState<S> get state => _state;
 
   /// The items in order, each with its stable identifier. The list is a copy:
   /// it does not change when the array does.
@@ -197,17 +205,6 @@ final class FormidableFieldArray<N extends FormidableNode, T>
     _refresh();
   }
 
-  /// Calls [listener] after every change of the array or of any item, even one
-  /// that leaves [state] equal. A listener of [state] is called only when it
-  /// differs.
-  void addChangeListener(void Function() listener) {
-    assert(!isDisposed, 'Cannot add a listener to a disposed object.');
-    _changeListeners.add(listener);
-  }
-
-  void removeChangeListener(void Function() listener) =>
-      _changeListeners.remove(listener);
-
   // FormidableNode.
 
   @override
@@ -299,7 +296,6 @@ final class FormidableFieldArray<N extends FormidableNode, T>
       _unfollow(item.node);
       item.node.dispose();
     }
-    _changeListeners.clear();
     super.dispose();
   }
 
@@ -319,15 +315,13 @@ final class FormidableFieldArray<N extends FormidableNode, T>
     if (!_initialItems.contains(item)) item.node.dispose();
   }
 
-  void _follow(N node) => node is FormidableForm<Object?>
-      ? node.addChangeListener(_onItemChanged)
-      : node.addListener(_onItemChanged);
+  // The state of the array holds the state of its items, so following their
+  // state is following every change below the array.
+  void _follow(N node) => node.addListener(_onItemChanged);
 
-  void _unfollow(N node) => node is FormidableForm<Object?>
-      ? node.removeChangeListener(_onItemChanged)
-      : node.removeListener(_onItemChanged);
+  void _unfollow(N node) => node.removeListener(_onItemChanged);
 
-  void _onItemChanged() => _refresh(itemChanged: true);
+  void _onItemChanged() => _refresh();
 
   bool get _structureChanged {
     if (_items.length != _initialItems.length) return true;
@@ -364,22 +358,17 @@ final class FormidableFieldArray<N extends FormidableNode, T>
     }
   }
 
-  void _refresh({bool itemChanged = false}) {
+  void _refresh() {
     _stale = false;
     _state = _stateFor();
     final changed = _state != _notified;
     _notified = _state;
     if (changed) notifyListeners();
-    if (isDisposed) return;
-    if (changed || itemChanged) {
-      for (final listener in List.of(_changeListeners)) {
-        if (_changeListeners.contains(listener)) listener();
-      }
-    }
   }
 
-  FormidableFieldArrayState _stateFor() => FormidableFieldArrayState(
+  FormidableFieldArrayState<S> _stateFor() => FormidableFieldArrayState<S>(
     ids: [for (final item in _items) item.id],
+    items: [for (final item in _items) _itemState(item.node)],
     errors: _errors(),
     touched: _touched,
     submitted: _submitted,

@@ -102,7 +102,7 @@ class _SurveyBodyState extends State<_SurveyBody> {
             border: OutlineInputBorder(),
           ),
         ),
-        // Rebuilds when a Field is registered or removed.
+        // Rebuilds when a Field is registered, removed or edited.
         ValueListenableBuilder<FormidableDynamicFormState>(
           valueListenable: form.answers.asValueListenable(),
           builder: (context, state, _) => Column(

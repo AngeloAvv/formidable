@@ -113,12 +113,12 @@ FormidableSegmentedButton<String>(
 ),
 ```
 
-Save is on only while the Form is valid *and* has changes, so a [Form Selector](/form/state) reads `value` and `state.dirty` (the **declarative pattern**):
+Save is on only while the Form is valid *and* has changes, so the generated [Form Selector](/form/state) reads `value` and `dirty` from the state (the **declarative pattern**):
 
 ```dart
 // example/lib/contact/contact_material.dart
-FormidableFormSelector<ContactForm, bool>(
-  selector: (form) => form.value != null && form.state.dirty,
+ContactFormSelector<bool>(
+  selector: (state) => state.value != null && state.dirty,
   builder: (context, canSave) => FilledButton(
     onPressed: canSave ? () => _save(form) : null,
     child: const Text('Save'),

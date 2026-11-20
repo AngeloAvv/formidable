@@ -13,15 +13,18 @@ class TripMaterialPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TripFormScope(
-    child: Scaffold(
+    // The builder gets the Form and a context below the scope.
+    builder: (context, form) => Scaffold(
       appBar: AppBar(title: const Text('Trip')),
-      body: const _TripBody(),
+      body: _TripBody(form: form),
     ),
   );
 }
 
 class _TripBody extends StatefulWidget {
-  const _TripBody();
+  const _TripBody({required this.form});
+
+  final TripForm form;
 
   @override
   State<_TripBody> createState() => _TripBodyState();
@@ -41,7 +44,7 @@ class _TripBodyState extends State<_TripBody> {
 
   @override
   Widget build(BuildContext context) {
-    final form = context.tripForm;
+    final form = widget.form;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -55,7 +58,7 @@ class _TripBodyState extends State<_TripBody> {
         ),
         const SizedBox(height: 16),
         Text('Stops', style: Theme.of(context).textTheme.titleMedium),
-        FormidableFieldArrayBuilder<StopForm, Stop>(
+        FormidableFieldArrayBuilder(
           array: form.stops,
           itemBuilder: (context, index, item) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
@@ -123,7 +126,7 @@ class _TripBodyState extends State<_TripBody> {
         ),
         const SizedBox(height: 16),
         Text('Tags', style: Theme.of(context).textTheme.titleMedium),
-        FormidableFieldArrayBuilder<FormidableField<String>, String>(
+        FormidableFieldArrayBuilder(
           array: form.tags,
           itemBuilder: (context, index, item) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),

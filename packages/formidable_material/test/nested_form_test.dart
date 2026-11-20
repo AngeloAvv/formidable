@@ -125,8 +125,8 @@ void main() {
       app(
         CheckoutFormScope.value(
           form: form,
-          child: FormidableFormSelector<CheckoutForm, String?>(
-            selector: (form) => form.value?.billing.street,
+          child: CheckoutFormSelector<String?>(
+            selector: (state) => state.value?.billing.street,
             builder: (context, street) => Text('street:$street'),
           ),
         ),

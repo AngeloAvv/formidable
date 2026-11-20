@@ -78,7 +78,7 @@ A dynamic Field is a node of the Form like a declared one:
 - **Form Validators.** A Form Validator can address a dynamic Field in its errors.
 - **Dirty, reset and commit.** A dynamic Field that differs from its initial state makes the Form dirty. `reset()` and `commit()` reach every registered Field. Registering or removing a Field is structure, not user input: it does not make the Form dirty, and neither `reset()` nor `commit()` registers or removes anything.
 - **Focus order.** Dynamic Fields follow the Fields of the Schema in registration order, and the Fields of a registered Nested Form follow their Form.
-- **Notifications.** The Form notifies once when a Field is registered or removed. `form.answers.state.keys` changes then and only then, so a widget that lists the Fields can rebuild on it (`addListener` on `form.answers`).
+- **Notifications.** The Form notifies once when a Field is registered or removed. The state of the Dynamic Form, `form.answers.state`, holds the keys and the state of every registered Field (`state.field<String>('nickname')`), so a widget that lists the Fields can rebuild on it (`addListener` on `form.answers`) and it also changes when one of them does.
 
 ## Initial values, patch and replace
 

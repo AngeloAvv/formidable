@@ -35,14 +35,20 @@ String _scope(SchemaModel schema) {
       ? 'required $form Function() create,'
       : '$form Function()? create,';
   final createArgument = needsCreate ? 'create' : 'create ?? $form.new';
+  final state = schema.stateName;
+  final prefix = schema.name;
   return '''
 /// Creates a [$form], makes it available to the widgets below and disposes it.
+///
+/// Give it exactly one of `child` and `builder`. The `builder` receives the
+/// [$form] and a context below the scope.
 class $scope extends FormidableScope<$form> {
   $scope({
     super.key,
     $createParameter
     super.errorDisplay,
-    required super.child,
+    super.child,
+    super.builder,
   }) : super(create: $createArgument);
 
   /// Exposes a [$form] that something else owns, without disposing it.
@@ -50,7 +56,8 @@ class $scope extends FormidableScope<$form> {
     super.key,
     required $form form,
     super.errorDisplay,
-    required super.child,
+    super.child,
+    super.builder,
   }) : super.value(form: form);
 
   /// The [$form] of the closest [$scope] above [context].
@@ -61,6 +68,49 @@ class $scope extends FormidableScope<$form> {
 extension ${schema.name}FormContext on BuildContext {
   /// The [$form] of the closest [$scope] above this context.
   $form get $getter => $scope.of(this);
+}
+
+/// Rebuilds with the [$state] of a [$form] on every change of the Form.
+///
+/// Without `form` it uses the closest [$scope].
+class ${prefix}FormBuilder
+    extends FormidableTypedFormBuilder<$form, $state> {
+  const ${prefix}FormBuilder({
+    super.key,
+    super.form,
+    required super.builder,
+    super.buildWhen,
+  });
+}
+
+/// Calls `listener` with each new [$state] of a [$form], never for the state
+/// present when it is built.
+///
+/// Without `form` it uses the closest [$scope].
+class ${prefix}FormListener
+    extends FormidableTypedFormListener<$form, $state> {
+  const ${prefix}FormListener({
+    super.key,
+    super.form,
+    required super.listener,
+    required super.child,
+    super.listenWhen,
+  });
+}
+
+/// Rebuilds only when what `selector` picks from the [$state] of a [$form]
+/// changes.
+///
+/// Without `form` it uses the closest [$scope].
+class ${prefix}FormSelector<R>
+    extends FormidableTypedFormSelector<$form, $state, R> {
+  const ${prefix}FormSelector({
+    super.key,
+    super.form,
+    required super.selector,
+    required super.builder,
+    super.buildWhen,
+  });
 }
 ''';
 }

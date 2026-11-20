@@ -92,7 +92,7 @@ An Unset Required Field produces a `FormidableRequiredError`. `@MinLength` produ
 
 ## Use the Form in Flutter
 
-`SignUpFormScope` creates the Form and disposes it. Widgets below it get the Form from the context.
+`SignUpFormScope` creates the Form and disposes it. Widgets below it get the Form from the context, or from the `builder` of the scope, which gives you the Form and a context below the scope.
 
 ```dart
 class SignUpPage extends StatelessWidget {
@@ -100,30 +100,31 @@ class SignUpPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SignUpFormScope(
-        child: Builder(
-          builder: (context) => Column(
-            children: [
-              FormidableTextField(
-                field: context.signUpForm.username,
-                decoration: const InputDecoration(labelText: 'Username'),
-              ),
-              FilledButton(
-                onPressed: () async {
-                  switch (await context.signUpForm.submit()) {
-                    case FormidableSubmitValid(:final value):
-                      // Send value to your domain layer.
-                    case FormidableSubmitInvalid():
-                      // The errors are already on the Fields.
-                  }
-                },
-                child: const Text('Sign up'),
-              ),
-            ],
-          ),
+        builder: (context, form) => Column(
+          children: [
+            FormidableTextField(
+              field: form.username,
+              decoration: const InputDecoration(labelText: 'Username'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                switch (await form.submit()) {
+                  case FormidableSubmitValid(:final value):
+                    // Send value to your domain layer.
+                  case FormidableSubmitInvalid():
+                    // The errors are already on the Fields.
+                }
+              },
+              child: const Text('Sign up'),
+            ),
+          ],
         ),
       );
 }
 ```
+
+To rebuild when anything in the Form changes, use the generated `SignUpFormBuilder`, which gives you the typed state of the Form (`state.username.value`, `state.status`). See [State and reactive widgets](/form/state).
+
 
 `FormidableTextField` is a Material text field bound to a `String` Field:
 

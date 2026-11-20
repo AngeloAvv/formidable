@@ -914,8 +914,14 @@ class SignUp {
       'isValid',
       'isDirty',
       'buildOutput',
+      'buildState',
       'hashCode',
       'toString',
+      // Members of the generated state, which holds a getter for every Field.
+      'status',
+      'dirty',
+      'pending',
+      'errors',
     ]) {
       test('fails for a Field named $name', () async {
         final result = await build(name);
