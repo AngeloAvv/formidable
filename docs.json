@@ -39,7 +39,8 @@
       "pages": [
         { "title": "The generated Form", "href": "/form" },
         { "title": "State and reactive widgets", "href": "/form/state" },
-        { "title": "Form Effects", "href": "/form/effects" }
+        { "title": "Form Effects", "href": "/form/effects" },
+        { "title": "Writing, dirty and leaving the screen", "href": "/form/writes" }
       ]
     },
     {

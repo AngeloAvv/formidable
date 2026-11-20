@@ -9,6 +9,7 @@ export 'src/field_widgets.dart';
 export 'src/form_widgets.dart';
 export 'src/localizations/localizations.dart';
 export 'src/messages.dart';
+export 'src/pop_scope.dart';
 export 'src/observable_widgets.dart'
     show FormidableObservableAsValueListenable, FormidableStateCondition;
 export 'src/scope.dart';
