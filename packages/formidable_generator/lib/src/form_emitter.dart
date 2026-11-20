@@ -30,7 +30,7 @@ String emitForm(SchemaModel schema) {
       .join(', ');
   final fromForwards = [
     ...fields.map(
-      (f) => f.isPassthrough || f.isNested || f.isDynamic
+      (f) => f.isPassthrough || f.isNested || f.isDynamic || f.isArray
           ? '${f.name}: source.${f.name}'
           : '${f.name}: (value: source.${f.name})',
     ),
@@ -100,7 +100,8 @@ String emitForm(SchemaModel schema) {
   out.writeln(
     '  /// Form takes a Schema instance and replaces all its Fields; patch',
   );
-  out.writeln('  /// part of it through its own `patch`.');
+  out.writeln('  /// part of it through its own `patch`. A Field Array takes a list and');
+  out.writeln('  /// replaces all its items.');
   out.writeln('  void patch({$patchParameters}) => batch(() {');
   for (final f in fields) {
     out.writeln(
@@ -118,6 +119,12 @@ String emitForm(SchemaModel schema) {
   for (final f in fields) {
     if (f.isDynamic) {
       out.writeln('    ${f.name}.replace(source.${f.name});');
+    } else if (f.isArray) {
+      out.writeln(
+        f.isNullable
+            ? '    ${f.name}.setValue(source.${f.name} ?? const []);'
+            : '    ${f.name}.setValue(source.${f.name});',
+      );
     } else if (!f.isNested) {
       out.writeln('    ${f.name}.setValue(source.${f.name});');
     } else if (f.isNullable) {
@@ -143,7 +150,7 @@ bool _isRequiredParameter(FieldModel f) =>
     f.isPassthrough && !f.isNullable && f.defaultSource == null;
 
 String _privateParameter(FieldModel f) {
-  if (f.isDynamic) return '${f.optionalTypeSource} ${f.name}';
+  if (f.isDynamic || f.isArray) return '${f.optionalTypeSource} ${f.name}';
   if (f.isNested) {
     return f.nested!.requiresInitial
         ? 'required ${f.typeSource} ${f.name}'
@@ -163,7 +170,7 @@ String _partialParameter(FieldModel f) {
 }
 
 String _partialForward(FieldModel f) {
-  if (f.isNested || f.isDynamic) return '${f.name}: ${f.name}';
+  if (f.isNested || f.isDynamic || f.isArray) return '${f.name}: ${f.name}';
   if (!f.isPassthrough) {
     return '${f.name}: ${f.name} == null ? null : (value: ${f.name})';
   }
@@ -177,6 +184,8 @@ String _handleType(FieldModel f) => f.isDynamic
     ? 'FormidableDynamicForm'
     : f.isNested
     ? f.nested!.formName
+    : f.isArray
+    ? 'FormidableFieldArray<${f.array!.nodeType}, ${f.array!.elementTypeSource}>'
     : f.isPassthrough
     ? 'FormidablePassthrough<${f.typeSource}>'
     : 'FormidableField<${f.typeSource}>';
@@ -202,14 +211,57 @@ String _nested(FieldModel f) {
 
 String _output(FieldModel f) => f.isDynamic
     ? '${f.name}.output'
+    : f.isArray
+    ? (f.isNullable ? '${f.name}.outputOrNull' : '${f.name}.output')
     : f.isNested
     ? (_isOptionalNested(f)
           ? '${f.name}.outputOrNull'
           : '${f.name}.buildOutput()')
     : '${f.name}.output';
 
+/// The Field Array of [f]: the items are Nested Forms or Fields.
+String _array(FieldModel f) {
+  final array = f.array!;
+  final element = array.elementTypeSource;
+  final String create;
+  final String read;
+  if (array.nested != null) {
+    final form = array.nested!.formName;
+    final injected = array.nested!.asyncParameters
+        .map((p) => '${p.name}: ${p.name}')
+        .join(', ');
+    final fromInjected = injected.isEmpty ? '' : ', $injected';
+    create = 'initial == null ? $form($injected) : $form.from(initial$fromInjected)';
+    read = 'item.buildOutput()';
+  } else {
+    final source = array.fieldArraySource!;
+    final itemArguments = [
+      if (array.hasNormalizers)
+        'normalizers: $source.normalizers'
+            '.cast<FormidableNormalizer<$element>>()',
+      if (array.hasEach) 'validators: $source.each',
+      'initial: initial == null ? null : (value: initial)',
+    ];
+    create = 'FormidableField<$element>(${itemArguments.join(', ')})';
+    read = 'item.output';
+  }
+  final arguments = [
+    'create: (initial) => $create',
+    'read: (item) => $read',
+    if (f.validators.isNotEmpty)
+      'validators: const [${f.validators.map((v) => v.replaceFirst('const ', '')).join(', ')}]',
+    if (f.isRequired) 'required: true',
+    if (f.isNullable) 'nullable: true',
+    if (f.defaultSource != null) 'defaultValue: ${f.defaultSource}',
+    'initial: ${f.name}',
+  ];
+  return 'FormidableFieldArray<${array.nodeType}, $element>'
+      '(${arguments.join(', ')})';
+}
+
 String _field(FieldModel f) {
   if (f.isDynamic) return 'FormidableDynamicForm(initial: ${f.name})';
+  if (f.isArray) return _array(f);
   if (f.isNested) return _nested(f);
   if (f.isPassthrough) {
     return 'FormidablePassthrough<${f.typeSource}>(${f.name})';

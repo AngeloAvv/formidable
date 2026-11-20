@@ -10,6 +10,7 @@ import 'categories/cross_field.dart';
 import 'categories/dates.dart';
 import 'categories/files.dart';
 import 'categories/finance.dart';
+import 'categories/field_arrays.dart';
 import 'categories/formats.dart';
 import 'categories/locale.dart';
 import 'categories/network.dart';
@@ -38,6 +39,7 @@ abstract class FormidableLocalizations
         FormidableDateMessages,
         FormidableFileMessages,
         FormidableFinanceMessages,
+        FormidableFieldArrayMessages,
         FormidableFormatMessages,
         FormidableLocaleMessages,
         FormidableNetworkMessages,
@@ -96,7 +98,8 @@ abstract class FormidableLocalizations
       asyncMessageOf(error) ??
       numberMessageOf(error) ??
       dateMessageOf(error) ??
-      choiceMessageOf(error);
+      choiceMessageOf(error) ??
+      fieldArrayMessageOf(error);
 }
 
 /// English.
@@ -110,6 +113,7 @@ class FormidableLocalizationsEn extends FormidableLocalizations
         FormidableDateMessagesEn,
         FormidableFileMessagesEn,
         FormidableFinanceMessagesEn,
+        FormidableFieldArrayMessagesEn,
         FormidableFormatMessagesEn,
         FormidableLocaleMessagesEn,
         FormidableNetworkMessagesEn,
@@ -131,6 +135,7 @@ class FormidableLocalizationsIt extends FormidableLocalizations
         FormidableDateMessagesIt,
         FormidableFileMessagesIt,
         FormidableFinanceMessagesIt,
+        FormidableFieldArrayMessagesIt,
         FormidableFormatMessagesIt,
         FormidableLocaleMessagesIt,
         FormidableNetworkMessagesIt,
@@ -152,6 +157,7 @@ class FormidableLocalizationsEs extends FormidableLocalizations
         FormidableDateMessagesEs,
         FormidableFileMessagesEs,
         FormidableFinanceMessagesEs,
+        FormidableFieldArrayMessagesEs,
         FormidableFormatMessagesEs,
         FormidableLocaleMessagesEs,
         FormidableNetworkMessagesEs,
@@ -173,6 +179,7 @@ class FormidableLocalizationsFr extends FormidableLocalizations
         FormidableDateMessagesFr,
         FormidableFileMessagesFr,
         FormidableFinanceMessagesFr,
+        FormidableFieldArrayMessagesFr,
         FormidableFormatMessagesFr,
         FormidableLocaleMessagesFr,
         FormidableNetworkMessagesFr,
@@ -194,6 +201,7 @@ class FormidableLocalizationsDe extends FormidableLocalizations
         FormidableDateMessagesDe,
         FormidableFileMessagesDe,
         FormidableFinanceMessagesDe,
+        FormidableFieldArrayMessagesDe,
         FormidableFormatMessagesDe,
         FormidableLocaleMessagesDe,
         FormidableNetworkMessagesDe,

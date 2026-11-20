@@ -7,6 +7,8 @@ description: Move through a form with the keyboard, in Schema declaration order
 
 Users move through a form with the keyboard's action key. Formidable follows **Schema declaration order**, so the order of the Fields in your Schema is the order of the form.
 
+The order is a **tree order**: it descends into [Nested Forms](/schema/nested-forms) and into the items of [Field Arrays](/schema/field-arrays) right where they are declared. A Schema `title, origin (Nested Form), stops (Field Array), memo` is walked as `title`, the Fields of `origin`, the Fields of every stop in the order of the array, then `memo`. Adding, removing or moving an item changes the order with it. Submitting an invalid form focuses the first invalid Field in that same order.
+
 ```dart
 @Formidable()
 class Shipping {

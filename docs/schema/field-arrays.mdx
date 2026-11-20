@@ -1,0 +1,155 @@
+---
+title: Field Arrays and collections
+description: Repeatable sections and multi-value inputs, with stable identity and typed access
+---
+
+# Field Arrays and collections
+
+A **Field Array** is an ordered collection of Nested Forms (or of Fields) that can grow and shrink. It is generated from a list in the Schema.
+
+## A list of Schemas
+
+A `List` of Schemas (classes annotated with `@Formidable()`) becomes a Field Array of Nested Forms.
+
+```dart
+@Formidable()
+class Telephone {
+  const Telephone({required this.number, this.label});
+
+  @MinLength(3)
+  final String number;
+  final String? label;
+}
+
+@Formidable()
+class Person {
+  const Person({required this.name, this.phones = const []});
+
+  final String name;
+
+  @MaxItems(3)
+  final List<Telephone> phones;
+}
+```
+
+`form.phones` is a `FormidableFieldArray<TelephoneForm, Telephone>`:
+
+```dart
+final form = PersonForm();
+
+form.phones.add();                              // an empty TelephoneForm
+form.phones.add(const Telephone(number: '555'));    // prefilled
+form.phones.insert(0, const Telephone(number: '111'));
+form.phones.move(0, 2);                         // keeps the item and its state
+form.phones.removeAt(1);
+form.phones.remove(form.phones.items.first);
+form.phones.setValue([const Telephone(number: '777')]); // replaces every item
+form.phones.clear();
+
+form.phones.items.first.node.number.setValue('555'); // a typed handle
+```
+
+Every item is a `FormidableFieldArrayItem` with its generated Form in `node`. Each item is a full Nested Form: its Validators, Normalizers, Form Effects and Form Validators run for its own Fields, and a Form Validator of the parent can address a Field of an item.
+
+`PersonForm()` starts with no items, `PersonForm(phones: [...])` and `PersonForm.from(person)` start with one item per entry, and `patch(phones: [...])` and `replace(person)` replace the items as one change.
+
+## Stable identity
+
+Every item has an integer `id` that never changes while the item exists, survives `move`, and is never given to another item of the same array. Use it as the key of the widget of the row, so that adding, removing or reordering items never hands the text, focus or scroll state of one row to another:
+
+```dart
+for (final item in form.phones.items)
+  PhoneRow(key: ValueKey(item.id), form: item.node)
+```
+
+[`FormidableFieldArrayBuilder`](#the-field-array-builder) does that for you.
+
+## Validators and presence of the array itself
+
+Annotations on the list judge the array as a whole. The built-in `MinItems(n)` and `MaxItems(n)` judge the number of items, and any Validator typed for `Iterable<Object?>` fits. A Validator receives one entry per item: the value of the item, or `null` while the item has none yet (an Unset Field or an invalid Nested Form). The generator rejects a Validator that is not typed for `Iterable<Object?>`.
+
+An **empty array is Unset**, and the rules of [required and optional Fields](/schema/presence) apply:
+
+| Schema field | Empty array |
+| --- | --- |
+| `final List<Telephone> phones;` | Required: invalid until it has an item. |
+| `final List<Telephone>? phones;` | Optional: valid, the output is `null`. |
+| `final List<Telephone> phones = const [];` | Optional: valid, the output is the default. |
+| `@Required() final List<Telephone>? phones;` | Required. |
+
+Validators of the array run only while it has items, like the Validators of a Field run only while it has a value. The state of the array (`form.phones.state`) has `ids`, `length`, `errors` (the errors of the array itself, not of its items), `touched`, `dirty` and `submitted`. The errors of the items are errors of their own Fields.
+
+`submit()` collects both: the errors of every Field of every item in `fieldErrors`, in tree order, and the errors of the arrays themselves in `arrayErrors`, keyed by the array handle.
+
+## Behavior shared with Nested Forms
+
+- **Dirty, reset and commit.** Adding, removing or moving an item makes the Form dirty. `reset()` puts back the items the array had (the same Forms, each reset) and drops the new ones; `commit()` makes the current items the new initial state.
+- **Submit and focus.** `submit()` makes every item touched and submitted and focuses the first invalid Field in tree order. See [focus and keyboard actions](/widgets/focus).
+- **Notifications.** A listener of the array (`addListener`) is called when its state changes, for example when an item is added or moved. `addChangeListener` also fires for every change inside an item, as it does for a Nested Form.
+- **Disposal.** Removing an item disposes it, unless `reset()` could still bring it back. Disposing the parent disposes every item.
+
+## Lists, sets and maps of primitive values
+
+A `List`, `Set` or `Map` of primitive values is **one Field** by default, holding the whole collection. That is what a multi-select or a tag input wants:
+
+```dart
+final List<String> topics;       // FormidableField<List<String>>
+final Set<String> flags;         // FormidableField<Set<String>>
+final Map<String, int> counts;   // FormidableField<Map<String, int>>
+```
+
+Opt a list into a Field Array of Fields with `@FieldArray()` when every entry is an input of its own, with its own errors and widget:
+
+```dart
+@FieldArray(each: [MinLength(2)], normalizers: [Trim()])
+@MaxItems(5)
+final List<String> tags;         // FormidableFieldArray<FormidableField<String>, String>
+```
+
+`each` adds Validators and `normalizers` adds Normalizers to every item. The Validators written as annotations of the list still judge the list. An item of a `List<String>` is required, so an Unset item blocks submit; use `List<String?>` for items that may be null.
+
+## Build errors
+
+The build fails, with a message that names the Field, for:
+
+- a **set of Schemas** (`Set<Telephone>`): its items would have no stable identity and no order. Use a list;
+- a list of nullable Schemas (`List<Telephone?>`), because every item is a Form;
+- `@Passthrough()` on a list of Schemas or of `@FieldArray()` items;
+- Normalizers on the list itself (use `@FieldArray(normalizers: [...])`), or `each` / `normalizers` on a list of Schemas (put them on the Fields of the nested Schema);
+- `@FieldArray()` on something that is not a `List`;
+- a Validator on the array that is not typed for `Iterable<Object?>`, or an `each` Validator that does not fit the item type;
+- a Schema that contains itself, even through a list;
+- a list of Schemas whose items cannot be created empty because they have a required `@Passthrough()` Field. Make that Field nullable or give it a default.
+
+## The Field Array Builder
+
+`FormidableFieldArrayBuilder` rebuilds when the array changes and wraps every item in a widget keyed with its `id`. It has a synchronous first frame.
+
+```dart
+FormidableFieldArrayBuilder<TelephoneForm, Telephone>(
+  array: context.personForm.phones,
+  itemBuilder: (context, index, item) => Row(children: [
+    Expanded(
+      child: FormidableTextField<String>(
+        field: item.node.number,
+        decoration: const InputDecoration(labelText: 'Number'),
+      ),
+    ),
+    IconButton(
+      icon: const Icon(Icons.delete),
+      onPressed: () => context.personForm.phones.remove(item),
+    ),
+  ]),
+  builder: (context, state, items) => Column(children: [
+    ...items,
+    TextButton(
+      onPressed: context.personForm.phones.add,
+      child: const Text('Add phone'),
+    ),
+  ]),
+)
+```
+
+`builder` lays the rows out and receives the state of the array, which is where you show its errors (`state.errors`, through `formidableMessageOf`). It defaults to a `Column`; return a `ListView` for long lists. `buildWhen` limits the rebuilds.
+
+The item-count errors are localized in English, Italian, Spanish, French and German like every other built-in error.

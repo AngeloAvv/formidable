@@ -22,6 +22,10 @@ const _normalizerChecker = TypeChecker.typeNamed(
   inPackage: 'formidable',
 );
 const _dynamicChecker = TypeChecker.typeNamed(Dynamic, inPackage: 'formidable');
+const _fieldArrayChecker = TypeChecker.typeNamed(
+  FieldArray,
+  inPackage: 'formidable',
+);
 const _effectsChecker = TypeChecker.typeNamed(Effects, inPackage: 'formidable');
 const _validatorChecker = TypeChecker.typeNamed(
   FormidableValidator,
@@ -139,6 +143,7 @@ final class FieldModel {
     required this.isPassthrough,
     this.nested,
     this.isDynamic = false,
+    this.array,
   });
 
   final String name;
@@ -170,10 +175,16 @@ final class FieldModel {
   /// Set when the Field's type is another Schema: the Field is a Nested Form.
   final NestedModel? nested;
 
+  /// Set when the Field is a Field Array: a list of Schemas or a list of
+  /// primitive values annotated with `@FieldArray()`.
+  final ArrayModel? array;
+
   bool get isNested => nested != null;
 
   /// Whether the Field has `@Dynamic()`: its Fields are registered at runtime.
   final bool isDynamic;
+
+  bool get isArray => array != null;
 
   /// The type with a trailing `?`, for optional parameters.
   String get optionalTypeSource => isNullable ? typeSource : '$typeSource?';
@@ -197,6 +208,36 @@ final class NestedModel {
   /// Whether the nested Form cannot be created empty because it has a
   /// Passthrough Field that must be supplied.
   final bool requiresInitial;
+}
+
+/// What the emitters need to know about a Field Array.
+final class ArrayModel {
+  const ArrayModel({
+    required this.elementTypeSource,
+    this.nested,
+    this.fieldArraySource,
+    this.hasEach = false,
+    this.hasNormalizers = false,
+  });
+
+  /// The type of an item value as written, for example `Phone` or `String?`.
+  final String elementTypeSource;
+
+  /// Set when the items are Nested Forms of another Schema.
+  final NestedModel? nested;
+
+  /// The `@FieldArray(...)` annotation as a const expression, or null.
+  final String? fieldArraySource;
+
+  /// Whether `@FieldArray` carries Validators for every item.
+  final bool hasEach;
+
+  /// Whether `@FieldArray` carries Normalizers for every item.
+  final bool hasNormalizers;
+
+  /// The generated Form of the items, or `FormidableField<T>` for primitives.
+  String get nodeType =>
+      nested?.formName ?? 'FormidableField<$elementTypeSource>';
 }
 
 /// One argument of the Schema constructor call.
@@ -350,6 +391,9 @@ FieldModel _readField(
 ) {
   final isDynamic = _readDynamic(field, defaultSource, owner);
   final nested = _readNested(field, defaultSource, owner, path);
+  final array = nested == null
+      ? _readArray(field, defaultSource, owner, path)
+      : null;
   final validators = <String>[];
   final normalizers = <String>[];
   final crossFieldRules = <CrossFieldRuleModel>[];
@@ -359,11 +403,32 @@ FieldModel _readField(
     final type = value?.type;
     if (type == null) continue;
     if (_asyncValidatorChecker.isExactlyType(type) && type is InterfaceType) {
+      if (array != null || isDynamic) {
+        throw InvalidGenerationSourceError(
+          'Field "${field.name}" of ${owner.name} is a '
+          '${array != null ? 'Field Array' : 'Dynamic Form'} and cannot have '
+          '${annotation.toSource()}. Put the Async Validator on a Field of '
+          '${array != null ? 'its items' : 'the Dynamic Form, when you register it'}.',
+          element: field,
+        );
+      }
       asyncValidators.add(_readAsyncValidator(field, type));
     } else if (_normalizerChecker.isAssignableFromType(type)) {
+      if (array != null) {
+        throw InvalidGenerationSourceError(
+          'Field "${field.name}" of ${owner.name} is a Field Array and cannot '
+          'have ${annotation.toSource()} on the list. Normalizers apply to '
+          'the items: use @FieldArray(normalizers: [...]).',
+          element: field,
+        );
+      }
       normalizers.add('const ${annotation.toSource().substring(1)}');
     } else if (_validatorChecker.isAssignableFromType(type)) {
-      _checkValidatorFits(field, value!);
+      if (array != null) {
+        _checkArrayValidatorFits(field, value!);
+      } else {
+        _checkValidatorFits(field, value!);
+      }
       // The part file shares the Schema library's scope, so the annotation
       // source can be reused as a const expression as it is written.
       validators.add('const ${annotation.toSource().substring(1)}');
@@ -386,6 +451,7 @@ FieldModel _readField(
     isPassthrough: _passthroughChecker.hasAnnotationOf(field),
     nested: nested,
     isDynamic: isDynamic,
+    array: array,
   );
 }
 
@@ -444,6 +510,178 @@ bool _readDynamic(
     );
   }
   return true;
+}
+
+/// The Field Array model of [field], or null when it is a single Field.
+///
+/// A list of Schemas is always a Field Array. A list of anything else is one
+/// only with `@FieldArray()`. A set of Schemas is a build error: its items
+/// have no stable identity.
+ArrayModel? _readArray(
+  FieldElement field,
+  String? defaultSource,
+  ClassElement owner,
+  List<ClassElement> path,
+) {
+  final where = 'Field "${field.name}" of ${owner.name}';
+  final type = field.type;
+  final annotation = field.metadata.annotations
+      .where((a) {
+        final t = a.computeConstantValue()?.type;
+        return t != null && _fieldArrayChecker.isExactlyType(t);
+      })
+      .firstOrNull;
+
+  final listType = type is InterfaceType && type.isDartCoreList ? type : null;
+
+  if (type is InterfaceType && type.isDartCoreSet) {
+    final element = type.typeArguments.single;
+    final target = element is InterfaceType ? element.element : null;
+    if (target is ClassElement && isSchema(target)) {
+      throw InvalidGenerationSourceError(
+        '$where is a set of Schemas (${type.getDisplayString()}). The items of '
+        'a Field Array need a stable identity and an order, which a set does '
+        'not give. Use List<${target.name}>.',
+        element: field,
+      );
+    }
+  }
+
+  if (annotation != null && listType == null) {
+    throw InvalidGenerationSourceError(
+      '$where has @FieldArray(), which can only annotate a List, but the Field '
+      'is ${type.getDisplayString()}.',
+      element: field,
+    );
+  }
+  if (listType == null) return null;
+
+  final element = listType.typeArguments.single;
+  final target = element is InterfaceType ? element.element : null;
+  final isSchemaList = target is ClassElement && isSchema(target);
+  if (!isSchemaList && annotation == null) return null;
+
+  if (_passthroughChecker.hasAnnotationOf(field)) {
+    throw InvalidGenerationSourceError(
+      '$where is a Field Array and cannot be a @Passthrough(). A Passthrough '
+      'Field cannot change, so it cannot be a collection of items.',
+      element: field,
+    );
+  }
+
+  if (!isSchemaList) {
+    final each = <DartObject>[];
+    if (annotation != null) {
+      final value = annotation.computeConstantValue()!;
+      each.addAll(value.getField('each')?.toListValue() ?? const []);
+    }
+    for (final validator in each) {
+      _checkValidatorFits(
+        field,
+        validator,
+        valueType: element,
+        what: 'the items',
+      );
+    }
+    final value = annotation!.computeConstantValue()!;
+    return ArrayModel(
+      elementTypeSource: element.getDisplayString(),
+      fieldArraySource: 'const ${annotation.toSource().substring(1)}',
+      hasEach: each.isNotEmpty,
+      hasNormalizers:
+          value.getField('normalizers')?.toListValue()?.isNotEmpty ?? false,
+    );
+  }
+
+  if (annotation != null) {
+    final value = annotation.computeConstantValue()!;
+    if ((value.getField('each')?.toListValue()?.isNotEmpty ?? false) ||
+        (value.getField('normalizers')?.toListValue()?.isNotEmpty ?? false)) {
+      throw InvalidGenerationSourceError(
+        '$where is a Field Array of Nested Forms, so @FieldArray(each: ..., '
+        'normalizers: ...) has nothing to apply to. Put Validators and '
+        'Normalizers on the Fields of ${target.name}.',
+        element: field,
+      );
+    }
+  }
+  if (element.nullabilitySuffix == NullabilitySuffix.question) {
+    throw InvalidGenerationSourceError(
+      '$where is a list of nullable Schemas (${type.getDisplayString()}). '
+      'Every item of a Field Array of Nested Forms is a Form, so it cannot be '
+      'null. Use List<${target.name}>.',
+      element: field,
+    );
+  }
+  if (path.contains(target)) {
+    final cycle = [...path.skipWhile((c) => c != target), target];
+    throw InvalidGenerationSourceError(
+      '$where contains ${target.name}, which contains itself again '
+      '(${cycle.map((c) => c.name).join(' -> ')}). '
+      'A Nested Form is always created with its parent, so a Schema cannot '
+      'contain itself, not even through a list.',
+      element: field,
+    );
+  }
+  final itemSchema = readSchema(target, path);
+  if (itemSchema.requiresInitial) {
+    throw InvalidGenerationSourceError(
+      '$where is a list of ${target.name}, but ${target.name} has a '
+      '@Passthrough() Field that must be supplied, so a new item cannot be '
+      'created empty. Make that Field nullable or give it a default.',
+      element: field,
+    );
+  }
+  return ArrayModel(
+    elementTypeSource: element.getDisplayString(),
+    nested: NestedModel(
+      formName: itemSchema.formName,
+      requiresInitial: false,
+      asyncParameters: itemSchema.asyncParameters,
+    ),
+  );
+}
+
+/// Whether [field] becomes a Field Array: a list of Schemas, or a list with
+/// `@FieldArray()`.
+bool _isFieldArray(FieldElement field) {
+  final type = field.type;
+  if (type is! InterfaceType || !type.isDartCoreList) return false;
+  if (_fieldArrayChecker.hasAnnotationOf(field)) return true;
+  final element = type.typeArguments.single;
+  final target = element is InterfaceType ? element.element : null;
+  return target is ClassElement && isSchema(target);
+}
+
+/// Fails the build when a Validator on a Field Array cannot judge the list a
+/// Field Array hands it: one entry per item, as an `Iterable<Object?>`.
+void _checkArrayValidatorFits(FieldElement field, DartObject object) {
+  final validatorType = object.type;
+  if (validatorType is! InterfaceType) return;
+  final accepted = validatorType.allSupertypes
+      .where(
+        (t) =>
+            t.element.name == 'FormidableValidator' &&
+            _validatorChecker.isExactlyType(t),
+      )
+      .map((t) => t.typeArguments.single)
+      .firstOrNull;
+  if (accepted == null) return;
+  final typeSystem = field.library.typeSystem;
+  final received = field.library.typeProvider.iterableType(
+    field.library.typeProvider.objectQuestionType,
+  );
+  if (!typeSystem.isAssignableTo(received, accepted)) {
+    throw InvalidGenerationSourceError(
+      '@${validatorType.element.name} cannot be used on "${field.name}" of '
+      '${field.enclosingElement.name}: it validates '
+      '${accepted.getDisplayString()}, but a Field Array hands its Validators '
+      'one entry per item as Iterable<Object?>. Use a Validator that accepts '
+      'Iterable<Object?>, such as MinItems or MaxItems, or put the Validator '
+      'on the items with @FieldArray(each: [...]).',
+      element: field,
+    );
+  }
 }
 
 /// The nested Schema of [field], or null when its type is not a Schema.
@@ -600,6 +838,7 @@ List<AsyncParameter> _collectAsyncParameters(
   for (final parameter in [
     for (final f in fields) ...f.asyncValidators,
     for (final f in fields) ...?f.nested?.asyncParameters,
+    for (final f in fields) ...?f.array?.nested?.asyncParameters,
     ...formValidators,
   ]) {
     if (fieldNames.contains(parameter.name)) {
@@ -637,11 +876,13 @@ List<AsyncParameter> _collectAsyncParameters(
 /// the Field instead.
 ///
 /// [valueType] is the type the Validator receives, the Field type by default.
+/// [what] names it in the error message.
 void _checkValidatorFits(
   FieldElement field,
-  DartObject object, [
+  DartObject object, {
   DartType? valueType,
-]) {
+  String? what,
+}) {
   final validatorType = object.type;
   if (validatorType is! InterfaceType) return;
   final accepted = validatorType.allSupertypes
@@ -658,11 +899,11 @@ void _checkValidatorFits(
   final fieldType = typeSystem.promoteToNonNull(receivedType);
   if (!typeSystem.isAssignableTo(fieldType, accepted)) {
     final validator = validatorType.element.name;
-    final what = valueType == null ? 'the Field' : 'the elements';
+    final subject = what ?? (valueType == null ? 'the Field' : 'the elements');
     throw InvalidGenerationSourceError(
       '@$validator cannot be used on "${field.name}" of '
       '${field.enclosingElement.name}: it validates '
-      '${accepted.getDisplayString()}, but $what is '
+      '${accepted.getDisplayString()}, but $subject is '
       '${receivedType.getDisplayString()}. Use a Validator that accepts '
       '${receivedType.getDisplayString()}, or change the Field type.',
       element: field,
@@ -683,7 +924,7 @@ void _checkValidatorFits(
       final nestedType = nested.type;
       if (nestedType != null &&
           _validatorChecker.isAssignableFromType(nestedType)) {
-        _checkValidatorFits(field, nested, memberValueType);
+        _checkValidatorFits(field, nested, valueType: memberValueType);
       }
     }
   }
@@ -714,6 +955,16 @@ CrossFieldRuleModel _readCrossFieldRule(
       problem(
         'cannot be used: "${field.name}" is a Passthrough Field, which has '
         'no errors.',
+      ),
+      element: field,
+    );
+  }
+
+  if (_isFieldArray(field)) {
+    throw InvalidGenerationSourceError(
+      problem(
+        'cannot be used: "${field.name}" is a Field Array, which has no '
+        'single value to judge. Put the rule on a Field of its items.',
       ),
       element: field,
     );
@@ -756,6 +1007,15 @@ CrossFieldRuleModel _readCrossFieldRule(
         problem(
           'refers to #$name, which is a Passthrough Field. A Passthrough '
           'Field cannot be used in a rule.',
+        ),
+        element: field,
+      );
+    }
+    if (_isFieldArray(referenced)) {
+      throw InvalidGenerationSourceError(
+        problem(
+          'refers to #$name, which is a Field Array. A Field Array cannot be '
+          'used in a rule.',
         ),
         element: field,
       );
