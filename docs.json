@@ -29,6 +29,11 @@
       "group": "Validation",
       "pages": [
         { "title": "Validators", "href": "/validation" },
+        { "title": "Collection Validators", "href": "/validation/collections" },
+        { "title": "File Validators", "href": "/validation/files" },
+        { "title": "Network Validators", "href": "/validation/network" },
+        { "title": "Finance Validators", "href": "/validation/finance" },
+        { "title": "Locale Validators", "href": "/validation/locale" },
         { "title": "Custom Validators", "href": "/validation/custom" },
         { "title": "Normalizers", "href": "/validation/normalizers" },
         { "title": "Messages and localization", "href": "/validation/messages" }

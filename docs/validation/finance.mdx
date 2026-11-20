@@ -1,0 +1,57 @@
+---
+title: Finance Validators
+description: Rules for cards, bank accounts and currencies
+---
+
+# Finance Validators
+
+These Validators judge a `String` Field. Each has a typed error and a message in English, Italian, Spanish, French and German.
+
+```dart
+@Formidable()
+class Payment {
+  const Payment({
+    required this.card,
+    required this.cvc,
+    required this.expiry,
+    required this.iban,
+  });
+
+  @CreditCard(brands: [CardBrand.visa, CardBrand.mastercard])
+  final String card;
+
+  @CardCvc()
+  final String cvc;
+
+  @CardExpiry()
+  final String expiry;
+
+  @Iban(countries: ['IT', 'DE'])
+  final String iban;
+}
+```
+
+| Annotation | Passes when | Error |
+|---|---|---|
+| `CreditCard({brands})` | The digits (spaces and hyphens are ignored) pass the Luhn check. With `brands`, the number also has the prefix and length of one of them. Without, any number of 12 to 19 digits that passes the check is accepted. | `FormidableCreditCardError(brands)` |
+| `CardCvc()` | Three or four digits. | `FormidableCardCvcError` |
+| `CardExpiry({now})` | The value is `MM/YY` or `MM/YYYY` and the card has not expired. A card is valid through the end of the printed month. | `FormidableCardExpiryError` (not a date), `FormidableCardExpiredError` (in the past) |
+| `Iban({countries})` | The country code, length and mod 97 checksum are right. Spaces are ignored and case does not matter. With `countries`, only those ISO country codes pass. | `FormidableIbanError(countries)` |
+| `Bic()` | Four letters, two letters, two letters or digits, and optionally three more (8 or 11 characters). Case does not matter. | `FormidableBicError` |
+| `CurrencyCode()` | An ISO 4217 code in upper case, such as `EUR`. | `FormidableCurrencyCodeError` |
+
+The card brands are `visa`, `mastercard`, `amex`, `discover`, `diners`, `jcb`, `unionpay` and `maestro`.
+
+## Testing a card expiry
+
+`CardExpiry` reads the system clock. Give it your own clock with a top-level function, since an annotation is a constant:
+
+```dart
+DateTime fixedNow() => DateTime(2026, 6, 15);
+
+const validator = CardExpiry(now: fixedNow);
+```
+
+## What is not checked
+
+A valid card number is not a real card, and a valid IBAN is not an existing account. These Validators check the shape that can be known without asking a bank. The security code is checked for its length only: the length that a brand requires (four digits for American Express) is not enforced.

@@ -1,0 +1,39 @@
+---
+title: Locale Validators
+description: Rules for country, language and locale codes and for phone numbers
+---
+
+# Locale Validators
+
+These Validators judge a `String` Field. Each has a typed error and a message in English, Italian, Spanish, French and German.
+
+```dart
+@Formidable()
+class Traveler {
+  const Traveler({required this.country, required this.language, required this.phone});
+
+  @CountryCode()
+  final String country;
+
+  @LanguageCode()
+  final String language;
+
+  @Phone()
+  final String phone;
+}
+```
+
+| Annotation | Passes when | Error |
+|---|---|---|
+| `CountryCode()` | An ISO 3166-1 alpha-2 code in upper case that is officially assigned (`IT`, `US`). | `FormidableCountryCodeError` |
+| `LanguageCode()` | An ISO 639-1 code in lower case (`it`, `en`). | `FormidableLanguageCodeError` |
+| `LocaleCode()` | A language, an optional script and an optional region, separated by hyphens or underscores, never both: `en`, `en-US`, `zh_Hant_TW`, `es-419`. | `FormidableLocaleCodeError` |
+| `Phone()` | An E.164 number: a plus sign, a first digit from 1 to 9, and at most 15 digits in all, with no spaces or punctuation. | `FormidablePhoneError` |
+
+`LocaleCode` is not called `Locale` so it does not clash with Flutter's `Locale` in files that import both.
+
+In a locale, the language is an ISO 639-1 code, or any three lower case letters for the languages that have no two letter code (`fil`). The script has four letters with a capital first one. The region is an ISO 3166-1 alpha-2 code or three digits. Variants and extensions (`ca-ES-valencia`, `en-u-ca-gregory`) are not accepted.
+
+## Phone numbers
+
+`Phone` checks the shape of an international number and nothing else: it does not know which country codes exist, how long the numbers of a country are, or whether a number is assigned. Ask the user to type the number without separators, or remove them with a [Normalizer](/validation/normalizers) first.

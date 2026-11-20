@@ -1,0 +1,55 @@
+---
+title: Collection Validators
+description: Rules for lists, sets and maps, and for the elements inside them
+---
+
+# Collection Validators
+
+These Validators judge a whole `List`, `Set`, `Iterable` or `Map` Field. Each has a typed error and a message in English, Italian, Spanish, French and German.
+
+```dart
+@Formidable()
+class Basket {
+  const Basket({required this.items, required this.tags, required this.settings});
+
+  @NotEmpty()
+  final List<String> items;
+
+  @Unique(ignoreCase: true)
+  @Each([MinLength(2)])
+  final List<String> tags;
+
+  @HasKeys(['host', 'port'])
+  final Map<String, Object> settings;
+}
+```
+
+| Annotation | Passes when | Error |
+|---|---|---|
+| `NotEmpty()` | The `Iterable`, `Map` or `String` has at least one element. | `FormidableNotEmptyError` |
+| `Unique({ignoreCase})` | No element appears twice. With `ignoreCase: true`, strings that differ only in case are equal. | `FormidableUniqueError(duplicates)` |
+| `ContainsAll(values)` | Every value of the list is in the collection. | `FormidableContainsAllError(missing)` |
+| `ContainsNone(values)` | None of the values of the list is in the collection. | `FormidableContainsNoneError(found)` |
+| `HasKeys(keys)` | The map has every key. | `FormidableHasKeysError(missing)` |
+| `Each([validators])` | Every element passes every Validator in the list. | `FormidableEachError(failures)` |
+
+`NotEmpty` accepts an `Iterable`, a `Map` or a `String`, because Dart has no common type for them. Presence is a different thing: a Field that is Unset is reported by the [Required Field rules](/schema/presence), not by `NotEmpty`, and `NotEmpty` never runs on an Unset Field.
+
+## Each
+
+`Each` applies Validators to the elements of a collection. The Validators judge one element, so the generator checks them against the element type of the Field and fails the build when they do not fit:
+
+```dart
+@Each([MinLength(3)])
+final List<int> codes; // build error: MinLength validates String, the elements are int
+```
+
+When an element is `null` (a `List<String?>`), a Validator that does not accept null is skipped for it, as it is outside a collection.
+
+`FormidableEachError.failures` maps the position of every rejected element, counted from 0, to the errors of that element. The message lists the positions counted from 1, the way people read them.
+
+## Error data
+
+`FormidableUniqueError.duplicates` lists each repeated value once, as it first appeared. `FormidableContainsAllError.missing`, `FormidableContainsNoneError.found` and `FormidableHasKeysError.missing` list the values that broke the rule, in the order you declared them.
+
+See [Messages and localization](/validation/messages) to change the wording.

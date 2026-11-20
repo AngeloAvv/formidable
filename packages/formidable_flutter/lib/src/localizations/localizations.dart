@@ -2,7 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:formidable/formidable.dart';
 
+import 'categories/collections.dart';
 import 'categories/combinators.dart';
+import 'categories/files.dart';
+import 'categories/finance.dart';
+import 'categories/locale.dart';
+import 'categories/network.dart';
 import 'categories/parsing.dart';
 import 'categories/presence.dart';
 import 'categories/strings.dart';
@@ -19,7 +24,12 @@ import 'categories/strings.dart';
 /// not compile.
 abstract class FormidableLocalizations
     with
+        FormidableCollectionMessages,
         FormidableCombinatorMessages,
+        FormidableFileMessages,
+        FormidableFinanceMessages,
+        FormidableLocaleMessages,
+        FormidableNetworkMessages,
         FormidableParsingMessages,
         FormidablePresenceMessages,
         FormidableStringMessages {
@@ -63,13 +73,23 @@ abstract class FormidableLocalizations
       presenceMessageOf(error) ??
       stringMessageOf(error) ??
       combinatorMessageOf(error) ??
+      collectionMessageOf(error) ??
+      fileMessageOf(error) ??
+      networkMessageOf(error) ??
+      financeMessageOf(error) ??
+      localeMessageOf(error) ??
       parsingMessageOf(error);
 }
 
 /// English.
 class FormidableLocalizationsEn extends FormidableLocalizations
     with
+        FormidableCollectionMessagesEn,
         FormidableCombinatorMessagesEn,
+        FormidableFileMessagesEn,
+        FormidableFinanceMessagesEn,
+        FormidableLocaleMessagesEn,
+        FormidableNetworkMessagesEn,
         FormidableParsingMessagesEn,
         FormidablePresenceMessagesEn,
         FormidableStringMessagesEn {
@@ -79,7 +99,12 @@ class FormidableLocalizationsEn extends FormidableLocalizations
 /// Italian.
 class FormidableLocalizationsIt extends FormidableLocalizations
     with
+        FormidableCollectionMessagesIt,
         FormidableCombinatorMessagesIt,
+        FormidableFileMessagesIt,
+        FormidableFinanceMessagesIt,
+        FormidableLocaleMessagesIt,
+        FormidableNetworkMessagesIt,
         FormidableParsingMessagesIt,
         FormidablePresenceMessagesIt,
         FormidableStringMessagesIt {
@@ -89,7 +114,12 @@ class FormidableLocalizationsIt extends FormidableLocalizations
 /// Spanish.
 class FormidableLocalizationsEs extends FormidableLocalizations
     with
+        FormidableCollectionMessagesEs,
         FormidableCombinatorMessagesEs,
+        FormidableFileMessagesEs,
+        FormidableFinanceMessagesEs,
+        FormidableLocaleMessagesEs,
+        FormidableNetworkMessagesEs,
         FormidableParsingMessagesEs,
         FormidablePresenceMessagesEs,
         FormidableStringMessagesEs {
@@ -99,7 +129,12 @@ class FormidableLocalizationsEs extends FormidableLocalizations
 /// French.
 class FormidableLocalizationsFr extends FormidableLocalizations
     with
+        FormidableCollectionMessagesFr,
         FormidableCombinatorMessagesFr,
+        FormidableFileMessagesFr,
+        FormidableFinanceMessagesFr,
+        FormidableLocaleMessagesFr,
+        FormidableNetworkMessagesFr,
         FormidableParsingMessagesFr,
         FormidablePresenceMessagesFr,
         FormidableStringMessagesFr {
@@ -109,7 +144,12 @@ class FormidableLocalizationsFr extends FormidableLocalizations
 /// German.
 class FormidableLocalizationsDe extends FormidableLocalizations
     with
+        FormidableCollectionMessagesDe,
         FormidableCombinatorMessagesDe,
+        FormidableFileMessagesDe,
+        FormidableFinanceMessagesDe,
+        FormidableLocaleMessagesDe,
+        FormidableNetworkMessagesDe,
         FormidableParsingMessagesDe,
         FormidablePresenceMessagesDe,
         FormidableStringMessagesDe {
