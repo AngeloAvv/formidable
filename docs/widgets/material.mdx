@@ -5,7 +5,7 @@ description: Checkbox, switch, radio group, slider, dropdown, date and time pick
 
 # Material widgets
 
-`formidable_material` ships one widget for each common input. Every one is a thin layer over the headless [Binding](/widgets), built on `material_ui`, and binds to a Field with no glue code:
+`formidable_material` ships one widget for each common input. Every one is a [Field Widget](/widgets), built on `material_ui`, and binds to a Field with no glue code:
 
 ```dart
 FormidableCheckbox(field: form.acceptedTerms, title: const Text('I accept the terms'))
@@ -16,7 +16,7 @@ They all behave the same way:
 - **Touched.** A text field is touched when it loses focus. These widgets can't rely on that, so the first interaction marks the Field touched: toggling, picking, moving the thumb, or cancelling a dialog. The Validation Message shows from then on.
 - **Unset is not null.** An Unset Field is shown as "nothing chosen": an unchecked box, a switch that is off, no radio selected, the thumb at the minimum, an empty dropdown. The Field stays Unset until the user acts, and a required Field reports the missing value.
 - **Messages.** The Validation Message comes through the usual chain (see [Validation messages](/validation/messages)). Every widget takes `messages:` to override it for that widget only.
-- **Common parameters only.** Each widget exposes the parameters most code needs. For anything else, build the Material widget from a `FormidableBindingBuilder`.
+- **Common parameters only** (for now). The text field takes the whole API of `TextField`; the other widgets expose the parameters most code needs. For anything else, build the Material widget from a `FormidableFieldWidget` (see [Your own Field Widgets](/widgets/custom)).
 
 | Widget | Field type | Notes |
 | --- | --- | --- |
@@ -28,6 +28,48 @@ They all behave the same way:
 | `FormidableDatePicker` | `DateTime`, `DateTime?` | Opens `showDatePicker`. `firstDate`, `lastDate`, `initialDate`, `format`, `clearable`. |
 | `FormidableTimePicker` | `TimeOfDay`, `TimeOfDay?` | Opens `showTimePicker`. `initialTime`, `format`, `clearable`. |
 | `FormidableSegmentedButton<T>` | any `T` | One segment at a time. `allowDeselect` lets the user go back to Unset. |
+
+## The text field
+
+`FormidableTextField` takes every parameter of Flutter's `TextField`: `style`, `textAlign`, `textAlignVertical`, `inputFormatters`, `maxLength`, `autofillHints`, `onTap`, `onSubmitted`, `contextMenuBuilder` and the rest. Formidable owns four things, so they are not parameters: the `controller` (the Field is the source of truth), `enabled` (the Field says it), `onChanged` (follow the Field instead, with a `FormidableFieldListener`) and the deprecated parameters.
+
+```dart
+FormidableTextField<String>(
+  field: form.username,
+  style: const TextStyle(fontWeight: FontWeight.w600),
+  textAlignVertical: TextAlignVertical.center,
+  decoration: const InputDecoration(
+    labelText: 'Username',
+    helperText: 'Letters and numbers only',
+  ),
+)
+```
+
+### The decoration is merged
+
+There is no decoration builder. Your `decoration` is used as it is, and Formidable adds one thing: the Validation Message as `errorText`, only when your decoration has none. A custom `errorText` (for example one that comes from the server) still wins.
+
+For a decoration that depends on the value, build the widget inside a `FormidableFieldBuilder`, so it is rebuilt when the Field changes:
+
+```dart
+FormidableFieldBuilder<String>(
+  field: form.search,
+  builder: (context, state) => FormidableTextField<String>(
+    field: form.search,
+    decoration: InputDecoration(
+      suffixIcon: state.isSet
+          ? IconButton(icon: const Icon(Icons.clear), onPressed: form.search.clear)
+          : null,
+    ),
+  ),
+)
+```
+
+A null `decoration` draws no decoration, like `TextField`, and so no Validation Message either.
+
+### Keyboard action
+
+`textInputAction` defaults to "next" while another Field follows and "done" on the last one, and a multiline field keeps its newline key. Without `onEditingComplete`, the action moves focus to the next Field (see [Focus and keyboard actions](/widgets/focus)).
 
 ## A radio option that means null
 

@@ -5,7 +5,7 @@ description: Convenience widgets for iOS-style apps, built on cupertino_ui
 
 # Cupertino widgets
 
-`formidable_cupertino` gives every common Cupertino input a Field to bind to, with no glue code. The widgets are thin layers over the [headless Binding](/widgets) and use `cupertino_ui`.
+`formidable_cupertino` gives every common Cupertino input a Field to bind to, with no glue code. The widgets are [Field Widgets](/widgets) built on `cupertino_ui`.
 
 ```dart
 FormidableCupertinoTextField(field: form.age, placeholder: 'Age')
@@ -14,7 +14,7 @@ FormidableCupertinoSwitch(field: form.notifications)
 
 | Widget | Field type | Notes |
 | --- | --- | --- |
-| `FormidableCupertinoTextField<T>` | any type with a [Codec](/widgets/codecs) | `codec:` works like the Material text field. Touched when it loses focus. |
+| `FormidableCupertinoTextField<T>` | any type with a [Codec](/widgets/codecs) | The whole API of `CupertinoTextField`. `codec:` works like the Material text field. Touched when it loses focus. |
 | `FormidableCupertinoSwitch` | `bool` | An Unset Field shows the switch off. |
 | `FormidableCupertinoCheckbox` | `bool` | An Unset Field shows the box unchecked. |
 | `FormidableCupertinoSegmentedControl<T>` | `T` | `children` maps each value to the widget of its segment. |
@@ -41,25 +41,26 @@ FormidableCupertinoTextField<Money>(
 )
 ```
 
+The widget takes every parameter of `CupertinoTextField` (`style`, `padding`, `prefix`, `clearButtonMode`, `inputFormatters`, `onSubmitted`...), except what Formidable owns: the `controller`, `enabled` and `onChanged`. Cupertino has no error decoration, so the Validation Message is drawn under the field by `FormidableCupertinoErrorCaption`, the same way for every widget of the package. A null `decoration` gives the default rounded border; pass `const BoxDecoration()` to remove the box.
+
 ## Pickers and Unset Fields
 
 A picker always has to show something. An Unset Field shows the current time (date picker) or a duration of zero (timer picker) on the wheels, and stays Unset until the user moves them. A value set in code starts the wheels again on the new value; a value picked by the user never does.
 
-## Dropping down to the Binding
+## Dropping down to the base
 
-The widgets expose the most common parameters. For everything else, build the widget from `FormidableBindingBuilder`, as with any third-party widget:
+The text field takes the whole API of `CupertinoTextField`; the other widgets expose the most common parameters. For everything else, build the widget from `FormidableFieldWidget`, as with any third-party widget:
 
 ```dart
-FormidableBindingBuilder<bool?>(
+FormidableFieldWidget<bool?, bool?>(
   field: form.notifications,
-  builder: (context, binding) => CupertinoSwitch(
-    value: binding.value ?? false,
-    onChanged: (value) {
-      binding.onTouched();
-      binding.onChanged(value);
-    },
+  builder: (context, control) => CupertinoSwitch(
+    value: control.value ?? false,
+    onChanged: (value) => control.didChange(value, touch: true),
   ),
 )
 ```
+
+See [Your own Field Widgets](/widgets/custom).
 
 The example app has a page that shows every widget.

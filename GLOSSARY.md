@@ -96,9 +96,9 @@ _Avoid_: Error text, error string
 
 ### UI
 
-**Binding**:
-The link between one Field and one widget. It keeps the value the widget displays, its focus and its errors in sync with the Field.
-_Avoid_: Reactive field, field widget
+**Field Widget**:
+A widget that shows and edits one Field. It keeps the value the widget displays, its focus and its errors in sync with the Field, and writes what the user does back through the Field's pipeline. `FormidableFieldWidget` is the base that turns any widget into one, and its control is the state object that the widget reads and calls.
+_Avoid_: Binding, reactive field, form field
 
 **Codec**:
 A pure two-way conversion between a Field's value and the value a widget displays or edits. Parsing an edited value can fail, and when it does the failure becomes a Validation Error.

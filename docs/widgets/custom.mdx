@@ -1,0 +1,138 @@
+---
+title: Your own Field Widgets
+description: Turn any widget into a Formidable widget, by subclassing or ad hoc
+---
+
+# Your own Field Widgets
+
+Any widget can show a Field: a color picker, a rating, a map pin, a third-party input. You need `FormidableFieldWidget` from `formidable_flutter`, which depends only on the widgets library, so it works with any design system.
+
+The example is a color picker. The Field is a `Color?`, and the widget is a row of swatches. It knows nothing about Formidable:
+
+```dart
+class SwatchPicker extends StatelessWidget {
+  const SwatchPicker({
+    super.key,
+    required this.colors,
+    required this.selected,
+    required this.onSelected,
+    this.errorText,
+  });
+
+  final List<Color> colors;
+  final Color? selected;
+  final ValueChanged<Color> onSelected;
+  final String? errorText;
+
+  // ...a Row of tappable swatches, a border on the selected one, and the
+  // error text under it.
+}
+```
+
+## Ad hoc, with the builder
+
+Wrap it where you use it. The `builder` receives the control, which has everything the picker needs:
+
+```dart
+FormidableFieldWidget<Color?, Color?>(
+  field: form.color,
+  builder: (context, control) => SwatchPicker(
+    colors: const [Colors.red, Colors.green, Colors.blue],
+    selected: control.value,
+    onSelected: (color) => control.didChange(color, touch: true),
+    errorText: control.errorText,
+  ),
+)
+```
+
+- `control.value` is what the Field holds, so the picker follows changes made in code (a reset, a patch).
+- `control.didChange(color, touch: true)` writes the Field and marks it touched. The picker can't "lose focus", so the first tap is what counts, and `errorText` shows after it. Without `touch: true`, the error shows after the picker's focus node loses focus; give `control.focusNode` to a `Focus` widget around the picker to get that.
+- `control.errorText` is null until the error should show, with the same policy and Validation Messages as every other Formidable widget.
+
+## As a subclass
+
+When an app (or a package) uses the picker in many places, give it a name. Subclass `FormidableFieldWidget` and pass the builder to `super`:
+
+```dart
+class FormidableColorPicker extends FormidableFieldWidget<Color?, Color?> {
+  FormidableColorPicker({
+    super.key,
+    required super.field,
+    required List<Color> colors,
+    super.messages,
+    super.errorDisplay,
+    super.focusNode,
+  }) : super(
+         builder: (context, control) => SwatchPicker(
+           colors: colors,
+           selected: control.value,
+           onSelected: (color) => control.didChange(color, touch: true),
+           errorText: control.errorText,
+         ),
+       );
+}
+```
+
+Now it reads like the widgets of `formidable_material`:
+
+```dart
+FormidableColorPicker(
+  field: form.color,
+  colors: const [Colors.red, Colors.green, Colors.blue],
+)
+```
+
+A widget that needs more behavior than a builder gives overrides `createState` and returns a subclass of `FormidableFieldWidgetState<T, V>`. The state is a plain Flutter `State`: add fields, override `didChange` or `didChangeField`, and read your own widget parameters through a narrowed `widget` getter.
+
+```dart
+class _CountingState extends FormidableFieldWidgetState<Color?, Color?> {
+  int writes = 0;
+
+  @override
+  void didChange(Color? value, {bool touch = false}) {
+    writes++;
+    super.didChange(value, touch: touch);
+  }
+}
+```
+
+## A different view value
+
+The Field and the widget do not have to speak the same type. Say a rating is an `int` from 1 to 5, and your widget is a slider that works with a `double` from 0 to 1. Write a [Codec](/widgets/codecs) and pass it:
+
+```dart
+class RatingCodec extends FormidableCodec<int, double> {
+  const RatingCodec();
+
+  @override
+  double format(int value) => (value - 1) / 4;
+
+  @override
+  FormidableParseResult<int> parse(double input) =>
+      FormidableParsedValue((input * 4).round() + 1);
+}
+
+FormidableFieldWidget<int, double>(
+  field: form.rating,
+  codec: const RatingCodec(),
+  builder: (context, control) => Slider(
+    value: control.value ?? 0,
+    onChanged: (position) => control.didChange(position, touch: true),
+  ),
+)
+```
+
+`control.value` is the Field seen through `format`, and `didChange` goes through `parse`. A `FormidableParseFailure` rejects the Field with that error, and a `FormidableParsedUnset` clears it.
+
+## Keyboard navigation
+
+A widget that takes text input uses the same helpers as the text fields: give `control.focusNode` to the widget, `control.textInputAction` as its keyboard action and `control.onEditingComplete` as the handler. The Field is then part of the [focus order](/widgets/focus), and `form.field.focus()` reaches it.
+
+## What the widget gives you
+
+- The Field is **touched** when the focus node loses focus, or on `touch: true`.
+- It is registered for **focus navigation** and for focusing the first invalid Field on submit.
+- It rebuilds when the Field changes: value, errors, enabled, pending.
+- The focus node is **owned** by the control and disposed with it, unless you pass `focusNode:`, which is never disposed by the widget.
+
+For more on the Field behind the widget, see [State and reactive widgets](/form/state).

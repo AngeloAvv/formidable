@@ -34,7 +34,7 @@ The default registry covers these pairs, all to and from text. A Field of a null
 | `num` | whole numbers parse to `int`, anything else to `double` |
 | `DateTime` | ISO 8601: `2024-01-31` at midnight, a full ISO string otherwise |
 
-`FormidableTextField` and `FormidableBindingBuilder` pick the Codec for you:
+`FormidableTextField` and `FormidableTextFieldWidget` pick the Codec for you:
 
 ```dart
 FormidableTextField(field: form.age)        // FormidableField<int>

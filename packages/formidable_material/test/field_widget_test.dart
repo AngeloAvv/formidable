@@ -549,6 +549,8 @@ void main() {
     });
   });
 
+  _textTests();
+
   group('a custom state', () {
     testWidgets('a subclass can override createState', (tester) async {
       await tester.pumpWidget(_app(_CountingPicker(field: color)));
@@ -586,6 +588,100 @@ void main() {
       await tester.pump();
 
       expect(control.focusNode.hasFocus, isFalse);
+    });
+  });
+}
+
+void _textTests() {
+  group('text specialization', () {
+    late FormidableTextFieldWidgetState<int> control;
+
+    Future<void> mount(WidgetTester tester, FormidableField<int> field) =>
+        tester.pumpWidget(
+          _app(
+            FormidableTextFieldWidget<int>(
+              field: field,
+              builder: (context, c) {
+                control = c;
+                return TextField(controller: c.textController);
+              },
+            ),
+          ),
+        );
+
+    testWidgets('the controller shows the Field through the built-in Codec', (
+      tester,
+    ) async {
+      final age = FormidableField<int>(initial: (value: 42));
+      addTearDown(age.dispose);
+      await mount(tester, age);
+      expect(control.textController.text, '42');
+
+      age.setValue(7);
+      await tester.pump();
+
+      expect(control.textController.text, '7');
+    });
+
+    testWidgets('didChange parses text, and shows it when code calls it', (
+      tester,
+    ) async {
+      final age = FormidableField<int>();
+      addTearDown(age.dispose);
+      await mount(tester, age);
+
+      control.didChange('12');
+
+      expect(age.value, 12);
+      expect(control.textController.text, '12');
+
+      control.didChange('');
+      expect(age.isSet, isFalse);
+      expect(control.textController.text, isEmpty);
+    });
+
+    testWidgets('text that is not a number stays and rejects the Field', (
+      tester,
+    ) async {
+      final age = FormidableField<int>(initial: (value: 3));
+      addTearDown(age.dispose);
+      await mount(tester, age);
+
+      control.didChange('3x');
+      await tester.pump();
+
+      expect(age.inputError, isA<FormidableNumberParseError>());
+      expect(control.textController.text, '3x');
+    });
+
+    testWidgets('another Field replaces the text', (tester) async {
+      final first = FormidableField<int>(initial: (value: 1));
+      final second = FormidableField<int>(initial: (value: 2));
+      addTearDown(first.dispose);
+      addTearDown(second.dispose);
+      await mount(tester, first);
+      expect(control.textController.text, '1');
+
+      await mount(tester, second);
+
+      expect(control.textController.text, '2');
+    });
+
+    testWidgets('without a Codec for the type, the controller asserts', (
+      tester,
+    ) async {
+      final color = FormidableField<Color>();
+      addTearDown(color.dispose);
+      await tester.pumpWidget(
+        _app(
+          FormidableTextFieldWidget<Color>(
+            field: color,
+            builder: (context, c) => TextField(controller: c.textController),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isA<AssertionError>());
     });
   });
 }

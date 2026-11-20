@@ -50,16 +50,17 @@ When `onEditingComplete` is set, Formidable does not move the focus: it is up to
 
 ## In your own widgets
 
-`FormidableBinding` exposes the same behaviour for any text widget:
+The control of a [Field Widget](/widgets) exposes the same behaviour for any text widget:
 
 ```dart
-FormidableBindingBuilder<String>(
+FormidableTextFieldWidget<String>(
   field: form.name,
-  builder: (context, binding) => TextField(
-    controller: binding.textController,
-    focusNode: binding.focusNode,
-    textInputAction: binding.textInputAction,
-    onEditingComplete: binding.onEditingComplete,
+  builder: (context, control) => TextField(
+    controller: control.textController,
+    focusNode: control.focusNode,
+    onChanged: control.didChange,
+    textInputAction: control.textInputAction,
+    onEditingComplete: control.onEditingComplete,
   ),
 )
 ```
@@ -72,4 +73,4 @@ You can show one Field in more than one widget. They stay in sync, and `field.fo
 
 ## Who owns the focus node and the text controller
 
-The Binding creates and disposes its own `FocusNode` and `TextEditingController`. When you pass your own (`focusNode:`, `textController:`), the Binding uses them and **never disposes them**. You do.
+A Field Widget creates and disposes its own `FocusNode` and, for text, its own `TextEditingController`. When you pass your own (`focusNode:`, `textController:`), the widget uses them and **never disposes them**. You do.

@@ -11,7 +11,7 @@ Formidable is a reactive form library for Flutter. You declare a form by annotat
 - **The generator produces a typed Form.** `SignUp` becomes `SignUpForm`. Every Field is reached through a typed handle, with no string paths and no casts.
 - **Required-ness comes from the type.** A non-nullable Field without a default is required. A nullable Field is optional. Unset is a state of its own, separate from null.
 - **Typed output.** `submit()` returns a sealed result: valid with the Schema instance, or invalid with the errors.
-- **Two layers of UI binding.** A headless Binding works with any widget, and thin Material and Cupertino widgets are built on top of it.
+- **Two layers of UI.** A headless Field Widget base works with any widget, and Material and Cupertino widgets with the full API of the Flutter widgets they wrap are built on top of it.
 
 The first release is 0.1.0. Signatures and behavior are expected to change across 0.x releases.
 
@@ -21,7 +21,7 @@ The first release is 0.1.0. Signatures and behavior are expected to change acros
 |---|---|
 | `formidable` | Pure Dart core: annotations, runtime, Validators and Validation Errors |
 | `formidable_generator` | The code generator, run by `build_runner` |
-| `formidable_flutter` | Flutter bindings: Form Scope and the headless Binding. Depends only on the widgets library |
+| `formidable_flutter` | Flutter bindings: Form Scope and the Field Widget base. Depends only on the widgets library |
 | `formidable_material` | Material widgets, built on `material_ui` |
 | `formidable_cupertino` | Cupertino widgets, built on `cupertino_ui` |
 

@@ -1,5 +1,5 @@
 name: formidable_cupertino
-description: Cupertino convenience widgets for Formidable, built on cupertino_ui and the headless Binding.
+description: Cupertino convenience widgets for Formidable, built on cupertino_ui and the Field Widget base.
 version: 0.1.0
 homepage: https://docs.page/AngeloAvv/formidable
 repository: https://github.com/AngeloAvv/formidable
