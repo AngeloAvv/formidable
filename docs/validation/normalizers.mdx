@@ -1,0 +1,55 @@
+---
+title: Normalizers
+description: Clean a Field's value before it is validated
+---
+
+# Normalizers
+
+A Normalizer rewrites the value of a Field before validation. You declare it as an annotation on the Field, like a Validator, and it applies only when you declare it. Whitespace the user typed on purpose is kept unless you decide otherwise.
+
+```dart
+@Formidable()
+class Contact {
+  const Contact({required this.name, this.nickname});
+
+  @Trim()
+  @MinLength(2)
+  final String name;
+
+  @Trim()
+  final String? nickname;
+}
+```
+
+`@Trim()` trims the text around the value. Text that is only whitespace becomes **Unset**, so a required Field reports a `FormidableRequiredError` and an optional Field falls back to its default or to `null` in the output.
+
+```dart
+final form = ContactForm();
+
+form.name.setValue('  Ada  ');
+form.name.value; // 'Ada'
+
+form.name.setValue('   ');
+form.name.isSet; // false
+```
+
+## Where Normalizers run
+
+Normalizers run on every value written to the Field, whether it comes from the user or from code, and on the initial values the Form is created with. They run first: then the [Form Effects](/form/effects), then the Validators. A Validator always sees the normalized value.
+
+A Normalizer runs only while the Field has a value, and a Normalizer typed for a non-nullable value is skipped when the chosen value is `null`.
+
+## Custom Normalizers
+
+Extend `FormidableNormalizer<T>` with a const class and use it as an annotation:
+
+```dart
+class Lowercase extends FormidableNormalizer<String> {
+  const Lowercase();
+
+  @override
+  String normalize(String value) => value.toLowerCase();
+}
+```
+
+Override `makesUnset` to turn the normalized value into Unset, as `@Trim()` does for empty text.

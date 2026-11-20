@@ -2,6 +2,7 @@
 /// Validation Errors. It has no Flutter dependency.
 library;
 
+export 'src/annotations/effects.dart';
 export 'src/annotations/formidable.dart';
 export 'src/annotations/passthrough.dart';
 export 'src/annotations/required.dart';
@@ -10,12 +11,16 @@ export 'src/codecs/codecs.dart';
 export 'src/codecs/parse_error.dart';
 export 'src/codecs/parse_result.dart';
 export 'src/codecs/text_codecs.dart';
+export 'src/normalizers/normalizer.dart';
+export 'src/normalizers/trim.dart';
+export 'src/runtime/effect.dart';
 export 'src/runtime/field.dart';
 export 'src/runtime/field_state.dart';
 export 'src/runtime/form.dart';
 export 'src/runtime/form_state.dart';
 export 'src/runtime/node.dart';
 export 'src/runtime/passthrough.dart';
+export 'src/runtime/pipeline.dart';
 export 'src/runtime/notifier.dart';
 export 'src/runtime/status.dart';
 export 'src/runtime/submit_result.dart';

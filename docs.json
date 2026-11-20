@@ -29,12 +29,16 @@
       "group": "Validation",
       "pages": [
         { "title": "Validators", "href": "/validation" },
+        { "title": "Normalizers", "href": "/validation/normalizers" },
         { "title": "Messages and localization", "href": "/validation/messages" }
       ]
     },
     {
       "group": "Form",
-      "pages": [{ "title": "The generated Form", "href": "/form" }]
+      "pages": [
+        { "title": "The generated Form", "href": "/form" },
+        { "title": "Form Effects", "href": "/form/effects" }
+      ]
     },
     {
       "group": "Widgets",
