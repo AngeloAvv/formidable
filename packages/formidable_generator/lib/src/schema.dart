@@ -65,6 +65,14 @@ final class SchemaModel {
   /// Problems that do not stop the build, reported by the Form builder only.
   final List<String> warnings;
 
+  /// Whether a Form of this Schema cannot be created without a Schema
+  /// instance, because a Passthrough Field has no value to start from.
+  bool get requiresInitial => fields.any(
+    (f) =>
+        (f.isPassthrough && !f.isNullable && f.defaultSource == null) ||
+        (f.nested?.requiresInitial ?? false),
+  );
+
   String get formName => '${name}Form';
   String get scopeName => '${name}FormScope';
 }
@@ -79,6 +87,7 @@ final class FieldModel {
     required this.defaultSource,
     required this.isRequired,
     required this.isPassthrough,
+    this.nested,
   });
 
   final String name;
@@ -102,8 +111,25 @@ final class FieldModel {
   /// Whether the Field has `@Passthrough()`.
   final bool isPassthrough;
 
+  /// Set when the Field's type is another Schema: the Field is a Nested Form.
+  final NestedModel? nested;
+
+  bool get isNested => nested != null;
+
   /// The type with a trailing `?`, for optional parameters.
   String get optionalTypeSource => isNullable ? typeSource : '$typeSource?';
+}
+
+/// What the emitters need to know about the Schema a Field nests.
+final class NestedModel {
+  const NestedModel({required this.formName, required this.requiresInitial});
+
+  /// The generated Form of the nested Schema, for example `AddressForm`.
+  final String formName;
+
+  /// Whether the nested Form cannot be created empty because it has a
+  /// Passthrough Field that must be supplied.
+  final bool requiresInitial;
 }
 
 /// One argument of the Schema constructor call.
@@ -116,7 +142,7 @@ final class ConstructorArgument {
 
 /// Reads [element] into a [SchemaModel], or throws an
 /// [InvalidGenerationSourceError] when it cannot become a Form.
-SchemaModel readSchema(Element element) {
+SchemaModel readSchema(Element element, [List<ClassElement> path = const []]) {
   if (element is! ClassElement) {
     throw InvalidGenerationSourceError(
       '@Formidable() can only annotate a class.',
@@ -173,7 +199,10 @@ SchemaModel readSchema(Element element) {
   };
   final models = {
     for (final field in fields)
-      field.name!: _readField(field, defaults[field.name]),
+      field.name!: _readField(field, defaults[field.name], element, [
+        ...path,
+        element,
+      ]),
   };
 
   final warnings = [
@@ -235,7 +264,13 @@ List<FieldElement> _finalFields(ClassElement element) {
   ];
 }
 
-FieldModel _readField(FieldElement field, String? defaultSource) {
+FieldModel _readField(
+  FieldElement field,
+  String? defaultSource,
+  ClassElement owner,
+  List<ClassElement> path,
+) {
+  final nested = _readNested(field, defaultSource, owner, path);
   final validators = <String>[];
   final normalizers = <String>[];
   for (final annotation in field.metadata.annotations) {
@@ -260,6 +295,74 @@ FieldModel _readField(FieldElement field, String? defaultSource) {
     defaultSource: defaultSource,
     isRequired: _requiredChecker.hasAnnotationOf(field),
     isPassthrough: _passthroughChecker.hasAnnotationOf(field),
+    nested: nested,
+  );
+}
+
+/// The nested Schema of [field], or null when its type is not a Schema.
+NestedModel? _readNested(
+  FieldElement field,
+  String? defaultSource,
+  ClassElement owner,
+  List<ClassElement> path,
+) {
+  final type = field.type;
+  final target = type is InterfaceType ? type.element : null;
+  if (target is! ClassElement || !isSchema(target)) return null;
+
+  final where = 'Field "${field.name}" of ${owner.name}';
+  if (path.contains(target)) {
+    final cycle = [...path.skipWhile((c) => c != target), target];
+    throw InvalidGenerationSourceError(
+      '$where nests ${target.name}, which nests itself again '
+      '(${cycle.map((c) => c.name).join(' -> ')}). A Nested Form is always '
+      'created with its parent, so a Schema cannot contain itself.',
+      element: field,
+    );
+  }
+  if (_passthroughChecker.hasAnnotationOf(field)) {
+    throw InvalidGenerationSourceError(
+      '$where is a Nested Form and cannot be a @Passthrough(). Mark the '
+      'Fields of ${target.name} instead.',
+      element: field,
+    );
+  }
+  final rules = [
+    for (final annotation in field.metadata.annotations)
+      if (annotation.computeConstantValue()?.type case final t?)
+        if (_normalizerChecker.isAssignableFromType(t) ||
+            _validatorChecker.isAssignableFromType(t))
+          annotation.toSource(),
+  ];
+  if (rules.isNotEmpty) {
+    throw InvalidGenerationSourceError(
+      '$where is a Nested Form and cannot have ${rules.first}. Put Validators '
+      'and Normalizers on the Fields of ${target.name}.',
+      element: field,
+    );
+  }
+  if (defaultSource != null) {
+    throw InvalidGenerationSourceError(
+      '$where is a Nested Form and cannot have a default value. Give the '
+      'Fields of ${target.name} their own defaults.',
+      element: field,
+    );
+  }
+
+  final nestedSchema = readSchema(target, path);
+  final requiresInitial = nestedSchema.requiresInitial;
+  if (requiresInitial &&
+      field.type.nullabilitySuffix == NullabilitySuffix.question) {
+    throw InvalidGenerationSourceError(
+      '$where is a nullable Nested Form, but ${target.name} has a '
+      '@Passthrough() Field that must be supplied, so it cannot be created '
+      'while Unset. Make the Field non-nullable.',
+      element: field,
+    );
+  }
+  return NestedModel(
+    formName: nestedSchema.formName,
+    requiresInitial: requiresInitial,
   );
 }
 

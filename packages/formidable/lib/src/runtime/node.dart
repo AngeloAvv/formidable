@@ -4,8 +4,14 @@ import 'pipeline.dart';
 
 /// A child of a Form, in Schema declaration order.
 ///
-/// Fields are nodes today. Nested Forms and Field Arrays join them without
-/// changing the Form.
+/// Fields and Passthrough Fields are nodes, and so is a [FormidableForm]: a
+/// Nested Form is just a Form that is the child of another one. Field Arrays
+/// join them without changing the Form.
+///
+/// A node that has Fields below it implements [collectErrors], [isDirty] and
+/// [isPending] by recursing, routes its writes through the pipeline it was
+/// bound to, and implements [revalidate] as "recompute errors, notify only if
+/// the snapshot changed".
 abstract interface class FormidableNode {
   /// Whether this node and everything below it has no errors.
   bool get isValid;
@@ -42,7 +48,8 @@ abstract interface class FormidableNode {
   /// listeners if its state changed. Called by the Form after Effects ran.
   void revalidate();
 
-  /// Calls [listener] whenever anything at or below this node changes.
+  /// Calls [listener] whenever the node changes. A Form calls it only when its
+  /// state changed; its parent follows it with `addChangeListener` instead.
   void addListener(void Function() listener);
 
   void removeListener(void Function() listener);

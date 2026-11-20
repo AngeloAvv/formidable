@@ -22,7 +22,8 @@
       "group": "Schema",
       "pages": [
         { "title": "Declaring a Schema", "href": "/schema" },
-        { "title": "Required and optional Fields", "href": "/schema/presence" }
+        { "title": "Required and optional Fields", "href": "/schema/presence" },
+        { "title": "Nested Forms", "href": "/schema/nested-forms" }
       ]
     },
     {
