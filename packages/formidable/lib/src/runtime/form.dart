@@ -35,6 +35,10 @@ abstract class FormidableForm<S>
       const [];
   final Set<FormidableNode> _pending = {};
   bool _running = false;
+  int _batchDepth = 0;
+  bool _needsSettle = false;
+  int _held = 0;
+  bool _heldChange = false;
   FormidableFormState _state = FormidableFormState(
     status: FormidableStatus.valid,
   );
@@ -100,6 +104,68 @@ abstract class FormidableForm<S>
   void removeChangeListener(void Function() listener) =>
       _changeListeners.remove(listener);
 
+  /// Restores every Field to its initial value and presence, and forgets that
+  /// it was touched. It notifies once and does not run the Form Effects: the
+  /// initial state is already consistent.
+  @override
+  void reset() => batch(() {
+    for (final node in _nodes) {
+      node.reset();
+    }
+  });
+
+  /// Makes the current state the new initial state, so the Form and its
+  /// Fields are no longer dirty. It notifies once.
+  @override
+  void commit() => batch(() {
+    // An optional Nested Form that is set now stays set: presence is part of
+    // the initial state.
+    _initiallySet = isSet;
+    for (final node in _nodes) {
+      node.commit();
+    }
+  });
+
+  /// Makes every Field Unset, as one change. A Passthrough Field keeps its
+  /// value because it can never be Unset. An optional Nested Form is Unset
+  /// afterwards if it was Unset initially.
+  void clear() => batch(() {
+    for (final node in _nodes) {
+      if (node is FormidableField<Object?>) {
+        node.clear();
+      } else if (node is FormidableForm<Object?>) {
+        node.clear();
+      }
+    }
+  });
+
+  /// Runs [writes], which write Fields, as one change: the Form Effects run
+  /// once after the last write and every listener is notified at most once.
+  ///
+  /// Generated `patch` and `replace` are built on it.
+  void batch(void Function() writes) {
+    // A Nested Form writes as part of its parent's change.
+    final parent = _parent;
+    if (parent is FormidableForm<Object?>) return parent.batch(writes);
+    if (_batchDepth > 0 || _running) {
+      writes();
+      return;
+    }
+    _batchDepth++;
+    try {
+      writes();
+    } finally {
+      _batchDepth--;
+      final settle = _needsSettle;
+      _needsSettle = false;
+      if (_pending.isNotEmpty) {
+        _run();
+      } else if (settle) {
+        _settle();
+      }
+    }
+  }
+
   /// Registers the children of the Form, in Schema declaration order, its
   /// Form [effects] and the [formValidators] declared on the Schema. A
   /// generated Form calls it once from its constructor, with itself as [F],
@@ -120,6 +186,8 @@ abstract class FormidableForm<S>
       node.bindPipeline(this);
     }
     _run(initial: true);
+    // The initial state is what exists once the creation-time Effects ran.
+    commit();
     for (final node in _nodes) {
       _follow(node);
     }
@@ -143,7 +211,19 @@ abstract class FormidableForm<S>
     if (!mutate()) return;
     _pending.add(node);
     // An Effect wrote a Field: the running pass picks the change up.
-    if (!_running) _run();
+    if (!_running && _batchDepth == 0) _run();
+  }
+
+  @override
+  void settle() {
+    final parent = _parent;
+    if (parent != null) return parent.settle();
+    if (_running) return;
+    if (_batchDepth > 0) {
+      _needsSettle = true;
+    } else {
+      _settle();
+    }
   }
 
   /// Runs the Form Effects until nothing changes, then validates every node.
@@ -154,11 +234,48 @@ abstract class FormidableForm<S>
     } finally {
       _running = false;
       _pending.clear();
+      _settle();
+    }
+  }
+
+  /// Runs the Form Validators, then revalidates every node, so every path that
+  /// revalidates (a write, a batch, a reset, a commit) ends with up-to-date
+  /// Form errors. Node notifications are held back and the Form notifies once
+  /// afterwards.
+  void _settle() {
+    _holdTree(1);
+    try {
       _runFormValidators();
       for (final node in _nodes) {
         node.revalidate();
       }
+    } finally {
+      _holdTree(-1);
     }
+    _flushTree();
+  }
+
+  /// Holds back (or releases) the notifications of this Form and of its Nested
+  /// Forms, so the whole tree notifies once per settle.
+  void _holdTree(int delta) {
+    _held += delta;
+    for (final node in _nodes) {
+      if (node is FormidableForm<Object?>) node._holdTree(delta);
+    }
+  }
+
+  /// Publishes the state of the Nested Forms, then of this Form. A parent
+  /// stays held while its children publish, so it publishes only once.
+  void _flushTree() {
+    _held++;
+    try {
+      for (final node in _nodes) {
+        if (node is FormidableForm<Object?>) node._flushTree();
+      }
+    } finally {
+      _held--;
+    }
+    _flush();
   }
 
   /// Runs the Form Validators of this Form and of its Nested Forms and gives
@@ -322,8 +439,18 @@ abstract class FormidableForm<S>
   }
 
   void _onNodeChanged() {
+    _heldChange = true;
+    if (_held == 0) _flush();
+  }
+
+  /// Publishes the Form state and calls the change listeners, if anything
+  /// changed since the last time.
+  void _flush() {
     final next = _computeState();
-    if (next != _state) {
+    final stateChanged = next != _state;
+    if (!stateChanged && !_heldChange) return;
+    _heldChange = false;
+    if (stateChanged) {
       _state = next;
       notifyListeners();
     }

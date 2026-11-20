@@ -369,4 +369,127 @@ void main() {
       expect(await form.submit(), isA<FormidableSubmitValid<Delivery>>());
     });
   });
+
+  group('Nested Form writes', () {
+    Contact contact({Address? work}) => Contact(
+      name: 'Angelo',
+      home: const Address(street: 'Via Roma', zip: '00100'),
+      work: work,
+      billing: const Address(street: 'Via Milano'),
+    );
+
+    test('patch replaces the Fields of a Nested Form from a Schema', () {
+      final form = ContactForm.from(contact());
+
+      form.patch(home: const Address(street: 'Via Napoli'));
+
+      expect(form.home.street.value, 'Via Napoli');
+      // A null in the Schema is a chosen value, not Unset (ADR-0003).
+      expect(form.home.zip.value, isNull);
+      expect(form.name.value, 'Angelo');
+    });
+
+    test('a nested patch writes only the given Fields, in the same change', () {
+      final form = ContactForm.from(contact());
+      var notifications = 0;
+      form.addListener(() => notifications++);
+
+      form.patch(name: 'Other');
+      form.home.patch(street: 'Via Napoli');
+
+      expect(form.home.street.value, 'Via Napoli');
+      expect(form.home.zip.value, '00100');
+      expect(form.state.dirty, isTrue);
+      expect(notifications, 1);
+    });
+
+    test('replace writes every nested Field and sets an optional one', () {
+      final form = ContactForm.from(contact());
+
+      form.replace(contact(work: const Address(street: 'Via Torino')));
+
+      expect(form.work.isSet, isTrue);
+      expect(form.work.street.value, 'Via Torino');
+    });
+
+    test('replace with a null Nested Form clears it', () {
+      final form = ContactForm.from(
+        contact(work: const Address(street: 'Via Torino')),
+      );
+
+      form.replace(contact());
+
+      expect(form.work.street.isSet, isFalse);
+      expect(form.work.zip.isSet, isFalse);
+    });
+
+    test('replace through two levels', () async {
+      final form = OrderForm(title: 'T');
+
+      form.replace(Order(title: 'U', owner: contact()));
+
+      final result = await form.submit() as FormidableSubmitValid<Order>;
+      expect(result.value.owner.home.zip, '00100');
+    });
+
+    test('reset restores every level and the presence of optional ones', () {
+      final form = ContactForm.from(contact());
+      form.home.street.setValue('x');
+      form.work.zip.setValue('1');
+      form.home.street.markAsTouched();
+      expect(form.work.isSet, isTrue);
+
+      form.reset();
+
+      expect(form.home.street.value, 'Via Roma');
+      expect(form.home.street.state.touched, isFalse);
+      expect(form.work.isSet, isFalse);
+      expect(form.work.zip.isSet, isFalse);
+      expect(form.state.dirty, isFalse);
+      expect(form.state.status, FormidableStatus.valid);
+    });
+
+    test('reset notifies a Nested Form and its parent once', () {
+      final form = ContactForm.from(contact());
+      form.home.street.setValue('x');
+      form.home.zip.setValue('1');
+      var home = 0;
+      var parent = 0;
+      form.home.addListener(() => home++);
+      form.addListener(() => parent++);
+
+      form.reset();
+
+      expect(home, 1);
+      expect(parent, 1);
+    });
+
+    test(
+      'commit makes every level, and the presence, the new initial state',
+      () {
+        final form = ContactForm.from(contact());
+        form.home.street.setValue('Via Napoli');
+        form.work.street.setValue('Via Torino');
+
+        form.commit();
+
+        expect(form.state.dirty, isFalse);
+        expect(form.home.state.dirty, isFalse);
+        expect(form.work.isSet, isTrue);
+
+        form.reset();
+        expect(form.home.street.value, 'Via Napoli');
+        expect(form.work.street.value, 'Via Torino');
+      },
+    );
+
+    test('clear makes the Fields of every level Unset', () {
+      final form = ContactForm.from(contact());
+
+      form.home.clear();
+
+      expect(form.home.street.isSet, isFalse);
+      expect(form.home.zip.isSet, isFalse);
+    });
+  });
 }

@@ -45,6 +45,7 @@ final result = await form.submit();
 - **Dirty.** A nested Field that differs from its initial state makes its Nested Form and every ancestor dirty. Going back makes them clean.
 - **Notifications.** A parent notifies its listeners of a state change below it. A `FormidableFormSelector` or `addChangeListener` also fires when a nested value changes and the state stays equal.
 - **Form Effects.** A Schema's Effects run for changes in its own Fields, and the Effects of a parent also see changes in nested Fields (`context.changed(form.home.street)`). They all settle together before validation.
+- **Patch, replace, reset, commit and clear.** They go through every level as one change, with a single notification for the parent and for each Nested Form. `reset()` and `commit()` also restore or keep the presence of an optional Nested Form. `form.patch(home: address)` and `form.replace(contact)` take a Schema instance for a Nested Form and write all its Fields (a null Nested Form in `replace` clears it); to patch only some Fields of a Nested Form, call `form.home.patch(street: 'Via Roma')`, which joins the change of its parent. `form.home.clear()` makes every Field of the Nested Form Unset, Passthrough Fields excepted.
 - **Form Validators.** A Form Validator declared on a nested Schema addresses its own Fields. One declared on the parent can address Fields of a Nested Form (`FormidableFieldError(form.home.street, ...)`). An Unset optional Nested Form is not validated.
 - **Disposal.** Disposing the parent disposes every Nested Form.
 

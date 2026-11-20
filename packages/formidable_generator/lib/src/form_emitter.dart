@@ -12,6 +12,9 @@ String emitForm(SchemaModel schema) {
 
   final partialParameters = fields.map(_partialParameter).join(', ');
   final partialForwards = fields.map(_partialForward).join(', ');
+  final patchParameters = fields
+      .map((f) => '${f.optionalTypeSource} ${f.name}')
+      .join(', ');
   final fromForwards = fields
       .map(
         (f) => f.isPassthrough || f.isNested
@@ -48,6 +51,43 @@ String emitForm(SchemaModel schema) {
     out.writeln();
     out.writeln('  final ${_handleType(f)} ${f.name};');
   }
+  out.writeln();
+  out.writeln(
+    '  /// Writes only the Fields that are given, as one change. A null',
+  );
+  out.writeln('  /// argument leaves the Field as it is: use `clear()` or');
+  out.writeln(
+    '  /// `setValue` on the Field, or [replace], to write null. A Nested',
+  );
+  out.writeln(
+    '  /// Form takes a Schema instance and replaces all its Fields; patch',
+  );
+  out.writeln('  /// part of it through its own `patch`.');
+  out.writeln('  void patch({$patchParameters}) => batch(() {');
+  for (final f in fields) {
+    out.writeln(
+      f.isNested
+          ? '    if (${f.name} != null) this.${f.name}.replace(${f.name});'
+          : '    if (${f.name} != null) this.${f.name}.setValue(${f.name});',
+    );
+  }
+  out.writeln('  });');
+  out.writeln();
+  out.writeln('  /// Writes every Field from [source], as one change.');
+  out.writeln('  void replace(${schema.name} source) => batch(() {');
+  for (final f in fields) {
+    if (!f.isNested) {
+      out.writeln('    ${f.name}.setValue(source.${f.name});');
+    } else if (f.isNullable) {
+      out.writeln(
+        '    source.${f.name} == null ? ${f.name}.clear() : '
+        '${f.name}.replace(source.${f.name}!);',
+      );
+    } else {
+      out.writeln('    ${f.name}.replace(source.${f.name});');
+    }
+  }
+  out.writeln('  });');
   out.writeln();
   out.writeln('  @override');
   out.writeln('  ${schema.name} buildOutput() => ${_construct(schema)};');
