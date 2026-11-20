@@ -21,7 +21,7 @@ abstract mixin class FormidableFormatMessages {
   String hexColor();
 
   /// The value is not a color in one of the [formats].
-  String color(List<ColorFormat> formats);
+  String colorCode(List<ColorFormat> formats);
 
   /// The value is not a hexadecimal number.
   String hexadecimal();
@@ -54,7 +54,7 @@ abstract mixin class FormidableFormatMessages {
     FormidableUuidError(:final version) => uuid(version),
     FormidableUlidError() => ulid(),
     FormidableHexColorError() => hexColor(),
-    FormidableColorError(:final formats) => color(formats),
+    FormidableColorCodeError(:final formats) => colorCode(formats),
     FormidableHexadecimalError() => hexadecimal(),
     FormidableOctalError() => octal(),
     FormidableBase64Error() => base64(),
@@ -86,7 +86,7 @@ mixin FormidableFormatMessagesEn implements FormidableFormatMessages {
   String hexColor() => 'Must be a valid hex color, like #1A2B3C.';
 
   @override
-  String color(List<ColorFormat> formats) =>
+  String colorCode(List<ColorFormat> formats) =>
       'Must be a valid color (${_names(formats)}).';
 
   @override
@@ -136,7 +136,7 @@ mixin FormidableFormatMessagesIt implements FormidableFormatMessages {
       'Deve essere un colore esadecimale valido, ad esempio #1A2B3C.';
 
   @override
-  String color(List<ColorFormat> formats) =>
+  String colorCode(List<ColorFormat> formats) =>
       'Deve essere un colore valido (${_names(formats)}).';
 
   @override
@@ -188,7 +188,7 @@ mixin FormidableFormatMessagesEs implements FormidableFormatMessages {
       'Debe ser un color hexadecimal válido, por ejemplo #1A2B3C.';
 
   @override
-  String color(List<ColorFormat> formats) =>
+  String colorCode(List<ColorFormat> formats) =>
       'Debe ser un color válido (${_names(formats)}).';
 
   @override
@@ -240,7 +240,7 @@ mixin FormidableFormatMessagesFr implements FormidableFormatMessages {
       'Doit être une couleur hexadécimale valide, par exemple #1A2B3C.';
 
   @override
-  String color(List<ColorFormat> formats) =>
+  String colorCode(List<ColorFormat> formats) =>
       'Doit être une couleur valide (${_names(formats)}).';
 
   @override
@@ -292,7 +292,7 @@ mixin FormidableFormatMessagesDe implements FormidableFormatMessages {
       'Muss eine gültige Hex-Farbe sein, zum Beispiel #1A2B3C.';
 
   @override
-  String color(List<ColorFormat> formats) =>
+  String colorCode(List<ColorFormat> formats) =>
       'Muss eine gültige Farbe sein (${_names(formats)}).';
 
   @override

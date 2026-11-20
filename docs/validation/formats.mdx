@@ -42,16 +42,14 @@ Every Validator returns a typed Validation Error, with a message in English, Ita
 | Annotation | Error | Accepts |
 |---|---|---|
 | `HexColor({requireHash = true})` | `FormidableHexColorError` | `#rgb`, `#rgba`, `#rrggbb` and `#rrggbbaa`; the `#` is optional with `requireHash: false` |
-| `Color({formats})` | `FormidableColorError(formats)` | CSS colors in the given `ColorFormat`s (`hex`, `rgb`, `rgba`, `hsl`, `hsla`; all by default) |
+| `ColorCode({formats})` | `FormidableColorCodeError(formats)` | CSS colors in the given `ColorFormat`s (`hex`, `rgb`, `rgba`, `hsl`, `hsla`; all by default) |
 
-`Color` accepts `rgb(255, 0, 0)`, `rgb(100% 0% 0%)`, `rgba(0, 0, 0, 0.5)`, `hsl(120, 100%, 50%)` and `hsla(120, 100%, 50%, 0.5)`. Arguments are separated by commas or spaces, with an optional slash before the alpha. Named colors are not accepted.
+`ColorCode` accepts `rgb(255, 0, 0)`, `rgb(100% 0% 0%)`, `rgba(0, 0, 0, 0.5)`, `hsl(120, 100%, 50%)` and `hsla(120, 100%, 50%, 0.5)`. Arguments are separated by commas or spaces, with an optional slash before the alpha. Named colors are not accepted.
 
 ```dart
-@Color(formats: [ColorFormat.hex, ColorFormat.rgb])
+@ColorCode(formats: [ColorFormat.hex, ColorFormat.rgb])
 final String background;
 ```
-
-`Color` is also the name of the `dart:ui` type. Import Formidable with `hide Color`, or with a prefix, in files that use both.
 
 ## Numbers and encodings
 

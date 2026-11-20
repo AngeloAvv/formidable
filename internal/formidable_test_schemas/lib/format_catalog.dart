@@ -52,10 +52,10 @@ class FormatCatalog {
   @HexColor(requireHash: false)
   final String? hexColorNoHash;
 
-  @Color()
+  @ColorCode()
   final String? color;
 
-  @Color(formats: [ColorFormat.rgb, ColorFormat.rgba])
+  @ColorCode(formats: [ColorFormat.rgb, ColorFormat.rgba])
   final String? rgbColor;
 
   @Hexadecimal()

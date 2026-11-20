@@ -36,7 +36,7 @@ The Tier column means:
 | Annotation | Tier |
 |---|---|
 | `Email`, `Url(schemes, requireTld)`, `Uuid(version)`, `Ulid` | v1 |
-| `HexColor`, `Color(formats)`, `Hexadecimal`, `Octal`, `Base64` | v1 |
+| `HexColor`, `ColorCode(formats)`, `Hexadecimal`, `Octal`, `Base64` | v1 |
 | `Json`, `Jwt`, `SemVer`, `Luhn`, `Isbn` | v1 |
 | `Cuid`, `NanoId`, `Base32`, `Base58`, `DataUri`, `Hash(alg)` | later |
 | `Issn`, `Isrc`, `Ean`, `Isin`, `Vin`, `MimeType`, `Emoji` | later |

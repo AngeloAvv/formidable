@@ -1,7 +1,7 @@
 import '../validation/validation_error.dart';
 import '../validation/validator.dart';
 
-/// The notations [Color] can accept.
+/// The notations [ColorCode] can accept.
 enum ColorFormat {
   /// `#rgb`, `#rgba`, `#rrggbb` or `#rrggbbaa`.
   hex,
@@ -28,8 +28,8 @@ final class FormidableHexColorError extends FormidableValidationError {
 }
 
 /// The value is not a color in one of the accepted formats.
-final class FormidableColorError extends FormidableValidationError {
-  const FormidableColorError({required this.formats});
+final class FormidableColorCodeError extends FormidableValidationError {
+  const FormidableColorCodeError({required this.formats});
 
   /// The notations the Validator accepts.
   final List<ColorFormat> formats;
@@ -122,11 +122,8 @@ class HexColor extends FormidableValidator<String> {
 /// lightness are percentages, and alpha is 0 to 1 or 0% to 100%. Arguments are
 /// separated by commas or spaces, and by a slash before the alpha. Named colors
 /// such as `red` are not accepted.
-///
-/// Note that this name is also a type in `dart:ui`: import Formidable with
-/// `hide Color` or a prefix in files that use both.
-class Color extends FormidableValidator<String> {
-  const Color({this.formats = ColorFormat.values});
+class ColorCode extends FormidableValidator<String> {
+  const ColorCode({this.formats = ColorFormat.values});
 
   final List<ColorFormat> formats;
 
@@ -134,5 +131,5 @@ class Color extends FormidableValidator<String> {
   List<FormidableValidationError> validate(String value) =>
       _isColor(value, formats)
       ? const []
-      : [FormidableColorError(formats: formats)];
+      : [FormidableColorCodeError(formats: formats)];
 }

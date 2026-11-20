@@ -386,8 +386,8 @@ final _messages = <(String, FormidableValidationError, List<String>)>[
     ],
   ),
   (
-    'Color',
-    const FormidableColorError(formats: [ColorFormat.hex, ColorFormat.rgb]),
+    'ColorCode',
+    const FormidableColorCodeError(formats: [ColorFormat.hex, ColorFormat.rgb]),
     [
       'Must be a valid color (hex, rgb).',
       'Deve essere un colore valido (hex, rgb).',

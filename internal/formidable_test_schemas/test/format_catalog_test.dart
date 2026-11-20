@@ -137,9 +137,9 @@ final _cases = <_Case>[
     invalid: ['', 'ff', 'ggg', '##fff'],
   ),
   _Case(
-    'Color',
+    'ColorCode',
     (f) => f.color,
-    isA<FormidableColorError>(),
+    isA<FormidableColorCodeError>(),
     valid: [
       '#fff',
       '#11223344',
@@ -169,9 +169,9 @@ final _cases = <_Case>[
     ],
   ),
   _Case(
-    'Color(formats: rgb, rgba)',
+    'ColorCode(formats: rgb, rgba)',
     (f) => f.rgbColor,
-    isA<FormidableColorError>(),
+    isA<FormidableColorCodeError>(),
     valid: ['rgb(1, 2, 3)', 'rgba(1, 2, 3, 0.1)'],
     invalid: ['#fff', 'hsl(0, 0%, 0%)', 'hsla(0, 0%, 0%, 1)'],
   ),
@@ -347,16 +347,16 @@ void main() {
       expect(form.uuidV4.state.errors, [const FormidableUuidError(version: 4)]);
     });
 
-    test('Color reports the formats it accepts', () {
+    test('ColorCode reports the formats it accepts', () {
       final form = FormatCatalogForm()
         ..color.setValue('x')
         ..rgbColor.setValue('x');
 
       expect(form.color.state.errors, [
-        const FormidableColorError(formats: ColorFormat.values),
+        const FormidableColorCodeError(formats: ColorFormat.values),
       ]);
       expect(form.rgbColor.state.errors, [
-        const FormidableColorError(
+        const FormidableColorCodeError(
           formats: [ColorFormat.rgb, ColorFormat.rgba],
         ),
       ]);
