@@ -2,8 +2,6 @@ import 'package:formidable/formidable.dart';
 import 'package:formidable_test_schemas/catalog_finance.dart';
 import 'package:test/test.dart';
 
-DateTime _midJune2026() => DateTime(2026, 6, 15);
-
 /// Seam 1: the finance Validators of the built-in catalog.
 void main() {
   void check(
@@ -152,22 +150,30 @@ void main() {
     });
 
     test('is valid until the end of the month printed on the card', () {
-      const validator = CardExpiry(now: _midJune2026);
+      FormidableClock.withClock(() => DateTime(2026, 6, 15), () {
+        const validator = CardExpiry();
 
-      expect(validator.validate('06/26'), isEmpty);
-      expect(validator.validate('06/2026'), isEmpty);
-      expect(validator.validate('07/26'), isEmpty);
-      expect(validator.validate('05/26'), [const FormidableCardExpiredError()]);
-      expect(validator.validate('12/25'), [const FormidableCardExpiredError()]);
+        expect(validator.validate('06/26'), isEmpty);
+        expect(validator.validate('06/2026'), isEmpty);
+        expect(validator.validate('07/26'), isEmpty);
+        expect(validator.validate('05/26'), [
+          const FormidableCardExpiredError(),
+        ]);
+        expect(validator.validate('12/25'), [
+          const FormidableCardExpiredError(),
+        ]);
+      });
     });
 
     test('asks the clock when it validates', () {
-      var now = DateTime(2026, 6, 15);
-      final validator = CardExpiry(now: () => now);
+      const validator = CardExpiry();
 
-      expect(validator.validate('06/26'), isEmpty);
-      now = DateTime(2026, 7, 1);
-      expect(validator.validate('06/26'), isNotEmpty);
+      FormidableClock.withClock(() => DateTime(2026, 6, 15), () {
+        expect(validator.validate('06/26'), isEmpty);
+      });
+      FormidableClock.withClock(() => DateTime(2026, 7, 1), () {
+        expect(validator.validate('06/26'), isNotEmpty);
+      });
     });
   });
 

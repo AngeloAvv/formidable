@@ -2,12 +2,15 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:formidable/formidable.dart';
 
+import 'categories/choices.dart';
 import 'categories/collections.dart';
 import 'categories/combinators.dart';
+import 'categories/dates.dart';
 import 'categories/files.dart';
 import 'categories/finance.dart';
 import 'categories/locale.dart';
 import 'categories/network.dart';
+import 'categories/numbers.dart';
 import 'categories/parsing.dart';
 import 'categories/presence.dart';
 import 'categories/strings.dart';
@@ -24,12 +27,15 @@ import 'categories/strings.dart';
 /// not compile.
 abstract class FormidableLocalizations
     with
+        FormidableChoiceMessages,
         FormidableCollectionMessages,
         FormidableCombinatorMessages,
+        FormidableDateMessages,
         FormidableFileMessages,
         FormidableFinanceMessages,
         FormidableLocaleMessages,
         FormidableNetworkMessages,
+        FormidableNumberMessages,
         FormidableParsingMessages,
         FormidablePresenceMessages,
         FormidableStringMessages {
@@ -78,18 +84,24 @@ abstract class FormidableLocalizations
       networkMessageOf(error) ??
       financeMessageOf(error) ??
       localeMessageOf(error) ??
-      parsingMessageOf(error);
+      parsingMessageOf(error) ??
+      numberMessageOf(error) ??
+      dateMessageOf(error) ??
+      choiceMessageOf(error);
 }
 
 /// English.
 class FormidableLocalizationsEn extends FormidableLocalizations
     with
+        FormidableChoiceMessagesEn,
         FormidableCollectionMessagesEn,
         FormidableCombinatorMessagesEn,
+        FormidableDateMessagesEn,
         FormidableFileMessagesEn,
         FormidableFinanceMessagesEn,
         FormidableLocaleMessagesEn,
         FormidableNetworkMessagesEn,
+        FormidableNumberMessagesEn,
         FormidableParsingMessagesEn,
         FormidablePresenceMessagesEn,
         FormidableStringMessagesEn {
@@ -99,12 +111,15 @@ class FormidableLocalizationsEn extends FormidableLocalizations
 /// Italian.
 class FormidableLocalizationsIt extends FormidableLocalizations
     with
+        FormidableChoiceMessagesIt,
         FormidableCollectionMessagesIt,
         FormidableCombinatorMessagesIt,
+        FormidableDateMessagesIt,
         FormidableFileMessagesIt,
         FormidableFinanceMessagesIt,
         FormidableLocaleMessagesIt,
         FormidableNetworkMessagesIt,
+        FormidableNumberMessagesIt,
         FormidableParsingMessagesIt,
         FormidablePresenceMessagesIt,
         FormidableStringMessagesIt {
@@ -114,12 +129,15 @@ class FormidableLocalizationsIt extends FormidableLocalizations
 /// Spanish.
 class FormidableLocalizationsEs extends FormidableLocalizations
     with
+        FormidableChoiceMessagesEs,
         FormidableCollectionMessagesEs,
         FormidableCombinatorMessagesEs,
+        FormidableDateMessagesEs,
         FormidableFileMessagesEs,
         FormidableFinanceMessagesEs,
         FormidableLocaleMessagesEs,
         FormidableNetworkMessagesEs,
+        FormidableNumberMessagesEs,
         FormidableParsingMessagesEs,
         FormidablePresenceMessagesEs,
         FormidableStringMessagesEs {
@@ -129,12 +147,15 @@ class FormidableLocalizationsEs extends FormidableLocalizations
 /// French.
 class FormidableLocalizationsFr extends FormidableLocalizations
     with
+        FormidableChoiceMessagesFr,
         FormidableCollectionMessagesFr,
         FormidableCombinatorMessagesFr,
+        FormidableDateMessagesFr,
         FormidableFileMessagesFr,
         FormidableFinanceMessagesFr,
         FormidableLocaleMessagesFr,
         FormidableNetworkMessagesFr,
+        FormidableNumberMessagesFr,
         FormidableParsingMessagesFr,
         FormidablePresenceMessagesFr,
         FormidableStringMessagesFr {
@@ -144,12 +165,15 @@ class FormidableLocalizationsFr extends FormidableLocalizations
 /// German.
 class FormidableLocalizationsDe extends FormidableLocalizations
     with
+        FormidableChoiceMessagesDe,
         FormidableCollectionMessagesDe,
         FormidableCombinatorMessagesDe,
+        FormidableDateMessagesDe,
         FormidableFileMessagesDe,
         FormidableFinanceMessagesDe,
         FormidableLocaleMessagesDe,
         FormidableNetworkMessagesDe,
+        FormidableNumberMessagesDe,
         FormidableParsingMessagesDe,
         FormidablePresenceMessagesDe,
         FormidableStringMessagesDe {

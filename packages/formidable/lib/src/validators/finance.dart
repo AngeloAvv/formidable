@@ -1,5 +1,6 @@
 import '../validation/validation_error.dart';
 import '../validation/validator.dart';
+import 'clock.dart';
 
 /// A payment card network.
 enum CardBrand {
@@ -116,20 +117,13 @@ final class FormidableCardExpiredError extends FormidableValidationError {
   String toString() => 'The card has expired.';
 }
 
-DateTime _systemNow() => DateTime.now();
-
 /// The value is the expiry date of a card that has not expired yet, written as
 /// `MM/YY` or `MM/YYYY`.
 ///
 /// A card is valid until the end of the month printed on it. The month is
-/// compared with the date [now] returns, the system clock by default, so tests
-/// can pass a fixed one: `CardExpiry(now: fixedDate)`, where `fixedDate` is a
-/// top-level function.
+/// compared with [FormidableClock.now], which tests can replace.
 class CardExpiry extends FormidableValidator<String> {
-  const CardExpiry({this.now = _systemNow});
-
-  /// The clock of the Validator.
-  final DateTime Function() now;
+  const CardExpiry();
 
   @override
   List<FormidableValidationError> validate(String value) {
@@ -140,7 +134,7 @@ class CardExpiry extends FormidableValidator<String> {
     }
     final yearText = match!.group(2)!;
     final year = int.parse(yearText) + (yearText.length == 2 ? 2000 : 0);
-    final today = now();
+    final today = FormidableClock.now();
     final expired =
         year < today.year || (year == today.year && month < today.month);
     return expired ? const [FormidableCardExpiredError()] : const [];

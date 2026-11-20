@@ -3,203 +3,282 @@ import 'package:formidable/formidable.dart';
 import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
-/// Seam 2: every error of the collection, file, network, finance and locale
-/// Validators has a message in each language, found through the same lookup a
-/// widget uses.
+/// Seam 2: every number, date, choice and equality error has a message in the
+/// five languages, with its data and the plural of the language in it.
+///
+/// The expected texts are written by hand, in the order of [_errors].
+final _day = DateTime(2024, 6, 15);
+
+final _errors = <FormidableValidationError>[
+  const FormidableMinError(min: 10.5, exclusive: false, actual: 1),
+  const FormidableMinError(min: 10, exclusive: true, actual: 1),
+  const FormidableMaxError(max: 10, exclusive: false, actual: 99),
+  const FormidableMaxError(max: 10.5, exclusive: true, actual: 99),
+  const FormidableRangeError(min: 1, max: 5, actual: 9),
+  const FormidablePositiveError(0),
+  const FormidablePositiveOrZeroError(-1),
+  const FormidableNegativeError(0),
+  const FormidableNegativeOrZeroError(1),
+  const FormidableNonZeroError(),
+  const FormidableMultipleOfError(divisor: 0.5, actual: 1.2),
+  const FormidableEvenError(3),
+  const FormidableOddError(4),
+  const FormidableDecimalPlacesError(maxPlaces: 2, actualPlaces: 3),
+  const FormidableDecimalPlacesError(maxPlaces: 1, actualPlaces: 3),
+  const FormidableDigitsError(digits: 3, actualDigits: 2),
+  const FormidableMinDigitsError(minDigits: 1, actualDigits: 0),
+  const FormidableMaxDigitsError(maxDigits: 2, actualDigits: 3),
+  const FormidablePortError(0),
+  FormidableAfterError(reference: _day, inclusive: false, actual: _day),
+  FormidableAfterError(reference: _day, inclusive: true, actual: _day),
+  FormidableBeforeError(reference: _day, inclusive: false, actual: _day),
+  FormidableBeforeError(reference: _day, inclusive: true, actual: _day),
+  FormidableFutureError(now: _day, actual: _day),
+  FormidablePastError(now: _day, actual: _day),
+  FormidableDateBetweenError(
+    start: DateTime(2024, 3),
+    end: DateTime(2024, 3, 31),
+    actual: _day,
+  ),
+  FormidableSameDayError(date: _day, actual: DateTime(2024, 6, 16)),
+  const FormidableMinAgeError(minAge: 18, actualAge: 17),
+  const FormidableMinAgeError(minAge: 1, actualAge: 0),
+  const FormidableMaxAgeError(maxAge: 65, actualAge: 66),
+  const FormidableIsTrueError(),
+  const FormidableIsFalseError(),
+  const FormidableOneOfError(allowed: ['red', 'green'], actual: 'blue'),
+  const FormidableNoneOfError(disallowed: ['admin', 'root'], actual: 'root'),
+  const FormidableEqualToError(expected: 'agree', actual: 'no'),
+  const FormidableNotEqualToError(unexpected: 42),
+  const FormidableOneOfError(
+    allowed: [Brightness.light, Brightness.dark],
+    actual: null,
+  ),
+];
+
+const _expected = <String, List<String>>{
+  'en': [
+    'Must be at least 10.5.',
+    'Must be greater than 10.',
+    'Must be at most 10.',
+    'Must be less than 10.5.',
+    'Must be between 1 and 5.',
+    'Must be greater than zero.',
+    'Must be zero or greater.',
+    'Must be less than zero.',
+    'Must be zero or less.',
+    'Must not be zero.',
+    'Must be a multiple of 0.5.',
+    'Must be an even number.',
+    'Must be an odd number.',
+    'Must have at most 2 decimal places.',
+    'Must have at most 1 decimal place.',
+    'Must have exactly 3 digits.',
+    'Must have at least 1 digit.',
+    'Must have at most 2 digits.',
+    'Must be a port number between 1 and 65535.',
+    'Must be after 2024-06-15.',
+    'Must be on or after 2024-06-15.',
+    'Must be before 2024-06-15.',
+    'Must be on or before 2024-06-15.',
+    'Must be in the future.',
+    'Must be in the past.',
+    'Must be between 2024-03-01 and 2024-03-31.',
+    'Must be on 2024-06-15.',
+    'You must be at least 18 years old.',
+    'You must be at least 1 year old.',
+    'You must be at most 65 years old.',
+    'Must be accepted.',
+    'Must be declined.',
+    'Must be one of: red, green.',
+    'Must not be any of: admin, root.',
+    'Must be equal to agree.',
+    'Must not be equal to 42.',
+    'Must be one of: light, dark.',
+  ],
+  'it': [
+    'Deve essere almeno 10,5.',
+    'Deve essere maggiore di 10.',
+    'Deve essere al massimo 10.',
+    'Deve essere minore di 10,5.',
+    'Deve essere compreso tra 1 e 5.',
+    'Deve essere maggiore di zero.',
+    'Deve essere zero o maggiore.',
+    'Deve essere minore di zero.',
+    'Deve essere zero o minore.',
+    'Non deve essere zero.',
+    'Deve essere un multiplo di 0,5.',
+    'Deve essere un numero pari.',
+    'Deve essere un numero dispari.',
+    'Deve avere al massimo 2 cifre decimali.',
+    'Deve avere al massimo 1 cifra decimale.',
+    'Deve avere esattamente 3 cifre.',
+    'Deve avere almeno 1 cifra.',
+    'Deve avere al massimo 2 cifre.',
+    'Deve essere una porta compresa tra 1 e 65535.',
+    'Deve essere successiva al 15/06/2024.',
+    'Deve essere uguale o successiva al 15/06/2024.',
+    'Deve essere precedente al 15/06/2024.',
+    'Deve essere uguale o precedente al 15/06/2024.',
+    'Deve essere una data futura.',
+    'Deve essere una data passata.',
+    'Deve essere compresa tra il 01/03/2024 e il 31/03/2024.',
+    'Deve essere il 15/06/2024.',
+    'Devi avere almeno 18 anni.',
+    'Devi avere almeno 1 anno.',
+    'Puoi avere al massimo 65 anni.',
+    'Deve essere accettato.',
+    'Deve essere rifiutato.',
+    'Deve essere uno tra: red, green.',
+    'Non deve essere nessuno tra: admin, root.',
+    'Deve essere uguale a agree.',
+    'Non deve essere uguale a 42.',
+    'Deve essere uno tra: light, dark.',
+  ],
+  'es': [
+    'Debe ser al menos 10,5.',
+    'Debe ser mayor que 10.',
+    'Debe ser como máximo 10.',
+    'Debe ser menor que 10,5.',
+    'Debe estar entre 1 y 5.',
+    'Debe ser mayor que cero.',
+    'Debe ser cero o mayor.',
+    'Debe ser menor que cero.',
+    'Debe ser cero o menor.',
+    'No debe ser cero.',
+    'Debe ser múltiplo de 0,5.',
+    'Debe ser un número par.',
+    'Debe ser un número impar.',
+    'Debe tener como máximo 2 decimales.',
+    'Debe tener como máximo 1 decimal.',
+    'Debe tener exactamente 3 dígitos.',
+    'Debe tener al menos 1 dígito.',
+    'Debe tener como máximo 2 dígitos.',
+    'Debe ser un puerto entre 1 y 65535.',
+    'Debe ser posterior al 15/06/2024.',
+    'Debe ser igual o posterior al 15/06/2024.',
+    'Debe ser anterior al 15/06/2024.',
+    'Debe ser igual o anterior al 15/06/2024.',
+    'Debe ser una fecha futura.',
+    'Debe ser una fecha pasada.',
+    'Debe estar entre el 01/03/2024 y el 31/03/2024.',
+    'Debe ser el 15/06/2024.',
+    'Debes tener al menos 18 años.',
+    'Debes tener al menos 1 año.',
+    'Debes tener como máximo 65 años.',
+    'Debe aceptarse.',
+    'Debe rechazarse.',
+    'Debe ser uno de: red, green.',
+    'No debe ser ninguno de: admin, root.',
+    'Debe ser igual a agree.',
+    'No debe ser igual a 42.',
+    'Debe ser uno de: light, dark.',
+  ],
+  'fr': [
+    'Doit être au moins 10,5.',
+    'Doit être supérieur à 10.',
+    'Doit être au plus 10.',
+    'Doit être inférieur à 10,5.',
+    'Doit être compris entre 1 et 5.',
+    'Doit être supérieur à zéro.',
+    'Doit être supérieur ou égal à zéro.',
+    'Doit être inférieur à zéro.',
+    'Doit être inférieur ou égal à zéro.',
+    'Ne doit pas être zéro.',
+    'Doit être un multiple de 0,5.',
+    'Doit être un nombre pair.',
+    'Doit être un nombre impair.',
+    'Doit avoir au plus 2 décimales.',
+    'Doit avoir au plus 1 décimale.',
+    'Doit avoir exactement 3 chiffres.',
+    'Doit avoir au moins 1 chiffre.',
+    'Doit avoir au plus 2 chiffres.',
+    'Doit être un numéro de port entre 1 et 65535.',
+    'Doit être postérieure au 15/06/2024.',
+    'Doit être égale ou postérieure au 15/06/2024.',
+    'Doit être antérieure au 15/06/2024.',
+    'Doit être égale ou antérieure au 15/06/2024.',
+    'Doit être une date future.',
+    'Doit être une date passée.',
+    'Doit être comprise entre le 01/03/2024 et le 31/03/2024.',
+    'Doit être le 15/06/2024.',
+    'Vous devez avoir au moins 18 ans.',
+    'Vous devez avoir au moins 1 an.',
+    'Vous devez avoir au plus 65 ans.',
+    'Doit être accepté.',
+    'Doit être refusé.',
+    'Doit être l’une des valeurs suivantes : red, green.',
+    'Ne doit être aucune des valeurs suivantes : admin, root.',
+    'Doit être égal à agree.',
+    'Ne doit pas être égal à 42.',
+    'Doit être l’une des valeurs suivantes : light, dark.',
+  ],
+  'de': [
+    'Muss mindestens 10,5 sein.',
+    'Muss größer als 10 sein.',
+    'Darf höchstens 10 sein.',
+    'Muss kleiner als 10,5 sein.',
+    'Muss zwischen 1 und 5 liegen.',
+    'Muss größer als null sein.',
+    'Muss null oder größer sein.',
+    'Muss kleiner als null sein.',
+    'Muss null oder kleiner sein.',
+    'Darf nicht null sein.',
+    'Muss ein Vielfaches von 0,5 sein.',
+    'Muss eine gerade Zahl sein.',
+    'Muss eine ungerade Zahl sein.',
+    'Darf höchstens 2 Nachkommastellen haben.',
+    'Darf höchstens 1 Nachkommastelle haben.',
+    'Muss genau 3 Ziffern haben.',
+    'Muss mindestens 1 Ziffer haben.',
+    'Darf höchstens 2 Ziffern haben.',
+    'Muss eine Portnummer zwischen 1 und 65535 sein.',
+    'Muss nach dem 15.06.2024 liegen.',
+    'Muss am 15.06.2024 oder danach liegen.',
+    'Muss vor dem 15.06.2024 liegen.',
+    'Muss am 15.06.2024 oder davor liegen.',
+    'Muss in der Zukunft liegen.',
+    'Muss in der Vergangenheit liegen.',
+    'Muss zwischen dem 01.03.2024 und dem 31.03.2024 liegen.',
+    'Muss der 15.06.2024 sein.',
+    'Sie müssen mindestens 18 Jahre alt sein.',
+    'Sie müssen mindestens 1 Jahr alt sein.',
+    'Sie dürfen höchstens 65 Jahre alt sein.',
+    'Muss akzeptiert werden.',
+    'Muss abgelehnt werden.',
+    'Muss einer der folgenden Werte sein: red, green.',
+    'Darf keiner der folgenden Werte sein: admin, root.',
+    'Muss gleich agree sein.',
+    'Darf nicht gleich 42 sein.',
+    'Muss einer der folgenden Werte sein: light, dark.',
+  ],
+};
+
 void main() {
-  const languages = ['en', 'it', 'es', 'fr', 'de'];
-
-  /// One instance of every error of this part of the catalog.
-  final errors = <String, FormidableValidationError>{
-    'notEmpty': const FormidableNotEmptyError(),
-    'unique': const FormidableUniqueError(duplicates: ['a', 3]),
-    'containsAll': const FormidableContainsAllError(missing: ['x', 'y']),
-    'containsNone': const FormidableContainsNoneError(found: ['root']),
-    'hasKeys': const FormidableHasKeysError(missing: ['host']),
-    'each': const FormidableEachError({
-      1: [FormidableNotEmptyError()],
-    }),
-    'eachMany': const FormidableEachError({
-      0: [FormidableNotEmptyError()],
-      3: [FormidableNotEmptyError()],
-    }),
-    'minFileSize': const FormidableMinFileSizeError(
-      minBytes: 1536,
-      actualBytes: 100,
-    ),
-    'maxFileSize': const FormidableMaxFileSizeError(
-      maxBytes: 5 * 1024 * 1024,
-      actualBytes: 7 * 1024 * 1024,
-    ),
-    'fileExtension': const FormidableFileExtensionError(
-      allowed: ['pdf', 'docx'],
-      actual: 'png',
-    ),
-    'mimeType': const FormidableMimeTypeError(
-      allowed: ['image/*'],
-      actual: null,
-    ),
-    'imageFile': const FormidableImageFileError(),
-    'fileName': const FormidableFileNameError(maxLength: 40),
-    'ipV4': const FormidableIpError(IpVersion.v4),
-    'ipV6': const FormidableIpError(IpVersion.v6),
-    'ip': const FormidableIpError(IpVersion.any),
-    'cidrV4': const FormidableCidrError(IpVersion.v4),
-    'cidrV6': const FormidableCidrError(IpVersion.v6),
-    'cidr': const FormidableCidrError(IpVersion.any),
-    'macAddress': const FormidableMacAddressError(),
-    'hostname': const FormidableHostnameError(),
-    'fqdn': const FormidableFqdnError(),
-    'domain': const FormidableDomainError(),
-    'latitude': const FormidableLatitudeError(),
-    'longitude': const FormidableLongitudeError(),
-    'latLng': const FormidableLatLngError(),
-    'creditCard': const FormidableCreditCardError(brands: []),
-    'creditCardBrands': const FormidableCreditCardError(
-      brands: [CardBrand.visa, CardBrand.amex],
-    ),
-    'cardCvc': const FormidableCardCvcError(),
-    'cardExpiry': const FormidableCardExpiryError(),
-    'cardExpired': const FormidableCardExpiredError(),
-    'iban': const FormidableIbanError(countries: []),
-    'ibanCountries': const FormidableIbanError(countries: ['IT', 'DE']),
-    'bic': const FormidableBicError(),
-    'currencyCode': const FormidableCurrencyCodeError(),
-    'countryCode': const FormidableCountryCodeError(),
-    'languageCode': const FormidableLanguageCodeError(),
-    'localeCode': const FormidableLocaleCodeError(),
-    'phone': const FormidablePhoneError(),
-  };
-
-  /// Looks up the message of every error in [language] through the widget tree.
-  Future<Map<String, String>> messagesIn(
-    WidgetTester tester,
-    String language,
-  ) async {
-    final messages = <String, String>{};
-    await tester.pumpWidget(
-      MaterialApp(
-        locale: Locale(language),
-        supportedLocales: FormidableLocalizations.supportedLocales,
-        localizationsDelegates: [
-          FormidableLocalizations.delegate,
-          ...GlobalMaterialLocalizations.delegates,
-        ],
-        home: Builder(
-          builder: (context) {
-            for (final entry in errors.entries) {
-              messages[entry.key] = formidableMessageOf(context, entry.value);
-            }
-            return const SizedBox();
-          },
+  for (final MapEntry(key: language, value: texts) in _expected.entries) {
+    testWidgets('says every catalog error in $language', (tester) async {
+      late BuildContext context;
+      await tester.pumpWidget(
+        MaterialApp(
+          locale: Locale(language),
+          supportedLocales: FormidableLocalizations.supportedLocales,
+          localizationsDelegates: [
+            FormidableLocalizations.delegate,
+            ...GlobalMaterialLocalizations.delegates,
+          ],
+          home: Builder(
+            builder: (c) {
+              context = c;
+              return const SizedBox();
+            },
+          ),
         ),
-      ),
-    );
-    return messages;
-  }
+      );
 
-  const english = {
-    'notEmpty': 'Must not be empty.',
-    'unique': 'Must not contain duplicates: a, 3.',
-    'containsAll': 'Must contain: x, y.',
-    'containsNone': 'Must not contain: root.',
-    'hasKeys': 'Must have the keys: host.',
-    'each': 'Item 2 is invalid.',
-    'eachMany': 'Items 1, 4 are invalid.',
-    'minFileSize': 'The file must be at least 1.5 KB (it is 100 B).',
-    'maxFileSize': 'The file must be at most 5 MB (it is 7 MB).',
-    'fileExtension': 'The file must be one of these types: .pdf, .docx.',
-    'mimeType': 'The file type must be one of: image/*.',
-    'imageFile': 'The file must be an image.',
-    'fileName':
-        'The file name is not valid (at most 40 characters, '
-        r'without / \ : * ? " < > |).',
-    'ipV4': 'Must be a valid IPv4 address.',
-    'ipV6': 'Must be a valid IPv6 address.',
-    'ip': 'Must be a valid IP address.',
-    'cidrV4': 'Must be a valid IPv4 network in CIDR notation.',
-    'cidrV6': 'Must be a valid IPv6 network in CIDR notation.',
-    'cidr': 'Must be a valid network in CIDR notation.',
-    'macAddress': 'Must be a valid MAC address.',
-    'hostname': 'Must be a valid host name.',
-    'fqdn': 'Must be a fully qualified domain name.',
-    'domain': 'Must be a valid domain name.',
-    'latitude': 'Must be a latitude between -90 and 90.',
-    'longitude': 'Must be a longitude between -180 and 180.',
-    'latLng': 'Must be coordinates written as "latitude, longitude".',
-    'creditCard': 'Must be a valid card number.',
-    'creditCardBrands':
-        'Must be a valid card number (accepted: Visa, American Express).',
-    'cardCvc': 'Must be a 3 or 4 digit security code.',
-    'cardExpiry': 'Must be an expiry date written as MM/YY.',
-    'cardExpired': 'The card has expired.',
-    'iban': 'Must be a valid IBAN.',
-    'ibanCountries': 'Must be a valid IBAN from: IT, DE.',
-    'bic': 'Must be a valid BIC.',
-    'currencyCode': 'Must be a valid currency code.',
-    'countryCode': 'Must be a valid country code.',
-    'languageCode': 'Must be a valid language code.',
-    'localeCode': 'Must be a valid locale, for example en-US.',
-    'phone':
-        'Must be a phone number in international format (for example '
-        '+12025550123).',
-  };
-
-  /// Spot checks of the wording that depends on data, per language.
-  const spots = {
-    'it': {
-      'each': "L'elemento 2 non è valido.",
-      'eachMany': 'Gli elementi 1, 4 non sono validi.',
-      'minFileSize': 'Il file deve essere di almeno 1,5 KB (è 100 B).',
-      'ibanCountries': 'Deve essere un IBAN valido tra i paesi: IT, DE.',
-      'cardCvc': 'Deve essere un codice di sicurezza di 3 o 4 cifre.',
-    },
-    'es': {
-      'each': 'El elemento 2 no es válido.',
-      'eachMany': 'Los elementos 1, 4 no son válidos.',
-      'minFileSize': 'El archivo debe pesar al menos 1,5 KB (pesa 100 B).',
-      'ibanCountries': 'Debe ser un IBAN válido de: IT, DE.',
-      'cardExpired': 'La tarjeta ha caducado.',
-    },
-    'fr': {
-      'each': "L'élément 2 n'est pas valide.",
-      'eachMany': 'Les éléments 1, 4 ne sont pas valides.',
-      'maxFileSize': 'Le fichier doit faire au plus 5 MB (il fait 7 MB).',
-      'ibanCountries': 'Doit être un IBAN valide parmi les pays : IT, DE.',
-      'cardExpired': 'La carte a expiré.',
-    },
-    'de': {
-      'each': 'Element 2 ist ungültig.',
-      'eachMany': 'Die Elemente 1, 4 sind ungültig.',
-      'maxFileSize': 'Die Datei darf höchstens 5 MB groß sein (aktuell 7 MB).',
-      'ibanCountries':
-          'Muss eine gültige IBAN aus folgenden Ländern sein: IT, DE.',
-      'cardExpired': 'Die Karte ist abgelaufen.',
-    },
-  };
-
-  for (final language in languages) {
-    testWidgets('says every error in $language', (tester) async {
-      final messages = await messagesIn(tester, language);
-
-      expect(messages.keys, errors.keys);
-      for (final entry in messages.entries) {
-        // The last resort is the English toString, so a message that equals
-        // it in another language means the lookup found nothing.
-        expect(entry.value, isNotEmpty, reason: entry.key);
-        if (language == 'en') {
-          expect(entry.value, english[entry.key], reason: entry.key);
-        } else {
-          expect(
-            entry.value,
-            isNot(english[entry.key]),
-            reason: '${entry.key} is not translated to $language',
-          );
-        }
-      }
-      for (final spot in (spots[language] ?? const {}).entries) {
-        expect(messages[spot.key], spot.value, reason: spot.key);
-      }
+      expect(texts, hasLength(_errors.length));
+      expect([
+        for (final error in _errors) formidableMessageOf(context, error),
+      ], texts);
     });
   }
 }

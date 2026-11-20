@@ -35,7 +35,7 @@ class Payment {
 |---|---|---|
 | `CreditCard({brands})` | The digits (spaces and hyphens are ignored) pass the Luhn check. With `brands`, the number also has the prefix and length of one of them. Without, any number of 12 to 19 digits that passes the check is accepted. | `FormidableCreditCardError(brands)` |
 | `CardCvc()` | Three or four digits. | `FormidableCardCvcError` |
-| `CardExpiry({now})` | The value is `MM/YY` or `MM/YYYY` and the card has not expired. A card is valid through the end of the printed month. | `FormidableCardExpiryError` (not a date), `FormidableCardExpiredError` (in the past) |
+| `CardExpiry()` | The value is `MM/YY` or `MM/YYYY` and the card has not expired. A card is valid through the end of the printed month. | `FormidableCardExpiryError` (not a date), `FormidableCardExpiredError` (in the past) |
 | `Iban({countries})` | The country code, length and mod 97 checksum are right. Spaces are ignored and case does not matter. With `countries`, only those ISO country codes pass. | `FormidableIbanError(countries)` |
 | `Bic()` | Four letters, two letters, two letters or digits, and optionally three more (8 or 11 characters). Case does not matter. | `FormidableBicError` |
 | `CurrencyCode()` | An ISO 4217 code in upper case, such as `EUR`. | `FormidableCurrencyCodeError` |
@@ -44,12 +44,12 @@ The card brands are `visa`, `mastercard`, `amex`, `discover`, `diners`, `jcb`, `
 
 ## Testing a card expiry
 
-`CardExpiry` reads the system clock. Give it your own clock with a top-level function, since an annotation is a constant:
+`CardExpiry` reads the time from `FormidableClock`, the same clock the date Validators use. Replace it in a test:
 
 ```dart
-DateTime fixedNow() => DateTime(2026, 6, 15);
-
-const validator = CardExpiry(now: fixedNow);
+FormidableClock.withClock(() => DateTime(2026, 6, 15), () {
+  // 06/26 is valid, 05/26 has expired
+});
 ```
 
 ## What is not checked

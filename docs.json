@@ -34,6 +34,9 @@
         { "title": "Network Validators", "href": "/validation/network" },
         { "title": "Finance Validators", "href": "/validation/finance" },
         { "title": "Locale Validators", "href": "/validation/locale" },
+        { "title": "Number Validators", "href": "/validation/numbers" },
+        { "title": "Date Validators", "href": "/validation/dates" },
+        { "title": "Choice and equality Validators", "href": "/validation/choices" },
         { "title": "Custom Validators", "href": "/validation/custom" },
         { "title": "Normalizers", "href": "/validation/normalizers" },
         { "title": "Messages and localization", "href": "/validation/messages" }
