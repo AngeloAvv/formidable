@@ -2,6 +2,9 @@
 /// Validation Errors. It has no Flutter dependency.
 library;
 
+// Generated Forms name `Stream` in the streams they type after their state,
+// and a part file cannot import `dart:async` itself.
+export 'dart:async' show Stream;
 export 'src/annotations/async_validator.dart';
 export 'src/annotations/dynamic.dart';
 export 'src/annotations/effects.dart';

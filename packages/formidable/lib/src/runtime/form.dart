@@ -14,6 +14,7 @@ import 'node.dart';
 import 'notifier.dart';
 import 'pipeline.dart';
 import 'status.dart';
+import 'streams.dart';
 import 'submit_result.dart';
 
 /// The live instance generated from a Schema [S].
@@ -66,6 +67,60 @@ abstract class FormidableForm<S>
   /// changes.
   @override
   FormidableFormState get state => _state ??= _computeState();
+
+  FormidableStreamHub? _streamHub;
+
+  FormidableStreamHub get _hub =>
+      _streamHub ??= FormidableStreamHub(this, () => isDisposed);
+
+  /// Every state of the Form, as it changes: any Field below it, but also
+  /// touched, errors, pending and the rest.
+  ///
+  /// It is a broadcast stream that delivers synchronously, right after the
+  /// change, like [addListener]. It never emits the state the Form is in when
+  /// you listen, it listens to the Form only while it has subscribers, and it
+  /// closes when the Form is disposed. The same holds for [valueChanges],
+  /// [statusChanges] and [select]. A generated Form types it after its state
+  /// (`Stream<SignUpFormState>`).
+  Stream<FormidableFormState> get changes =>
+      _hub.derive(() => state, (state) => state, same: (_, _) => false);
+
+  /// The state of the Form, each time the value or presence of a Field below
+  /// it changes, including the Fields of Nested Forms, Field Arrays and Dynamic
+  /// Forms: an item added, removed, moved or edited, a Field registered or
+  /// removed, an optional Nested Form that becomes set or Unset.
+  ///
+  /// Touching a Field, submitting, focus, errors and pending are not value
+  /// changes, and neither is the Form becoming valid on its own: it is not tied
+  /// to [value], which is null until the Form is valid. The event is the state,
+  /// so the listener reads the Fields it cares about (`state.email.value`), or
+  /// `state.form.value` for the Schema instance when the Form is valid. A
+  /// generated Form types it after its state.
+  ///
+  /// ```dart
+  /// form.valueChanges.listen((state) => print(state.from.value));
+  /// ```
+  Stream<FormidableFormState> get valueChanges =>
+      _hub.derive<List<Object?>, FormidableFormState>(
+        () => valueKeyOf(this),
+        (_) => state,
+        same: sameValueKey,
+      );
+
+  /// The status of the Form, each time it changes between valid and invalid.
+  Stream<FormidableStatus> get statusChanges =>
+      _hub.derive(() => state.form.status, (status) => status);
+
+  /// What [selector] returns for the state of the Form, each time it differs
+  /// (by `==`) from what it returned before. The first selection is computed
+  /// when you listen, so the first event is a real change. A generated Form
+  /// hands the selector its typed state.
+  ///
+  /// ```dart
+  /// form.select((state) => (state.from.value, state.to.value));
+  /// ```
+  Stream<R> select<R>(R Function(FormidableFormState state) selector) =>
+      _hub.derive(() => selector(state), (selection) => selection);
 
   /// The Schema instance while the Form is valid and not pending, null
   /// otherwise (and while an optional Nested Form is Unset). It is the
@@ -700,6 +755,7 @@ abstract class FormidableForm<S>
       node.removeListener(_onNodeChanged);
       node.dispose();
     }
+    _streamHub?.close();
     super.dispose();
   }
 

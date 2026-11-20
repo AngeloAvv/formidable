@@ -9,6 +9,8 @@ import 'form_state.dart';
 import 'node.dart';
 import 'notifier.dart';
 import 'pipeline.dart';
+import 'status.dart';
+import 'streams.dart';
 
 /// Thrown when a key of a [FormidableDynamicForm] is used wrongly: it is
 /// already registered, or nothing is registered under it.
@@ -162,6 +164,45 @@ final class FormidableDynamicForm
 
   @override
   FormidableDynamicFormState get state => _state;
+
+  FormidableStreamHub? _streamHub;
+
+  FormidableStreamHub get _hub =>
+      _streamHub ??= FormidableStreamHub(this, () => isDisposed);
+
+  /// Every state of the Dynamic Form, as it changes: what is registered in it
+  /// and every state below.
+  ///
+  /// It is a broadcast stream that delivers synchronously, right after the
+  /// change, like [addListener]. It never emits the state the Dynamic Form is
+  /// in when you listen, it listens to it only while it has subscribers, and it
+  /// closes when the Dynamic Form is disposed. The same holds for
+  /// [valueChanges], [statusChanges] and [select].
+  Stream<FormidableDynamicFormState> get changes =>
+      _hub.derive(() => _state, (state) => state, same: (_, _) => false);
+
+  /// The state of the Dynamic Form, each time a Field or a Nested Form is
+  /// registered or removed, or the value or presence of a Field in it changes.
+  /// Touching, submitting and errors are not value changes.
+  Stream<FormidableDynamicFormState> get valueChanges =>
+      _hub.derive<List<Object?>, FormidableDynamicFormState>(
+        () => valueKeyOf(this),
+        (_) => _state,
+        same: sameValueKey,
+      );
+
+  /// The status of the Dynamic Form, each time it changes between valid and
+  /// invalid. It is invalid when anything registered in it is.
+  Stream<FormidableStatus> get statusChanges => _hub.derive(
+    () => isValid ? FormidableStatus.valid : FormidableStatus.invalid,
+    (status) => status,
+  );
+
+  /// What [selector] returns for the state of the Dynamic Form, each time it
+  /// differs (by `==`) from what it returned before. The first selection is
+  /// computed when you listen, so the first event is a real change.
+  Stream<R> select<R>(R Function(FormidableDynamicFormState state) selector) =>
+      _hub.derive(() => selector(_state), (selection) => selection);
 
   /// The registered keys, in registration order.
   List<String> get keys => _entries.keys.toList(growable: false);
@@ -489,6 +530,7 @@ final class FormidableDynamicForm
       node.dispose();
     }
     _entries.clear();
+    _streamHub?.close();
     super.dispose();
   }
 }

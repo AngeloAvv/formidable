@@ -152,6 +152,25 @@ String emitForm(SchemaModel schema) {
     '  ${schema.stateName} get state => super.state as ${schema.stateName};',
   );
   out.writeln();
+  // The streams, typed after the state like `state` is.
+  out.writeln('  @override');
+  out.writeln(
+    '  Stream<${schema.stateName}> get changes =>\n'
+    '      super.changes.cast<${schema.stateName}>();',
+  );
+  out.writeln();
+  out.writeln('  @override');
+  out.writeln(
+    '  Stream<${schema.stateName}> get valueChanges =>\n'
+    '      super.valueChanges.cast<${schema.stateName}>();',
+  );
+  out.writeln();
+  out.writeln('  @override');
+  out.writeln(
+    '  Stream<R> select<R>(R Function(${schema.stateName} state) selector) =>\n'
+    '      super.select<R>((state) => selector(state as ${schema.stateName}));',
+  );
+  out.writeln();
   out.writeln('  @override');
   out.writeln('  ${schema.stateName} buildState({');
   out.writeln('    required FormidableStatus status,');

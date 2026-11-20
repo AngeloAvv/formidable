@@ -20,6 +20,11 @@ mixin FormidableNotifierMixin {
   /// Whether [dispose] has been called.
   bool get isDisposed => _disposed;
 
+  /// Whether anything listens right now: a listener added with [addListener],
+  /// or a subscription to one of the streams (`changes`, `valueChanges`,
+  /// `statusChanges`, `select`), which is a listener while it has subscribers.
+  bool get hasListeners => _listeners.isNotEmpty;
+
   void addListener(void Function() listener) {
     assert(!_disposed, 'Cannot add a listener to a disposed object.');
     _listeners.add(listener);

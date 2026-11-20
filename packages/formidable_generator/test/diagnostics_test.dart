@@ -917,6 +917,12 @@ class SignUp {
       'buildState',
       'hashCode',
       'toString',
+      // The streams of the Form.
+      'changes',
+      'valueChanges',
+      'statusChanges',
+      'select',
+      'hasListeners',
       // The metadata of the generated state lives under `form`, so `form` is
       // the only name the state takes from the Schema's Fields.
       'form',

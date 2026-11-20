@@ -7,6 +7,8 @@ import 'form.dart';
 import 'node.dart';
 import 'notifier.dart';
 import 'pipeline.dart';
+import 'status.dart';
+import 'streams.dart';
 
 /// One entry of a [FormidableFieldArray]: the Nested Form or the Field that
 /// holds the data, with an identifier that never changes and is never reused.
@@ -107,6 +109,47 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
 
   @override
   FormidableFieldArrayState<S> get state => _state;
+
+  FormidableStreamHub? _streamHub;
+
+  FormidableStreamHub get _hub =>
+      _streamHub ??= FormidableStreamHub(this, () => isDisposed);
+
+  /// Every state of the array, as it changes: its items, but also touched,
+  /// errors and everything the states of its items hold.
+  ///
+  /// It is a broadcast stream that delivers synchronously, right after the
+  /// change, like [addListener]. It never emits the state the array is in when
+  /// you listen, it listens to the array only while it has subscribers, and it
+  /// closes when the array is disposed. The same holds for [valueChanges],
+  /// [statusChanges] and [select].
+  Stream<FormidableFieldArrayState<S>> get changes =>
+      _hub.derive(() => _state, (state) => state, same: (_, _) => false);
+
+  /// The state of the array, each time an item is added, removed, moved or
+  /// edited: the value or presence of any Field in any item changes, or the
+  /// items or their order do. Touching, submitting and errors are not value
+  /// changes.
+  Stream<FormidableFieldArrayState<S>> get valueChanges =>
+      _hub.derive<List<Object?>, FormidableFieldArrayState<S>>(
+        () => valueKeyOf(this),
+        (_) => _state,
+        same: sameValueKey,
+      );
+
+  /// The status of the array, each time it changes between valid and invalid.
+  /// The array is invalid when it has errors of its own or any item has.
+  Stream<FormidableStatus> get statusChanges => _hub.derive(
+    () => isValid ? FormidableStatus.valid : FormidableStatus.invalid,
+    (status) => status,
+  );
+
+  /// What [selector] returns for the state of the array, each time it differs
+  /// (by `==`) from what it returned before. The first selection is computed
+  /// when you listen, so the first event is a real change.
+  Stream<R> select<R>(
+    R Function(FormidableFieldArrayState<S> state) selector,
+  ) => _hub.derive(() => selector(_state), (selection) => selection);
 
   /// The items in order, each with its stable identifier. The list is a copy:
   /// it does not change when the array does.
@@ -303,6 +346,7 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
       _unfollow(item.node);
       item.node.dispose();
     }
+    _streamHub?.close();
     super.dispose();
   }
 

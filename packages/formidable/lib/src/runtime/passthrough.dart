@@ -2,6 +2,8 @@ import '../validation/validation_error.dart';
 import 'node.dart';
 import 'notifier.dart';
 import 'pipeline.dart';
+import 'status.dart';
+import 'streams.dart';
 
 /// A Passthrough Field: its value is supplied when the Form is created and it
 /// can never be Unset.
@@ -27,6 +29,35 @@ final class FormidablePassthrough<T>
 
   @override
   T get state => _value;
+
+  FormidableStreamHub? _streamHub;
+
+  FormidableStreamHub get _hub =>
+      _streamHub ??= FormidableStreamHub(this, () => isDisposed);
+
+  /// The value, each time it changes. Its state is its value, so this is the
+  /// same as [valueChanges]. See `FormidableField.changes` for how the streams
+  /// behave.
+  Stream<T> get changes => _hub.derive(() => _value, (value) => value);
+
+  /// The value, each time it changes.
+  Stream<T> get valueChanges => _hub.derive(() => _value, (value) => value);
+
+  /// A Passthrough Field is always valid, so this never emits. It is here so
+  /// that every Field offers the same streams.
+  Stream<FormidableStatus> get statusChanges =>
+      _hub.derive(() => FormidableStatus.valid, (status) => status);
+
+  /// What [selector] returns for the value, each time it differs (by `==`) from
+  /// what it returned before.
+  Stream<R> select<R>(R Function(T value) selector) =>
+      _hub.derive(() => selector(_value), (selection) => selection);
+
+  @override
+  void dispose() {
+    _streamHub?.close();
+    super.dispose();
+  }
 
   /// Replaces the value. The type is exactly the Field's type. The change goes
   /// through the Form Effects like a change to any other Field.
