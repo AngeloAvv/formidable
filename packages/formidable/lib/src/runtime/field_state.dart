@@ -11,6 +11,8 @@ final class FormidableFieldState<T> {
     required this.isSet,
     required List<FormidableValidationError> errors,
     required this.touched,
+    this.dirty = false,
+    this.enabled = true,
   }) : errors = List.unmodifiable(errors);
 
   /// The chosen value, or null while the Field is Unset.
@@ -25,6 +27,14 @@ final class FormidableFieldState<T> {
   /// Whether the user has interacted with the Field and then left it.
   final bool touched;
 
+  /// Whether the value or presence differs from the initial state. Going back
+  /// to the initial state makes the Field clean again.
+  final bool dirty;
+
+  /// Whether the Field takes part in the Form. A disabled Field is not
+  /// validated and does not block submit.
+  final bool enabled;
+
   FormidableStatus get status =>
       errors.isEmpty ? FormidableStatus.valid : FormidableStatus.invalid;
 
@@ -34,16 +44,24 @@ final class FormidableFieldState<T> {
       other.value == value &&
       other.isSet == isSet &&
       other.touched == touched &&
+      other.dirty == dirty &&
+      other.enabled == enabled &&
       _sameErrors(other.errors, errors);
 
   @override
-  int get hashCode =>
-      Object.hash(value, isSet, touched, Object.hashAll(errors));
+  int get hashCode => Object.hash(
+    value,
+    isSet,
+    touched,
+    dirty,
+    enabled,
+    Object.hashAll(errors),
+  );
 
   @override
   String toString() =>
       'FormidableFieldState(value: $value, isSet: $isSet, '
-      'touched: $touched, errors: $errors)';
+      'touched: $touched, dirty: $dirty, enabled: $enabled, errors: $errors)';
 
   static bool _sameErrors(
     List<FormidableValidationError> a,

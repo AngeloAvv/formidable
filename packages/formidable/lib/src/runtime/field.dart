@@ -34,6 +34,8 @@ final class FormidableField<T>
        _defaultValue = defaultValue {
     final start =
         initial ?? (defaultValue == null ? null : (value: defaultValue));
+    _initialIsSet = start != null;
+    _initialValue = start?.value;
     _state = _stateFor(
       isSet: start != null,
       value: start?.value,
@@ -45,6 +47,8 @@ final class FormidableField<T>
   final bool _required;
   final T? _defaultValue;
   late FormidableFieldState<T> _state;
+  late bool _initialIsSet;
+  late T? _initialValue;
 
   @override
   FormidableFieldState<T> get state => _state;
@@ -82,6 +86,12 @@ final class FormidableField<T>
   }
 
   @override
+  bool get isDirty => _state.dirty;
+
+  @override
+  bool get isPending => false;
+
+  @override
   void collectErrors(
     Map<FormidableField<Object?>, List<FormidableValidationError>> into,
   ) {
@@ -107,6 +117,7 @@ final class FormidableField<T>
     value: value,
     isSet: isSet,
     touched: touched,
+    dirty: isSet != _initialIsSet || (isSet && value != _initialValue),
     errors: isSet ? _validate(value) : _presenceErrors(),
   );
 

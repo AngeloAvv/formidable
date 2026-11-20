@@ -9,6 +9,12 @@ abstract interface class FormidableNode {
   /// Whether this node and everything below it has no errors.
   bool get isValid;
 
+  /// Whether this node or anything below it differs from its initial state.
+  bool get isDirty;
+
+  /// Whether this node or anything below it is still waiting for a result.
+  bool get isPending;
+
   /// Adds the errors of every Field at or below this node to [into].
   void collectErrors(
     Map<FormidableField<Object?>, List<FormidableValidationError>> into,

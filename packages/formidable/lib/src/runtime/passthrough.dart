@@ -12,9 +12,10 @@ import 'notifier.dart';
 final class FormidablePassthrough<T>
     with FormidableNotifierMixin
     implements FormidableNode, FormidableObservable<T> {
-  FormidablePassthrough(T value) : _value = value;
+  FormidablePassthrough(T value) : _value = value, _initial = value;
 
   T _value;
+  final T _initial;
 
   /// The current value.
   T get value => _value;
@@ -34,6 +35,12 @@ final class FormidablePassthrough<T>
 
   @override
   bool get isValid => true;
+
+  @override
+  bool get isDirty => _value != _initial;
+
+  @override
+  bool get isPending => false;
 
   @override
   void collectErrors(

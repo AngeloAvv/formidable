@@ -15,15 +15,35 @@ abstract class FormidableForm<S>
     with FormidableNotifierMixin
     implements FormidableObservable<FormidableFormState> {
   List<FormidableNode> _nodes = const [];
-  FormidableFormState _state = const FormidableFormState(
+  FormidableFormState _state = FormidableFormState(
     status: FormidableStatus.valid,
   );
+  final List<void Function()> _changeListeners = [];
 
   /// The children of the Form, in Schema declaration order.
   List<FormidableNode> get nodes => _nodes;
 
   @override
   FormidableFormState get state => _state;
+
+  /// The Schema instance while the Form is valid and not pending, null
+  /// otherwise. It is computed on every read.
+  S? get value {
+    final state = _state;
+    if (state.status != FormidableStatus.valid || state.pending) return null;
+    return buildOutput();
+  }
+
+  /// Calls [listener] after every change of any child, even one that leaves
+  /// [state] equal. A listener of [state] is called only when it differs, so
+  /// use this to follow [value], which can change while [state] does not.
+  void addChangeListener(void Function() listener) {
+    assert(!isDisposed, 'Cannot add a listener to a disposed object.');
+    _changeListeners.add(listener);
+  }
+
+  void removeChangeListener(void Function() listener) =>
+      _changeListeners.remove(listener);
 
   /// Registers the children of the Form, in Schema declaration order. A
   /// generated Form calls it once from its constructor.
@@ -59,19 +79,27 @@ abstract class FormidableForm<S>
       node.removeListener(_onNodeChanged);
       node.dispose();
     }
+    _changeListeners.clear();
     super.dispose();
   }
 
   void _onNodeChanged() {
     final next = _computeState();
-    if (next == _state) return;
-    _state = next;
-    notifyListeners();
+    if (next != _state) {
+      _state = next;
+      notifyListeners();
+    }
+    if (isDisposed) return;
+    for (final listener in List.of(_changeListeners)) {
+      if (_changeListeners.contains(listener)) listener();
+    }
   }
 
   FormidableFormState _computeState() => FormidableFormState(
     status: _nodes.every((node) => node.isValid)
         ? FormidableStatus.valid
         : FormidableStatus.invalid,
+    dirty: _nodes.any((node) => node.isDirty),
+    pending: _nodes.any((node) => node.isPending),
   );
 }
