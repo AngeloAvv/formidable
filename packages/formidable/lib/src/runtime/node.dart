@@ -21,6 +21,10 @@ abstract interface class FormidableNode {
     Map<FormidableField<Object?>, List<FormidableValidationError>> into,
   );
 
+  /// Marks every Field at or below this node as touched and submitted. Called
+  /// by the Form when `submit()` starts.
+  void markSubmitted();
+
   /// Gives the node the pipeline of its Form. Writes to the node run through
   /// it. Called once by the Form.
   void bindPipeline(FormidablePipeline pipeline);

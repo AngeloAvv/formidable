@@ -16,6 +16,7 @@ export 'src/normalizers/trim.dart';
 export 'src/runtime/effect.dart';
 export 'src/runtime/field.dart';
 export 'src/runtime/field_state.dart';
+export 'src/runtime/focus_target.dart';
 export 'src/runtime/form.dart';
 export 'src/runtime/form_state.dart';
 export 'src/runtime/node.dart';

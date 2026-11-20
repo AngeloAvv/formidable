@@ -3,6 +3,7 @@ import '../validation/required_error.dart';
 import '../validation/validation_error.dart';
 import '../validation/validator.dart';
 import 'field_state.dart';
+import 'focus_target.dart';
 import 'node.dart';
 import 'notifier.dart';
 import 'pipeline.dart';
@@ -62,6 +63,10 @@ final class FormidableField<T>
   T? _value;
   bool _isSet = false;
   bool _touched = false;
+  bool _enabled = true;
+  bool _submitted = false;
+  final List<FormidableFocusTarget> _focusTargets = [];
+  List<FormidableValidationError> _applied = const [];
   bool _stale = false;
   FormidableValidationError? _inputError;
   late FormidableFieldState<T> _state;
@@ -94,6 +99,31 @@ final class FormidableField<T>
 
   /// Makes the Field Unset.
   void clear() => _write(() => _assign(null));
+
+  /// Makes the Field take part in the Form again, and validates it.
+  void enable() => _setEnabled(true);
+
+  /// Takes the Field out of validation. It keeps its value and still
+  /// contributes to the output. An Unset Field that is required still blocks
+  /// submit, because no valid output exists without it.
+  void disable() => _setEnabled(false);
+
+  /// Shows [errors] on the Field, after the errors of its Validators, and makes
+  /// the Field invalid. Use it for errors that only a server can find. They
+  /// replace the errors applied before and go away on the next change of the
+  /// Field's value or presence. An empty list removes them right away.
+  ///
+  /// A disabled Field shows no applied errors.
+  void applyErrors(List<FormidableValidationError> errors) {
+    _applied = List.unmodifiable(errors);
+    _refresh();
+  }
+
+  void _setEnabled(bool enabled) {
+    if (_enabled == enabled) return;
+    _enabled = enabled;
+    _refresh();
+  }
 
   /// Replaces the errors that the Form Validators address to this Field. They
   /// are added after the Field's own errors. Called by the Form before it
@@ -130,8 +160,7 @@ final class FormidableField<T>
   ///
   /// Widgets call it when a Codec fails to parse their input. The next
   /// [setValue] or [clear] lifts the rejection.
-  void reject(FormidableValidationError error) =>
-      _write(() => _reject(error));
+  void reject(FormidableValidationError error) => _write(() => _reject(error));
 
   /// The error given to [reject], or null when the last input was accepted.
   FormidableValidationError? get inputError => _inputError;
@@ -140,6 +169,37 @@ final class FormidableField<T>
   void markAsTouched() {
     if (_touched) return;
     _touched = true;
+    _refresh();
+  }
+
+  /// Registers the widget that shows this Field, so that [focus] and [unfocus]
+  /// reach it. When several are registered the last one wins. Returns a
+  /// function that removes the registration.
+  void Function() registerFocusTarget(FormidableFocusTarget target) {
+    _focusTargets.add(target);
+    return () => _focusTargets.remove(target);
+  }
+
+  /// Whether [focus] can do something: the Field is enabled and a widget is
+  /// registered for it.
+  bool get canFocus => _enabled && _focusTargets.isNotEmpty;
+
+  /// Moves the input focus to the widget of the Field. It does nothing when
+  /// the Field is disabled or no widget shows it.
+  void focus() {
+    if (canFocus) _focusTargets.last.focus();
+  }
+
+  /// Takes the input focus away from the widget of the Field.
+  void unfocus() {
+    if (_focusTargets.isNotEmpty) _focusTargets.last.unfocus();
+  }
+
+  @override
+  void markSubmitted() {
+    if (_touched && _submitted) return;
+    _touched = true;
+    _submitted = true;
     _refresh();
   }
 
@@ -213,6 +273,7 @@ final class FormidableField<T>
     }
     _isSet = isSet;
     _value = value;
+    _applied = const [];
     _stale = true;
     return true;
   }
@@ -251,14 +312,17 @@ final class FormidableField<T>
     value: _value,
     isSet: _isSet,
     touched: _touched,
+    enabled: _enabled,
+    submitted: _submitted,
     dirty: _isSet != _initialIsSet || (_isSet && _value != _initialValue),
     errors: [
       ...(_isSet
-          ? _validate(_value)
+          ? (_enabled ? _validate(_value) : const <FormidableValidationError>[])
           : _inputError != null
           ? [_inputError!]
           : _presenceErrors()),
       ..._formErrors,
+      if (_enabled) ..._applied,
     ],
   );
 
@@ -283,7 +347,6 @@ final class FormidableField<T>
 
   List<FormidableValidationError> _validate(T? value) => [
     for (final validator in _validators)
-      if (value != null || validator.acceptsNull)
-        ...validator.validate(value),
+      if (value != null || validator.acceptsNull) ...validator.validate(value),
   ];
 }
