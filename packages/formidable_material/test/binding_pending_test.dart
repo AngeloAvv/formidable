@@ -42,7 +42,7 @@ void main() {
 
     await tester.pump(const Duration(milliseconds: 20));
     answer.complete(const []);
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 1));
 
     expect(find.text('done'), findsOneWidget);
   });
