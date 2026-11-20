@@ -23,6 +23,7 @@ class FormidableTextField<T> extends StatelessWidget {
     this.decoration = const InputDecoration(),
     this.keyboardType,
     this.textInputAction,
+    this.onEditingComplete,
     this.obscureText = false,
     this.minLines,
     this.maxLines = 1,
@@ -36,7 +37,14 @@ class FormidableTextField<T> extends StatelessWidget {
   final FormidableField<T> field;
   final InputDecoration decoration;
   final TextInputType? keyboardType;
+
+  /// The keyboard action. Null is "next" while another Field follows, "done"
+  /// on the last one. A multiline field keeps its newline key.
   final TextInputAction? textInputAction;
+
+  /// Called when the user presses the keyboard action. Null moves focus to the
+  /// next Field in Schema declaration order. When it is set it replaces that.
+  final VoidCallback? onEditingComplete;
   final bool obscureText;
   final int? minLines;
   final int? maxLines;
@@ -68,7 +76,9 @@ class FormidableTextField<T> extends StatelessWidget {
       enabled: binding.enabled,
       decoration: decoration.copyWith(errorText: binding.errorText),
       keyboardType: keyboardType,
-      textInputAction: textInputAction,
+      textInputAction:
+          textInputAction ?? (maxLines == 1 ? binding.textInputAction : null),
+      onEditingComplete: onEditingComplete ?? binding.onEditingComplete,
       obscureText: obscureText,
       minLines: minLines,
       maxLines: maxLines,
