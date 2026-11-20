@@ -50,7 +50,7 @@ dart run build_runner build
 
 For `SignUp` the generator writes:
 
-- `SignUp` Form in `sign_up.formidable.dart`: `SignUpForm`, a pure Dart class with a typed getter per Field (`form.username`).
+- `sign_up.formidable.dart`, a part file that declares `SignUpForm`: a pure Dart class with a typed getter per Field (`form.username`).
 - `sign_up.formidable_scope.dart`: `SignUpFormScope` and a `context.signUpForm` extension. It is written only when your package depends on `formidable_flutter`, so a Schema can live in a package that has no Flutter dependency.
 
 Import the scope file where you build widgets, next to the Schema:
