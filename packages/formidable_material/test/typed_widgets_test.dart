@@ -68,7 +68,7 @@ void main() {
         app(
           FormidableTypedFormSelector<SignUpForm, SignUpFormState, String?>(
             form: form,
-            selector: (state) => state.value?.username,
+            selector: (state) => state.form.value?.username,
             builder: (context, username) {
               builds++;
               return Text('u:$username');
@@ -97,7 +97,7 @@ void main() {
         app(
           FormidableFormBuilder<SignUpForm>(
             form: form,
-            builder: (context, state) => Text('d:${state.dirty}'),
+            builder: (context, state) => Text('d:${state.form.dirty}'),
           ),
         ),
       );
@@ -171,7 +171,8 @@ void main() {
           SignUpFormScope(
             create: () => form = SignUpForm(username: 'angelo'),
             child: SignUpFormListener(
-              listenWhen: (previous, next) => previous.dirty != next.dirty,
+              listenWhen: (previous, next) =>
+                  previous.form.dirty != next.form.dirty,
               listener: (context, state) => seen.add(state.username.value),
               child: const SizedBox(),
             ),
@@ -197,7 +198,7 @@ void main() {
           SignUpFormScope(
             create: () => form = SignUpForm(),
             child: SignUpFormSelector<bool>(
-              selector: (state) => state.value != null,
+              selector: (state) => state.form.value != null,
               builder: (context, canSubmit) {
                 builds++;
                 return Text('can:$canSubmit');

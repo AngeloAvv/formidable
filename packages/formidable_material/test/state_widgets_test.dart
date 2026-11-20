@@ -246,7 +246,7 @@ void main() {
           SignUpFormScope(
             create: () => form = SignUpForm(),
             child: FormidableFormBuilder<SignUpForm>(
-              builder: (context, state) => Text('s:${state.status.name}'),
+              builder: (context, state) => Text('s:${state.form.status.name}'),
             ),
           ),
         ),
@@ -268,7 +268,7 @@ void main() {
         app(
           FormidableFormBuilder<SignUpForm>(
             form: form,
-            builder: (context, state) => Text('d:${state.dirty}'),
+            builder: (context, state) => Text('d:${state.form.dirty}'),
           ),
         ),
       );
@@ -287,7 +287,8 @@ void main() {
         app(
           FormidableFormBuilder<SignUpForm>(
             form: form,
-            buildWhen: (previous, current) => previous.status != current.status,
+            buildWhen: (previous, current) =>
+                previous.form.status != current.form.status,
             builder: (context, state) {
               builds++;
               return const SizedBox();
@@ -313,8 +314,8 @@ void main() {
           FormidableFormListener<SignUpForm>(
             form: form,
             listenWhen: (previous, current) =>
-                previous.status != current.status,
-            listener: (context, state) => seen.add(state.status),
+                previous.form.status != current.form.status,
+            listener: (context, state) => seen.add(state.form.status),
             child: const SizedBox(),
           ),
         ),
@@ -335,7 +336,7 @@ void main() {
           SignUpFormScope(
             create: () => form = SignUpForm(),
             child: FormidableFormListener<SignUpForm>(
-              listener: (context, state) => seen.add(state.status),
+              listener: (context, state) => seen.add(state.form.status),
               child: const SizedBox(),
             ),
           ),
@@ -356,7 +357,7 @@ void main() {
         app(
           FormidableFormSelector<SignUpForm, String?>(
             form: form,
-            selector: (state) => (state.value as SignUp?)?.username,
+            selector: (state) => (state.form.value as SignUp?)?.username,
             builder: (context, username) {
               builds++;
               return Text('u:$username');
@@ -386,7 +387,7 @@ void main() {
         app(
           FormidableFormSelector<SignUpForm, bool>(
             form: form,
-            selector: (state) => state.value != null,
+            selector: (state) => state.form.value != null,
             builder: (context, canSubmit) {
               builds++;
               return Text('can:$canSubmit');
@@ -556,7 +557,7 @@ void main() {
         app(
           ValueListenableBuilder<FormidableFormState>(
             valueListenable: form.asValueListenable(),
-            builder: (context, state, _) => Text('s:${state.status.name}'),
+            builder: (context, state, _) => Text('s:${state.form.status.name}'),
           ),
         ),
       );
