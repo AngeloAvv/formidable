@@ -36,7 +36,9 @@ melos:
 
     test:
       description: Run the tests of every package, pure Dart ones with dart test.
-      run: melos run test:dart && melos run test:flutter
+      steps:
+        - test:dart
+        - test:flutter
 
     test:dart:
       description: Run the tests of the pure Dart packages.
@@ -66,4 +68,7 @@ melos:
 
     ci:
       description: What the CI runs, in order.
-      run: melos run generate && melos run analyze && melos run test
+      steps:
+        - generate
+        - analyze
+        - test
