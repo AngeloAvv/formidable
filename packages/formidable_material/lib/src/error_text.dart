@@ -2,6 +2,9 @@ import 'package:material_ui/material_ui.dart';
 
 /// The line shown below a widget that has no `errorText` of its own, such as a
 /// checkbox or a slider. Shows nothing while [text] is null.
+///
+/// Pass it `binding.errorText` when you build your own widget on a Binding, so
+/// that it shows the Validation Message like the widgets of this package do.
 class FormidableErrorLine extends StatelessWidget {
   const FormidableErrorLine({super.key, required this.text});
 

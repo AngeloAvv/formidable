@@ -5,6 +5,7 @@ library;
 export 'src/checkbox.dart';
 export 'src/date_picker.dart';
 export 'src/dropdown.dart';
+export 'src/error_text.dart';
 export 'src/radio_group.dart';
 export 'src/segmented_button.dart';
 export 'src/slider.dart';
