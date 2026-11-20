@@ -1,0 +1,64 @@
+---
+title: Writing, dirty and leaving the screen
+description: Patch, replace, reset and commit a Form, and warn before leaving with unsaved changes
+---
+
+# Writing, dirty and leaving the screen
+
+Code can update a Form with the same safety as user input. Every write goes through the Normalizers, the Form Effects and the Validators, notifies listeners and never marks a Field as touched. There is no way to update a Field silently.
+
+## patch
+
+`patch` is generated with one named parameter per Field, typed as the Field.
+
+```dart
+form.patch(name: '  Marco ', note: 'vip');
+```
+
+- Only the Fields you pass are written. An omitted argument leaves the Field unchanged.
+- It is one change: the Form Effects run once after the last write, and the Form and each changed Field notify once, so there are no intermediate rebuilds.
+- A null argument is the same as an omitted one. To write null into a nullable Field, use `form.phone.setValue(null)` or `replace`. To make a Field Unset, use `clear()`.
+
+## replace
+
+`replace` sets every Field, Passthrough Fields included, from a Schema instance, as one change. Use it to load fresh data into an open form.
+
+```dart
+form.replace(const Contact(id: 2, name: 'Marco'));
+```
+
+## Dirty
+
+A Field is dirty when its value or presence differs from its initial state, and so is the Form when any Field is. Changing a value and changing it back makes it clean again.
+
+The initial state is what the Form holds once it has been created and its Form Effects ran, so a value derived by an Effect at creation is not dirty.
+
+```dart
+form.state.dirty; // FormidableFormState
+form.name.state.dirty; // FormidableFieldState
+```
+
+## reset and commit
+
+- `reset()` returns every Field to its initial value and presence, clears its errors and forgets that it was touched. The Form Effects do not run: the initial state is already consistent, so reset restores it exactly.
+- `commit()` makes the current state the new initial state. Call it after a successful save so the Form is no longer dirty, and a later `reset()` returns to the saved values.
+
+Both notify once.
+
+## FormidablePopScope
+
+`FormidablePopScope` blocks leaving the screen while the Form is dirty. The system back gesture, the back button and `Navigator.maybePop` all call `confirmLeave`, where you show a confirmation and return whether to leave.
+
+```dart
+FormidablePopScope<ContactForm>(
+  confirmLeave: (context) async =>
+      await showDialog<bool>(
+        context: context,
+        builder: (context) => DiscardChangesDialog(),
+      ) ??
+      false,
+  child: const ContactFields(),
+)
+```
+
+While the Form is clean the screen is left without asking. The Form comes from the `form:` parameter or from the closest Form Scope. After saving, call `form.commit()` so the screen can be left.

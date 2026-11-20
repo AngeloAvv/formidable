@@ -90,11 +90,31 @@ final class FormidableField<T>
   /// Makes the Field Unset.
   void clear() => _write(() => _assign(null));
 
+  /// Restores the initial value and presence, clears the errors and forgets
+  /// that the user touched the Field. Form Effects do not run.
+  @override
+  void reset() {
+    _assign(_initialIsSet ? (value: _initialValue as T) : null);
+    _touched = false;
+    _stale = true;
+    _settle();
+  }
+
+  /// Makes the current value and presence the new initial state, so the Field
+  /// is no longer dirty.
+  @override
+  void commit() {
+    _initialIsSet = _isSet;
+    _initialValue = _value;
+    _stale = true;
+    _settle();
+  }
+
   /// Records that the user interacted with the Field and left it.
   void markAsTouched() {
     if (_touched) return;
     _touched = true;
-    _commit();
+    _refresh();
   }
 
   /// The value the Field contributes to the Schema instance.
@@ -129,7 +149,18 @@ final class FormidableField<T>
 
   @override
   void revalidate() {
-    if (_stale) _commit();
+    if (_stale) _refresh();
+  }
+
+  /// Brings the state up to date: through the Form when there is one, so it
+  /// notifies once for a batch of writes, otherwise on its own.
+  void _settle() {
+    final pipeline = _pipeline;
+    if (pipeline == null) {
+      _refresh();
+    } else {
+      pipeline.settle();
+    }
   }
 
   /// Runs [mutate] through the Form pipeline, or on its own when the Field is
@@ -137,7 +168,7 @@ final class FormidableField<T>
   void _write(bool Function() mutate) {
     final pipeline = _pipeline;
     if (pipeline == null) {
-      if (mutate()) _commit();
+      if (mutate()) _refresh();
     } else {
       pipeline.change(this, mutate);
     }
@@ -167,7 +198,7 @@ final class FormidableField<T>
   }
 
   /// Validates the current value and notifies listeners if the state changed.
-  void _commit() {
+  void _refresh() {
     _stale = false;
     _state = _stateFor();
     if (_state == _notified) return;

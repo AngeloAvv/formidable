@@ -24,6 +24,10 @@ abstract class FormidableForm<S>
   List<FormidableEffect<FormidableForm<Object?>>> _effects = const [];
   final Set<FormidableNode> _pending = {};
   bool _running = false;
+  int _batchDepth = 0;
+  bool _needsSettle = false;
+  int _held = 0;
+  bool _heldChange = false;
   FormidableFormState _state = FormidableFormState(
     status: FormidableStatus.valid,
   );
@@ -54,6 +58,47 @@ abstract class FormidableForm<S>
   void removeChangeListener(void Function() listener) =>
       _changeListeners.remove(listener);
 
+  /// Restores every Field to its initial value and presence, and forgets that
+  /// it was touched. It notifies once and does not run the Form Effects: the
+  /// initial state is already consistent.
+  void reset() => batch(() {
+    for (final node in _nodes) {
+      node.reset();
+    }
+  });
+
+  /// Makes the current state the new initial state, so the Form and its
+  /// Fields are no longer dirty. It notifies once.
+  void commit() => batch(() {
+    for (final node in _nodes) {
+      node.commit();
+    }
+  });
+
+  /// Runs [writes], which write Fields, as one change: the Form Effects run
+  /// once after the last write and every listener is notified at most once.
+  ///
+  /// Generated `patch` and `replace` are built on it.
+  void batch(void Function() writes) {
+    if (_batchDepth > 0 || _running) {
+      writes();
+      return;
+    }
+    _batchDepth++;
+    try {
+      writes();
+    } finally {
+      _batchDepth--;
+      final settle = _needsSettle;
+      _needsSettle = false;
+      if (_pending.isNotEmpty) {
+        _run();
+      } else if (settle) {
+        _settle();
+      }
+    }
+  }
+
   /// Registers the children of the Form, in Schema declaration order, and its
   /// Form [effects]. A generated Form calls it once from its constructor.
   ///
@@ -69,6 +114,8 @@ abstract class FormidableForm<S>
       node.bindPipeline(this);
     }
     _run(initial: true);
+    // The initial state is what exists once the creation-time Effects ran.
+    commit();
     for (final node in _nodes) {
       node.addListener(_onNodeChanged);
     }
@@ -80,7 +127,17 @@ abstract class FormidableForm<S>
     if (!mutate()) return;
     _pending.add(node);
     // An Effect wrote a Field: the running pass picks the change up.
-    if (!_running) _run();
+    if (!_running && _batchDepth == 0) _run();
+  }
+
+  @override
+  void settle() {
+    if (_running) return;
+    if (_batchDepth > 0) {
+      _needsSettle = true;
+    } else {
+      _settle();
+    }
   }
 
   /// Runs the Form Effects until nothing changes, then validates every node.
@@ -91,10 +148,22 @@ abstract class FormidableForm<S>
     } finally {
       _running = false;
       _pending.clear();
+      _settle();
+    }
+  }
+
+  /// Revalidates every node. Their notifications are held back and the Form
+  /// notifies once afterwards.
+  void _settle() {
+    _held++;
+    try {
       for (final node in _nodes) {
         node.revalidate();
       }
+    } finally {
+      _held--;
     }
+    _flush();
   }
 
   void _runEffects({required bool initial}) {
@@ -152,8 +221,18 @@ abstract class FormidableForm<S>
   }
 
   void _onNodeChanged() {
+    _heldChange = true;
+    if (_held == 0) _flush();
+  }
+
+  /// Publishes the Form state and calls the change listeners, if anything
+  /// changed since the last time.
+  void _flush() {
     final next = _computeState();
-    if (next != _state) {
+    final stateChanged = next != _state;
+    if (!stateChanged && !_heldChange) return;
+    _heldChange = false;
+    if (stateChanged) {
       _state = next;
       notifyListeners();
     }
