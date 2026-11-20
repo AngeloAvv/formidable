@@ -43,7 +43,9 @@
     },
     {
       "group": "Widgets",
-      "pages": [{ "title": "Binding Fields to widgets", "href": "/widgets" }]
+      "pages": [{ "title": "Binding Fields to widgets", "href": "/widgets" },
+        { "title": "Codecs", "href": "/widgets/codecs" }
+      ]
     },
     {
       "group": "Guides",

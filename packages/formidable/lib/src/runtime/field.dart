@@ -59,6 +59,7 @@ final class FormidableField<T>
   bool _isSet = false;
   bool _touched = false;
   bool _stale = false;
+  FormidableValidationError? _inputError;
   late FormidableFieldState<T> _state;
   late FormidableFieldState<T> _notified;
   late bool _initialIsSet;
@@ -89,6 +90,18 @@ final class FormidableField<T>
 
   /// Makes the Field Unset.
   void clear() => _write(() => _assign(null));
+
+  /// Rejects what the user typed: the Field becomes Unset and invalid with
+  /// [error], even when it is optional, so that bad input never turns into a
+  /// null silently. [error] replaces the required error.
+  ///
+  /// Widgets call it when a Codec fails to parse their input. The next
+  /// [setValue] or [clear] lifts the rejection.
+  void reject(FormidableValidationError error) =>
+      _write(() => _reject(error));
+
+  /// The error given to [reject], or null when the last input was accepted.
+  FormidableValidationError? get inputError => _inputError;
 
   /// Records that the user interacted with the Field and left it.
   void markAsTouched() {
@@ -146,11 +159,26 @@ final class FormidableField<T>
   /// Replaces the value and presence without validating. Returns whether
   /// either changed.
   bool _assign(({T value})? next) {
+    final lifted = _inputError != null;
+    _inputError = null;
     final isSet = next != null;
     final value = next?.value;
-    if (isSet == _isSet && value == _value) return false;
+    if (isSet == _isSet && value == _value) {
+      if (lifted) _stale = true;
+      return lifted;
+    }
     _isSet = isSet;
     _value = value;
+    _stale = true;
+    return true;
+  }
+
+  /// Makes the Field Unset with [error]. Returns whether anything changed.
+  bool _reject(FormidableValidationError error) {
+    if (!_isSet && _inputError == error) return false;
+    _isSet = false;
+    _value = null;
+    _inputError = error;
     _stale = true;
     return true;
   }
@@ -180,7 +208,11 @@ final class FormidableField<T>
     isSet: _isSet,
     touched: _touched,
     dirty: _isSet != _initialIsSet || (_isSet && _value != _initialValue),
-    errors: _isSet ? _validate(_value) : _presenceErrors(),
+    errors: _isSet
+        ? _validate(_value)
+        : _inputError != null
+        ? [_inputError!]
+        : _presenceErrors(),
   );
 
   /// Errors of an Unset Field: required unless something supplies the output.

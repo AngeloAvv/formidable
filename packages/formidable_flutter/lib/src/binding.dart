@@ -16,8 +16,7 @@ class FormidableBinding<T> extends ChangeNotifier {
     required this.resolveMessage,
     FocusNode? focusNode,
     TextEditingController? textController,
-    this._formatText,
-    this._parseText,
+    this._codec,
   }) : _ownsFocusNode = focusNode == null,
        _ownsTextController = textController == null,
        focusNode = focusNode ?? FocusNode(),
@@ -33,11 +32,10 @@ class FormidableBinding<T> extends ChangeNotifier {
 
   /// Turns a Validation Error into the text shown for it.
   final String Function(FormidableValidationError error) resolveMessage;
-  final String Function(T value)? _formatText;
-  final T? Function(String text)? _parseText;
   final bool _ownsFocusNode;
   final bool _ownsTextController;
   TextEditingController? _textController;
+  FormidableCodec<T, String>? _codec;
   bool _hadFocus = false;
 
   /// The snapshot of the Field.
@@ -62,13 +60,27 @@ class FormidableBinding<T> extends ChangeNotifier {
     return resolveMessage(state.errors.first);
   }
 
+  /// The Codec between the Field and the text of a text widget, or null when
+  /// there is none for this pair of types.
+  FormidableCodec<T, String>? get codec => _codec;
+
+  /// Changes the Codec and shows the Field again through it.
+  void updateCodec(FormidableCodec<T, String>? codec) {
+    if (codec == _codec) return;
+    _codec = codec;
+    _syncText(force: true);
+  }
+
   /// Controls the text of a text widget and stays in sync with the Field.
   ///
-  /// Needs `formatText` and `parseText`. An empty text is Unset.
+  /// Needs a Codec to text. What the user types goes through
+  /// [FormidableCodec.parse]: input that can't be parsed stays in the
+  /// controller, and the Field becomes invalid with the parse error.
   TextEditingController get textController {
     assert(
-      _formatText != null && _parseText != null,
-      'A text controller needs formatText and parseText.',
+      _codec != null,
+      'A text controller needs a Codec between $T and String. '
+      'Pass one with `codec:`, or add one to FormidableConfig.codecs.',
     );
     if (_textController == null) {
       _textController = TextEditingController();
@@ -84,12 +96,17 @@ class FormidableBinding<T> extends ChangeNotifier {
   void onCleared() => field.clear();
 
   /// The user typed [text] into a text widget.
+  ///
+  /// The Codec decides what [text] means: a value, no value (the Field becomes
+  /// Unset) or a parse error (the Field is rejected, even when it is optional).
   void onTextChanged(String text) {
-    final parsed = _parseText!(text);
-    if (parsed == null) {
-      field.clear();
-    } else {
-      field.setValue(parsed);
+    switch (_codec!.parse(text)) {
+      case FormidableParsedValue<T>(:final value):
+        field.setValue(value);
+      case FormidableParsedUnset<T>():
+        field.clear();
+      case FormidableParseFailure<T>(:final error):
+        field.reject(error);
     }
   }
 
@@ -107,19 +124,30 @@ class FormidableBinding<T> extends ChangeNotifier {
     _hadFocus = hasFocus;
   }
 
-  /// Writes the Field's value to the text controller, unless the controller
-  /// already shows it. That check keeps the cursor still while the user types.
-  void _syncText() {
+  /// Writes the Field to the text controller, unless the controller already
+  /// shows it. That check keeps the cursor still while the user types, and it
+  /// keeps input that can't be parsed on screen while the Field holds the
+  /// error it caused.
+  void _syncText({bool force = false}) {
     final controller = _textController;
-    if (controller == null) return;
+    final codec = _codec;
+    if (controller == null || codec == null) return;
     final fieldValue = field.isSet ? field.value : null;
-    if (_parseText!(controller.text) == fieldValue) return;
-    final text = fieldValue == null ? '' : _formatText!(fieldValue);
+    if (!force && _showsField(codec.parse(controller.text), fieldValue)) return;
+    final text = fieldValue == null ? '' : codec.format(fieldValue);
     controller.value = TextEditingValue(
       text: text,
       selection: TextSelection.collapsed(offset: text.length),
     );
   }
+
+  bool _showsField(FormidableParseResult<T> shown, T? fieldValue) =>
+      switch (shown) {
+        FormidableParsedValue<T>(:final value) =>
+          field.isSet && value == fieldValue,
+        FormidableParsedUnset<T>() => !field.isSet && field.inputError == null,
+        FormidableParseFailure<T>(:final error) => field.inputError == error,
+      };
 
   @override
   void dispose() {
