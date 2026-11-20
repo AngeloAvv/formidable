@@ -1,0 +1,60 @@
+---
+title: Date Validators
+description: Built-in rules for DateTime Fields, with an injectable clock
+---
+
+# Date Validators
+
+These Validators judge a `DateTime`, nullable or not.
+
+```dart
+@Formidable()
+class Booking {
+  const Booking({required this.arrival, required this.birthDate});
+
+  @After.today(inclusive: true)
+  final DateTime arrival;
+
+  @MinAge(18)
+  final DateTime birthDate;
+}
+```
+
+| Annotation | Accepts | Error |
+|---|---|---|
+| `@After('2024-01-31')`, `@After.now()`, `@After.today()` | later than the reference. `inclusive: true` accepts the reference | `FormidableAfterError(reference, inclusive, actual)` |
+| `@Before('2024-01-31')`, `@Before.now()`, `@Before.today()` | earlier than the reference. `inclusive: true` accepts the reference | `FormidableBeforeError(reference, inclusive, actual)` |
+| `@FutureDate()` | later than now | `FormidableFutureError(now, actual)` |
+| `@PastDate()` | earlier than now | `FormidablePastError(now, actual)` |
+| `@DateBetween('2024-03-01', '2024-03-31')` | any time on those days, both included | `FormidableDateBetweenError(start, end, actual)` |
+| `@SameDay('2024-06-15')`, `@SameDay.today()` | any time on that day | `FormidableSameDayError(date, actual)` |
+| `@MinAge(18)` | a birth date that gives at least 18 years today | `FormidableMinAgeError(minAge, actualAge)` |
+| `@MaxAge(65)` | a birth date that gives at most 65 years today | `FormidableMaxAgeError(maxAge, actualAge)` |
+
+`FutureDate` and `PastDate` are not called `Future` and `Past`, because `Future` is a core Dart class that the annotation would shadow in every Schema.
+
+## Constant dates
+
+`DateTime` cannot be a constant, so a constant date is an ISO 8601 string: `'2024-01-31'` or `'2024-01-31T09:30:00'`. The string is parsed when the Validator runs, and one that does not parse throws a `FormatException`.
+
+## Days or instants
+
+- With a **date-only** constant, `After.today`, `Before.today`, `@DateBetween` and `@SameDay`, the Validator compares calendar days. The time of day does not matter: `@After('2024-01-01')` rejects `2024-01-01 23:00` and accepts `2024-01-02 00:00`. It compares the year, month and day of the value as they are written, with no time zone conversion.
+- With a constant that has a time, `After.now`, `Before.now`, `@FutureDate` and `@PastDate`, it compares exact instants.
+
+## Age
+
+The age is counted in whole years on the day the Validator runs. A birthday counts from the day itself, a `@MaxAge(65)` person is still 65 until the day before their 66th birthday, and a 29 February birthday is reached on 1 March in a common year. A birth date in the future gives a negative age.
+
+## The clock
+
+Validators are const annotations, so they cannot take a clock as an argument. They read the current time from `FormidableClock`, which defaults to `DateTime.now`. Replace its source in tests, or in an app that must use a server time:
+
+```dart
+setUp(() => FormidableClock.source = () => DateTime(2024, 6, 15, 12));
+tearDown(FormidableClock.reset);
+```
+
+`FormidableClock.withClock(clock, body)` overrides it only while a synchronous `body` runs. A Field is validated when its value changes, so a value that was valid yesterday is not re-checked at midnight; write it again to re-run the Validators.
+
+Every error has a message in English, Italian, Spanish, French and German, with dates in the format of the language. See [Messages and localization](/validation/messages).

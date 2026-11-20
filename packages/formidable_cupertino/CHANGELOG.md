@@ -1,3 +1,3 @@
 ## 0.1.0
 
-- Initial release: the Cupertino package skeleton, widgets arrive in a later release.
+- Initial release: a text field with Codecs, switch, checkbox, segmented control, sliding segmented control, radio group, slider, date picker and timer picker.

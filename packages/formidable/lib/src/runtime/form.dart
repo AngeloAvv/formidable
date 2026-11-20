@@ -29,10 +29,15 @@ abstract class FormidableForm<S>
   List<FormidableCrossFieldBinding> _crossFieldRules = const [];
   final Set<FormidableNode> _pending = {};
   bool _running = false;
+  int _batchDepth = 0;
+  bool _needsSettle = false;
+  int _held = 0;
+  bool _heldChange = false;
   FormidableFormState _state = FormidableFormState(
     status: FormidableStatus.valid,
   );
   final List<void Function()> _changeListeners = [];
+  List<FormidableValidationError> _formErrors = const [];
 
   /// The children of the Form, in Schema declaration order.
   List<FormidableNode> get nodes => _nodes;
@@ -59,6 +64,47 @@ abstract class FormidableForm<S>
   void removeChangeListener(void Function() listener) =>
       _changeListeners.remove(listener);
 
+  /// Restores every Field to its initial value and presence, and forgets that
+  /// it was touched. It notifies once and does not run the Form Effects: the
+  /// initial state is already consistent.
+  void reset() => batch(() {
+    for (final node in _nodes) {
+      node.reset();
+    }
+  });
+
+  /// Makes the current state the new initial state, so the Form and its
+  /// Fields are no longer dirty. It notifies once.
+  void commit() => batch(() {
+    for (final node in _nodes) {
+      node.commit();
+    }
+  });
+
+  /// Runs [writes], which write Fields, as one change: the Form Effects run
+  /// once after the last write and every listener is notified at most once.
+  ///
+  /// Generated `patch` and `replace` are built on it.
+  void batch(void Function() writes) {
+    if (_batchDepth > 0 || _running) {
+      writes();
+      return;
+    }
+    _batchDepth++;
+    try {
+      writes();
+    } finally {
+      _batchDepth--;
+      final settle = _needsSettle;
+      _needsSettle = false;
+      if (_pending.isNotEmpty) {
+        _run();
+      } else if (settle) {
+        _settle();
+      }
+    }
+  }
+
   /// Registers the children of the Form, in Schema declaration order, its
   /// Form [effects], the [formValidators] declared on the Schema and the
   /// [crossFieldRules] declared on its Fields. A
@@ -82,6 +128,8 @@ abstract class FormidableForm<S>
       node.bindPipeline(this);
     }
     _run(initial: true);
+    // The initial state is what exists once the creation-time Effects ran.
+    commit();
     for (final node in _nodes) {
       node.addListener(_onNodeChanged);
     }
@@ -91,9 +139,20 @@ abstract class FormidableForm<S>
   @override
   void change(FormidableNode node, bool Function() mutate) {
     if (!mutate()) return;
+    _formErrors = const [];
     _pending.add(node);
     // An Effect wrote a Field: the running pass picks the change up.
-    if (!_running) _run();
+    if (!_running && _batchDepth == 0) _run();
+  }
+
+  @override
+  void settle() {
+    if (_running) return;
+    if (_batchDepth > 0) {
+      _needsSettle = true;
+    } else {
+      _settle();
+    }
   }
 
   /// Runs the Form Effects until nothing changes, then validates every node.
@@ -104,11 +163,25 @@ abstract class FormidableForm<S>
     } finally {
       _running = false;
       _pending.clear();
+      _settle();
+    }
+  }
+
+  /// Runs the Form Validators, then revalidates every node, so every path that
+  /// revalidates (a write, a batch, a reset, a commit) ends with up-to-date
+  /// Form errors. Node notifications are held back and the Form notifies once
+  /// afterwards.
+  void _settle() {
+    _held++;
+    try {
       _runFormValidators();
       for (final node in _nodes) {
         node.revalidate();
       }
+    } finally {
+      _held--;
     }
+    _flush();
   }
 
   /// Runs the Form Validators and gives every Field the errors addressed to
@@ -172,14 +245,48 @@ abstract class FormidableForm<S>
   /// is valid. Implemented by the generated Form.
   S buildOutput();
 
+  /// Adds errors that only the caller can find, usually the answer of a
+  /// server.
+  ///
+  /// [fieldErrors] are applied to their Fields, see
+  /// [FormidableField.applyErrors]; the errors of a Field are replaced, and a
+  /// Field that is missing from the map keeps its own. [formErrors] belong to
+  /// the Form as a whole and show in [FormidableFormState.errors]; they replace
+  /// the Form errors applied before.
+  ///
+  /// Both make the Form invalid. Field errors clear on the next change to that
+  /// Field. Form errors clear on the next change to any Field, and when
+  /// `submit()` starts.
+  void applyErrors({
+    Map<FormidableField<Object?>, List<FormidableValidationError>> fieldErrors =
+        const {},
+    List<FormidableValidationError> formErrors = const [],
+  }) {
+    _formErrors = List.unmodifiable(formErrors);
+    fieldErrors.forEach((field, errors) => field.applyErrors(errors));
+    _onNodeChanged();
+  }
+
   /// Decides whether the Form is valid and builds the Schema instance.
+  ///
+  /// It first makes every Field touched and submitted, so that every error can
+  /// show. When the Form is invalid it moves the focus to the first invalid
+  /// Field in Schema declaration order that is enabled and shown by a widget.
   Future<FormidableSubmitResult<S>> submit() async {
+    if (_formErrors.isNotEmpty) {
+      _formErrors = const [];
+      _onNodeChanged();
+    }
+    for (final node in _nodes) {
+      node.markSubmitted();
+    }
     final errors =
         <FormidableField<Object?>, List<FormidableValidationError>>{};
     for (final node in _nodes) {
       node.collectErrors(errors);
     }
     if (errors.isNotEmpty) {
+      errors.keys.where((field) => field.canFocus).firstOrNull?.focus();
       return FormidableSubmitInvalid<S>(Map.unmodifiable(errors));
     }
     return FormidableSubmitValid<S>(buildOutput());
@@ -196,8 +303,18 @@ abstract class FormidableForm<S>
   }
 
   void _onNodeChanged() {
+    _heldChange = true;
+    if (_held == 0) _flush();
+  }
+
+  /// Publishes the Form state and calls the change listeners, if anything
+  /// changed since the last time.
+  void _flush() {
     final next = _computeState();
-    if (next != _state) {
+    final stateChanged = next != _state;
+    if (!stateChanged && !_heldChange) return;
+    _heldChange = false;
+    if (stateChanged) {
       _state = next;
       notifyListeners();
     }
@@ -208,10 +325,11 @@ abstract class FormidableForm<S>
   }
 
   FormidableFormState _computeState() => FormidableFormState(
-    status: _nodes.every((node) => node.isValid)
+    status: _formErrors.isEmpty && _nodes.every((node) => node.isValid)
         ? FormidableStatus.valid
         : FormidableStatus.invalid,
     dirty: _nodes.any((node) => node.isDirty),
     pending: _nodes.any((node) => node.isPending),
+    errors: _formErrors,
   );
 }

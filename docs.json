@@ -29,6 +29,9 @@
       "group": "Validation",
       "pages": [
         { "title": "Validators", "href": "/validation" },
+        { "title": "Number Validators", "href": "/validation/numbers" },
+        { "title": "Date Validators", "href": "/validation/dates" },
+        { "title": "Choice and equality Validators", "href": "/validation/choices" },
         { "title": "Custom Validators", "href": "/validation/custom" },
         { "title": "Cross-field rules", "href": "/validation/cross-field" },
         { "title": "Normalizers", "href": "/validation/normalizers" },
@@ -40,12 +43,16 @@
       "pages": [
         { "title": "The generated Form", "href": "/form" },
         { "title": "State and reactive widgets", "href": "/form/state" },
-        { "title": "Form Effects", "href": "/form/effects" }
+        { "title": "Form Effects", "href": "/form/effects" },
+        { "title": "Writing, dirty and leaving the screen", "href": "/form/writes" },
+        { "title": "Submit, errors and disabled Fields", "href": "/form/submit" }
       ]
     },
     {
       "group": "Widgets",
       "pages": [{ "title": "Binding Fields to widgets", "href": "/widgets" },
+        { "title": "Material widgets", "href": "/widgets/material" },
+        { "title": "Cupertino widgets", "href": "/widgets/cupertino" },
         { "title": "Codecs", "href": "/widgets/codecs" }
       ]
     },
