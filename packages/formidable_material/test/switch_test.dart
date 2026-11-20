@@ -56,12 +56,12 @@ void main() {
       expect(find.text('This field is required.'), findsOneWidget);
     });
 
-    testWidgets('with a title, tapping the title toggles the Field', (
+    testWidgets('as a list tile, tapping the title toggles the Field', (
       tester,
     ) async {
       await tester.pumpWidget(
         app(
-          (form) => FormidableMaterialSwitch(
+          (form) => FormidableMaterialSwitchListTile(
             field: form.notifications,
             title: const Text('Notify me'),
           ),

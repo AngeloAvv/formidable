@@ -6,6 +6,8 @@ import 'package:flutter/services.dart'
 import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'decoration.dart';
+
 /// A Material text field bound to a Field of type [T].
 ///
 /// It shows the value, updates the Field as the user types, makes the Field
@@ -20,15 +22,18 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// It takes every parameter of [TextField] except the ones Formidable owns:
 /// the controller (the Field is the source of truth), `enabled` (the Field
-/// says it), `onChanged` and the deprecated parameters. To react to what the
-/// user types, follow the Field with a `FormidableFieldListener`.
+/// says it), `onChanged` and the deprecated parameters. Each one is readable
+/// as a field of the widget. To react to what the user types, follow the Field
+/// with a `FormidableFieldListener`.
 ///
-/// The [decoration] is merged with what Formidable adds, there is no builder
-/// for it. Formidable sets only [InputDecoration.errorText], and only when your
-/// decoration has none, so a custom `errorText` still wins. For a decoration
-/// that depends on the value, build the widget inside a
-/// `FormidableFieldBuilder` or `FormidableFieldSelector`. A null [decoration]
-/// draws no decoration, and so no Validation Message either, like [TextField].
+/// The [decoration] is merged with what Formidable adds: it sets only
+/// [InputDecoration.errorText], and only when your decoration has none, so a
+/// custom `errorText` still wins. To build the decoration from the state of
+/// the widget, pass a [decorationBuilder] instead (not both): it receives the
+/// control, so the decoration can depend on the value, for example a button
+/// that clears the field, shown only while there is text. Its result is merged
+/// the same way. A null [decoration] draws no decoration, and so no Validation
+/// Message either, like [TextField].
 ///
 /// The [textInputAction] defaults to "next" while another Field follows, and
 /// to "done" on the last one. A multiline field keeps its newline key. Without
@@ -42,81 +47,92 @@ class FormidableMaterialTextField<T> extends FormidableTextFieldWidget<T> {
     super.messages,
     super.errorDisplay,
     super.focusNode,
-    Object groupId = EditableText,
-    UndoHistoryController? undoController,
-    InputDecoration? decoration = const InputDecoration(),
-    TextInputType? keyboardType,
-    TextInputAction? textInputAction,
-    TextCapitalization textCapitalization = TextCapitalization.none,
-    TextStyle? style,
-    StrutStyle? strutStyle,
-    TextAlign textAlign = TextAlign.start,
-    TextAlignVertical? textAlignVertical,
-    TextDirection? textDirection,
-    bool readOnly = false,
-    bool? showCursor,
-    bool autofocus = false,
-    WidgetStatesController? statesController,
-    String obscuringCharacter = '•',
-    bool obscureText = false,
-    bool? autocorrect,
-    SmartDashesType? smartDashesType,
-    SmartQuotesType? smartQuotesType,
-    bool enableSuggestions = true,
-    int? maxLines = 1,
-    int? minLines,
-    bool expands = false,
-    int? maxLength,
-    MaxLengthEnforcement? maxLengthEnforcement,
-    VoidCallback? onEditingComplete,
-    ValueChanged<String>? onSubmitted,
-    AppPrivateCommandCallback? onAppPrivateCommand,
-    List<TextInputFormatter>? inputFormatters,
-    bool? ignorePointers,
-    double cursorWidth = 2.0,
-    double? cursorHeight,
-    Radius? cursorRadius,
-    bool? cursorOpacityAnimates,
-    Color? cursorColor,
-    Color? cursorErrorColor,
-    ui.BoxHeightStyle? selectionHeightStyle,
-    ui.BoxWidthStyle? selectionWidthStyle,
-    Brightness? keyboardAppearance,
-    EdgeInsets scrollPadding = const EdgeInsets.all(20.0),
-    DragStartBehavior dragStartBehavior = DragStartBehavior.start,
-    bool? enableInteractiveSelection,
-    bool? selectAllOnFocus,
-    TextSelectionControls? selectionControls,
-    GestureTapCallback? onTap,
-    bool onTapAlwaysCalled = false,
-    TapRegionCallback? onTapOutside,
-    TapRegionUpCallback? onTapUpOutside,
-    MouseCursor? mouseCursor,
-    InputCounterWidgetBuilder? buildCounter,
-    ScrollController? scrollController,
-    ScrollPhysics? scrollPhysics,
-    Iterable<String>? autofillHints = const <String>[],
-    ContentInsertionConfiguration? contentInsertionConfiguration,
-    Clip clipBehavior = Clip.hardEdge,
-    String? restorationId,
-    bool stylusHandwritingEnabled =
+    this.groupId = EditableText,
+    this.undoController,
+    this.decoration = const InputDecoration(),
+    this.decorationBuilder,
+    this.keyboardType,
+    this.textInputAction,
+    this.textCapitalization = TextCapitalization.none,
+    this.style,
+    this.strutStyle,
+    this.textAlign = TextAlign.start,
+    this.textAlignVertical,
+    this.textDirection,
+    this.readOnly = false,
+    this.showCursor,
+    this.autofocus = false,
+    this.statesController,
+    this.obscuringCharacter = '•',
+    this.obscureText = false,
+    this.autocorrect,
+    this.smartDashesType,
+    this.smartQuotesType,
+    this.enableSuggestions = true,
+    this.maxLines = 1,
+    this.minLines,
+    this.expands = false,
+    this.maxLength,
+    this.maxLengthEnforcement,
+    this.onEditingComplete,
+    this.onSubmitted,
+    this.onAppPrivateCommand,
+    this.inputFormatters,
+    this.ignorePointers,
+    this.cursorWidth = 2.0,
+    this.cursorHeight,
+    this.cursorRadius,
+    this.cursorOpacityAnimates,
+    this.cursorColor,
+    this.cursorErrorColor,
+    this.selectionHeightStyle,
+    this.selectionWidthStyle,
+    this.keyboardAppearance,
+    this.scrollPadding = const EdgeInsets.all(20.0),
+    this.dragStartBehavior = DragStartBehavior.start,
+    this.enableInteractiveSelection,
+    this.selectAllOnFocus,
+    this.selectionControls,
+    this.onTap,
+    this.onTapAlwaysCalled = false,
+    this.onTapOutside,
+    this.onTapUpOutside,
+    this.mouseCursor,
+    this.buildCounter,
+    this.scrollController,
+    this.scrollPhysics,
+    this.autofillHints = const <String>[],
+    this.contentInsertionConfiguration,
+    this.clipBehavior = Clip.hardEdge,
+    this.restorationId,
+    this.stylusHandwritingEnabled =
         EditableText.defaultStylusHandwritingEnabled,
-    bool enableIMEPersonalizedLearning = true,
-    bool? enableInlinePrediction,
-    EditableTextContextMenuBuilder? contextMenuBuilder,
-    bool canRequestFocus = true,
-    SpellCheckConfiguration? spellCheckConfiguration,
-    TextMagnifierConfiguration? magnifierConfiguration,
-    List<Locale>? hintLocales,
-  }) : super(
+    this.enableIMEPersonalizedLearning = true,
+    this.enableInlinePrediction,
+    this.contextMenuBuilder,
+    this.canRequestFocus = true,
+    this.spellCheckConfiguration,
+    this.magnifierConfiguration,
+    this.hintLocales,
+  }) : assert(
+         decorationBuilder == null ||
+             identical(decoration, const InputDecoration()),
+         'Pass either decoration or decorationBuilder, not both.',
+       ),
+       super(
          builder: (context, control) => TextField(
            groupId: groupId,
            controller: control.textController,
            focusNode: control.focusNode,
            undoController: undoController,
-           decoration: decoration?.copyWith(
-             errorText: decoration.errorText ?? control.errorText,
-           ),
+           decoration: decoration == null && decorationBuilder == null
+               ? null
+               : resolveInputDecoration(
+                   context,
+                   control,
+                   decoration ?? const InputDecoration(),
+                   decorationBuilder,
+                 ),
            keyboardType: keyboardType,
            textInputAction:
                textInputAction ??
@@ -187,4 +203,208 @@ class FormidableMaterialTextField<T> extends FormidableTextFieldWidget<T> {
            hintLocales: hintLocales,
          ),
        );
+
+  /// See [TextField.groupId].
+  final Object groupId;
+
+  /// See [TextField.undoController].
+  final UndoHistoryController? undoController;
+
+  /// The decoration of the field. Formidable adds the Validation Message as
+  /// its [InputDecoration.errorText] unless it has one. Null draws no
+  /// decoration. Not together with [decorationBuilder].
+  final InputDecoration? decoration;
+
+  /// Builds the decoration from the control, so that it can depend on the
+  /// value, the focus or the error. Merged like [decoration], which it
+  /// replaces.
+  final FormidableMaterialDecorationBuilder<T, String>? decorationBuilder;
+
+  /// See [TextField.keyboardType].
+  final TextInputType? keyboardType;
+
+  /// The keyboard action. Null is "next" while another Field follows, and
+  /// "done" on the last one. See [TextField.textInputAction].
+  final TextInputAction? textInputAction;
+
+  /// See [TextField.textCapitalization].
+  final TextCapitalization textCapitalization;
+
+  /// See [TextField.style].
+  final TextStyle? style;
+
+  /// See [TextField.strutStyle].
+  final StrutStyle? strutStyle;
+
+  /// See [TextField.textAlign].
+  final TextAlign textAlign;
+
+  /// See [TextField.textAlignVertical].
+  final TextAlignVertical? textAlignVertical;
+
+  /// See [TextField.textDirection].
+  final TextDirection? textDirection;
+
+  /// See [TextField.readOnly].
+  final bool readOnly;
+
+  /// See [TextField.showCursor].
+  final bool? showCursor;
+
+  /// See [TextField.autofocus].
+  final bool autofocus;
+
+  /// See [TextField.statesController].
+  final WidgetStatesController? statesController;
+
+  /// See [TextField.obscuringCharacter].
+  final String obscuringCharacter;
+
+  /// See [TextField.obscureText].
+  final bool obscureText;
+
+  /// See [TextField.autocorrect].
+  final bool? autocorrect;
+
+  /// See [TextField.smartDashesType].
+  final SmartDashesType? smartDashesType;
+
+  /// See [TextField.smartQuotesType].
+  final SmartQuotesType? smartQuotesType;
+
+  /// See [TextField.enableSuggestions].
+  final bool enableSuggestions;
+
+  /// See [TextField.maxLines].
+  final int? maxLines;
+
+  /// See [TextField.minLines].
+  final int? minLines;
+
+  /// See [TextField.expands].
+  final bool expands;
+
+  /// See [TextField.maxLength].
+  final int? maxLength;
+
+  /// See [TextField.maxLengthEnforcement].
+  final MaxLengthEnforcement? maxLengthEnforcement;
+
+  /// Replaces the move to the next Field when the keyboard action is pressed.
+  /// See [TextField.onEditingComplete].
+  final VoidCallback? onEditingComplete;
+
+  /// See [TextField.onSubmitted].
+  final ValueChanged<String>? onSubmitted;
+
+  /// See [TextField.onAppPrivateCommand].
+  final AppPrivateCommandCallback? onAppPrivateCommand;
+
+  /// See [TextField.inputFormatters].
+  final List<TextInputFormatter>? inputFormatters;
+
+  /// See [TextField.ignorePointers].
+  final bool? ignorePointers;
+
+  /// See [TextField.cursorWidth].
+  final double cursorWidth;
+
+  /// See [TextField.cursorHeight].
+  final double? cursorHeight;
+
+  /// See [TextField.cursorRadius].
+  final Radius? cursorRadius;
+
+  /// See [TextField.cursorOpacityAnimates].
+  final bool? cursorOpacityAnimates;
+
+  /// See [TextField.cursorColor].
+  final Color? cursorColor;
+
+  /// See [TextField.cursorErrorColor].
+  final Color? cursorErrorColor;
+
+  /// See [TextField.selectionHeightStyle].
+  final ui.BoxHeightStyle? selectionHeightStyle;
+
+  /// See [TextField.selectionWidthStyle].
+  final ui.BoxWidthStyle? selectionWidthStyle;
+
+  /// See [TextField.keyboardAppearance].
+  final Brightness? keyboardAppearance;
+
+  /// See [TextField.scrollPadding].
+  final EdgeInsets scrollPadding;
+
+  /// See [TextField.dragStartBehavior].
+  final DragStartBehavior dragStartBehavior;
+
+  /// See [TextField.enableInteractiveSelection].
+  final bool? enableInteractiveSelection;
+
+  /// See [TextField.selectAllOnFocus].
+  final bool? selectAllOnFocus;
+
+  /// See [TextField.selectionControls].
+  final TextSelectionControls? selectionControls;
+
+  /// See [TextField.onTap].
+  final GestureTapCallback? onTap;
+
+  /// See [TextField.onTapAlwaysCalled].
+  final bool onTapAlwaysCalled;
+
+  /// See [TextField.onTapOutside].
+  final TapRegionCallback? onTapOutside;
+
+  /// See [TextField.onTapUpOutside].
+  final TapRegionUpCallback? onTapUpOutside;
+
+  /// See [TextField.mouseCursor].
+  final MouseCursor? mouseCursor;
+
+  /// See [TextField.buildCounter].
+  final InputCounterWidgetBuilder? buildCounter;
+
+  /// See [TextField.scrollController].
+  final ScrollController? scrollController;
+
+  /// See [TextField.scrollPhysics].
+  final ScrollPhysics? scrollPhysics;
+
+  /// See [TextField.autofillHints].
+  final Iterable<String>? autofillHints;
+
+  /// See [TextField.contentInsertionConfiguration].
+  final ContentInsertionConfiguration? contentInsertionConfiguration;
+
+  /// See [TextField.clipBehavior].
+  final Clip clipBehavior;
+
+  /// See [TextField.restorationId].
+  final String? restorationId;
+
+  /// See [TextField.stylusHandwritingEnabled].
+  final bool stylusHandwritingEnabled;
+
+  /// See [TextField.enableIMEPersonalizedLearning].
+  final bool enableIMEPersonalizedLearning;
+
+  /// See [TextField.enableInlinePrediction].
+  final bool? enableInlinePrediction;
+
+  /// Null keeps the menu of [TextField]. See [TextField.contextMenuBuilder].
+  final EditableTextContextMenuBuilder? contextMenuBuilder;
+
+  /// See [TextField.canRequestFocus].
+  final bool canRequestFocus;
+
+  /// See [TextField.spellCheckConfiguration].
+  final SpellCheckConfiguration? spellCheckConfiguration;
+
+  /// See [TextField.magnifierConfiguration].
+  final TextMagnifierConfiguration? magnifierConfiguration;
+
+  /// See [TextField.hintLocales].
+  final List<Locale>? hintLocales;
 }

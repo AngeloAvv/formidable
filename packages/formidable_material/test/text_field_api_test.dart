@@ -92,6 +92,26 @@ void main() {
       expect(tapped, 1);
     });
 
+    testWidgets('keeps every parameter readable', (tester) async {
+      final widget = FormidableMaterialTextField<String>(
+        field: name,
+        style: const TextStyle(fontSize: 31),
+        maxLength: 12,
+        obscureText: true,
+        decoration: const InputDecoration(labelText: 'Name'),
+        textInputAction: TextInputAction.search,
+      );
+
+      expect(widget.style?.fontSize, 31);
+      expect(widget.maxLength, 12);
+      expect(widget.obscureText, isTrue);
+      expect(widget.decoration?.labelText, 'Name');
+      expect(widget.textInputAction, TextInputAction.search);
+      expect(widget.maxLines, 1);
+      expect(widget.textAlign, TextAlign.start);
+      expect(widget.decorationBuilder, isNull);
+    });
+
     testWidgets('keep the defaults of TextField when left out', (tester) async {
       await tester.pumpWidget(
         app(FormidableMaterialTextField<String>(field: name)),
