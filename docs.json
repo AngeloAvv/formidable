@@ -34,7 +34,10 @@
     },
     {
       "group": "Form",
-      "pages": [{ "title": "The generated Form", "href": "/form" }]
+      "pages": [
+        { "title": "The generated Form", "href": "/form" },
+        { "title": "State and reactive widgets", "href": "/form/state" }
+      ]
     },
     {
       "group": "Widgets",
