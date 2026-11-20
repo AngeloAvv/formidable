@@ -1,3 +1,5 @@
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart' show TextInputAction;
 import 'package:flutter/widgets.dart';
 import 'package:formidable/formidable.dart';
 
@@ -26,6 +28,7 @@ class FormidableBinding<T> extends ChangeNotifier {
        _textController = textController {
     field.addListener(_onFieldChanged);
     this.focusNode.addListener(_onFocusChanged);
+    field.addFocusLayoutListener(_onFocusLayoutChanged);
     _unregisterFocus = field.registerFocusTarget(
       _FocusNodeTarget(this.focusNode),
     );
@@ -47,6 +50,7 @@ class FormidableBinding<T> extends ChangeNotifier {
   TextEditingController? _textController;
   FormidableCodec<T, String>? _codec;
   bool _hadFocus = false;
+  bool _disposed = false;
 
   /// The snapshot of the Field.
   FormidableFieldState<T> get state => field.state;
@@ -74,6 +78,23 @@ class FormidableBinding<T> extends ChangeNotifier {
     );
     if (!shown) return null;
     return resolveMessage(state.errors.first);
+  }
+
+  /// The keyboard action of a text widget: "next" while another Field after
+  /// this one can take focus, "done" on the last one.
+  ///
+  /// Fields no widget shows, disabled Fields and Passthrough Fields are
+  /// skipped. The Binding notifies its listeners when this changes, because
+  /// another widget was added or removed.
+  TextInputAction get textInputAction =>
+      field.nextFocusable == null ? TextInputAction.done : TextInputAction.next;
+
+  /// The user pressed the keyboard action: focus moves to the next Field in
+  /// Schema declaration order, or the keyboard closes on the last one.
+  ///
+  /// A widget that overrides the focus behaviour does not call it.
+  void onEditingComplete() {
+    if (!field.focusNext()) focusNode.unfocus();
   }
 
   /// The Codec between the Field and the text of a text widget, or null when
@@ -154,6 +175,21 @@ class FormidableBinding<T> extends ChangeNotifier {
     notifyListeners();
   }
 
+  // Another widget of the Form appeared or went away. It can happen while the
+  // tree builds, when a listener must not mark widgets dirty, so a change that
+  // arrives mid-frame waits for the end of it.
+  void _onFocusLayoutChanged() {
+    final scheduler = SchedulerBinding.instance;
+    if (scheduler.schedulerPhase == SchedulerPhase.idle) {
+      notifyListeners();
+      return;
+    }
+    scheduler.addPostFrameCallback((_) {
+      if (!_disposed) notifyListeners();
+    });
+    scheduler.ensureVisualUpdate();
+  }
+
   void _onFocusChanged() {
     final hasFocus = focusNode.hasFocus;
     if (_hadFocus && !hasFocus) field.markAsTouched();
@@ -187,6 +223,8 @@ class FormidableBinding<T> extends ChangeNotifier {
 
   @override
   void dispose() {
+    _disposed = true;
+    field.removeFocusLayoutListener(_onFocusLayoutChanged);
     field.removeListener(_onFieldChanged);
     _unregisterFocus();
     focusNode.removeListener(_onFocusChanged);

@@ -16,6 +16,46 @@ void main() {
   }) => profileApp(field, onForm: (f) => form = f, codecs: codecs);
 
   group('FormidableCupertinoTextField', () {
+    testWidgets('the keyboard action moves focus to the next Field', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        app(
+          (form) => Column(
+            children: [
+              FormidableCupertinoTextField(
+                field: form.username,
+                placeholder: 'Username',
+              ),
+              FormidableCupertinoTextField(field: form.age, placeholder: 'Age'),
+            ],
+          ),
+        ),
+      );
+      await tester.pump();
+
+      TextInputAction? action(String placeholder) => tester
+          .widget<CupertinoTextField>(
+            find.widgetWithText(CupertinoTextField, placeholder),
+          )
+          .textInputAction;
+      expect(action('Username'), TextInputAction.next);
+      expect(action('Age'), TextInputAction.done);
+
+      await tester.tap(find.widgetWithText(CupertinoTextField, 'Username'));
+      await tester.pump();
+      await tester.testTextInput.receiveAction(TextInputAction.next);
+      await tester.pump();
+
+      final age = tester.widget<EditableText>(
+        find.descendant(
+          of: find.widgetWithText(CupertinoTextField, 'Age'),
+          matching: find.byType(EditableText),
+        ),
+      );
+      expect(age.focusNode.hasFocus, isTrue);
+    });
+
     testWidgets('shows the value and updates the Field as the user types', (
       tester,
     ) async {
