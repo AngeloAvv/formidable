@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:formidable/formidable.dart';
 
 import 'categories/combinators.dart';
+import 'categories/parsing.dart';
 import 'categories/presence.dart';
 import 'categories/strings.dart';
 
@@ -19,6 +20,7 @@ import 'categories/strings.dart';
 abstract class FormidableLocalizations
     with
         FormidableCombinatorMessages,
+        FormidableParsingMessages,
         FormidablePresenceMessages,
         FormidableStringMessages {
   const FormidableLocalizations();
@@ -60,13 +62,15 @@ abstract class FormidableLocalizations
   String? messageOf(FormidableValidationError error) =>
       presenceMessageOf(error) ??
       stringMessageOf(error) ??
-      combinatorMessageOf(error);
+      combinatorMessageOf(error) ??
+      parsingMessageOf(error);
 }
 
 /// English.
 class FormidableLocalizationsEn extends FormidableLocalizations
     with
         FormidableCombinatorMessagesEn,
+        FormidableParsingMessagesEn,
         FormidablePresenceMessagesEn,
         FormidableStringMessagesEn {
   const FormidableLocalizationsEn();
@@ -76,6 +80,7 @@ class FormidableLocalizationsEn extends FormidableLocalizations
 class FormidableLocalizationsIt extends FormidableLocalizations
     with
         FormidableCombinatorMessagesIt,
+        FormidableParsingMessagesIt,
         FormidablePresenceMessagesIt,
         FormidableStringMessagesIt {
   const FormidableLocalizationsIt();
@@ -85,6 +90,7 @@ class FormidableLocalizationsIt extends FormidableLocalizations
 class FormidableLocalizationsEs extends FormidableLocalizations
     with
         FormidableCombinatorMessagesEs,
+        FormidableParsingMessagesEs,
         FormidablePresenceMessagesEs,
         FormidableStringMessagesEs {
   const FormidableLocalizationsEs();
@@ -94,6 +100,7 @@ class FormidableLocalizationsEs extends FormidableLocalizations
 class FormidableLocalizationsFr extends FormidableLocalizations
     with
         FormidableCombinatorMessagesFr,
+        FormidableParsingMessagesFr,
         FormidablePresenceMessagesFr,
         FormidableStringMessagesFr {
   const FormidableLocalizationsFr();
@@ -103,6 +110,7 @@ class FormidableLocalizationsFr extends FormidableLocalizations
 class FormidableLocalizationsDe extends FormidableLocalizations
     with
         FormidableCombinatorMessagesDe,
+        FormidableParsingMessagesDe,
         FormidablePresenceMessagesDe,
         FormidableStringMessagesDe {
   const FormidableLocalizationsDe();
