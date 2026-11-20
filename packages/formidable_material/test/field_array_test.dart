@@ -50,7 +50,7 @@ void main() {
                     field: trip.origin.city,
                     decoration: const InputDecoration(labelText: 'City'),
                   ),
-                  FormidableFieldArrayBuilder<StopForm, Stop>(
+                  FormidableFieldArrayBuilder(
                     array: trip.stops,
                     itemBuilder: (context, index, item) =>
                         stopRow(item.node, index),

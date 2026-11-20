@@ -7,12 +7,24 @@ import 'scope.dart';
 /// Rebuilds [builder] with the state of a Form, starting with its current
 /// state.
 ///
+/// The state is complete: it holds the state of every Field, Nested Form and
+/// Field Array below the Form, so the builder runs for every change of the
+/// Form, a typed value included. Narrow it down with [buildWhen].
+///
 /// Pass [form] to use a specific Form. Without it, the widget looks up the
 /// closest Form Scope of type [F] and throws an error naming the missing scope
 /// when there is none.
-class FormidableFormBuilder<F extends FormidableForm<Object?>>
+///
+/// [S] is the type of the state the builder receives: the generated state of
+/// the Form (`SignUpFormState`). This is what the generated `SignUpFormBuilder`
+/// extends, so use that one. [FormidableFormBuilder] is the same widget typed
+/// as [FormidableFormState], for code that does not use the generator.
+class FormidableTypedFormBuilder<
+  F extends FormidableForm<Object?>,
+  S extends FormidableFormState
+>
     extends StatelessWidget {
-  const FormidableFormBuilder({
+  const FormidableTypedFormBuilder({
     super.key,
     this.form,
     required this.builder,
@@ -20,24 +32,37 @@ class FormidableFormBuilder<F extends FormidableForm<Object?>>
   });
 
   final F? form;
-  final Widget Function(BuildContext context, FormidableFormState state)
-  builder;
-  final FormidableStateCondition<FormidableFormState>? buildWhen;
+
+  /// Builds the widget for the current state.
+  final Widget Function(BuildContext context, S state) builder;
+
+  /// Decides, from the previous and the next state, whether to rebuild.
+  /// Without it every state change rebuilds.
+  final FormidableStateCondition<S>? buildWhen;
 
   @override
-  Widget build(BuildContext context) => ObservableBuilder<FormidableFormState>(
-    observable: form ?? FormidableScope.of<F>(context, listen: true),
+  Widget build(BuildContext context) => ObservableBuilder<S>(
+    observable: _FormStates<F, S>(
+      form ?? FormidableScope.of<F>(context, listen: true),
+    ),
     builder: builder,
     buildWhen: buildWhen,
   );
 }
 
-/// Calls [listener] each time the state of a Form changes. The Form comes from
-/// [form] or from the closest Form Scope of type [F], as in
-/// [FormidableFormBuilder].
-class FormidableFormListener<F extends FormidableForm<Object?>>
+/// Calls [listener] each time the state of a Form changes, never for the
+/// state present when it is built. The Form comes from [form] or from the
+/// closest Form Scope of type [F], and [S] is the state type, as in
+/// [FormidableTypedFormBuilder].
+///
+/// [listenWhen] receives the previous and the next state and decides whether
+/// to call the listener. Without it every state change calls it.
+class FormidableTypedFormListener<
+  F extends FormidableForm<Object?>,
+  S extends FormidableFormState
+>
     extends StatelessWidget {
-  const FormidableFormListener({
+  const FormidableTypedFormListener({
     super.key,
     this.form,
     required this.listener,
@@ -46,28 +71,35 @@ class FormidableFormListener<F extends FormidableForm<Object?>>
   });
 
   final F? form;
-  final void Function(BuildContext context, FormidableFormState state) listener;
-  final FormidableStateCondition<FormidableFormState>? listenWhen;
+  final void Function(BuildContext context, S state) listener;
+  final FormidableStateCondition<S>? listenWhen;
   final Widget child;
 
   @override
-  Widget build(BuildContext context) => ObservableListener<FormidableFormState>(
-    observable: form ?? FormidableScope.of<F>(context, listen: true),
+  Widget build(BuildContext context) => ObservableListener<S>(
+    observable: _FormStates<F, S>(
+      form ?? FormidableScope.of<F>(context, listen: true),
+    ),
     listener: listener,
     listenWhen: listenWhen,
     child: child,
   );
 }
 
-/// Rebuilds [builder] only when what [selector] picks from the Form changes.
+/// Rebuilds [builder] only when what [selector] picks from the state of a Form
+/// changes (compared with `==`) and [buildWhen] agrees.
 ///
-/// The selector receives the Form itself, so it can read `form.value` or any
-/// Field. It runs after every change of the Form, which is what lets it follow
-/// `form.value` even when the Form state stays equal. The Form comes from
-/// [form] or from the closest Form Scope of type [F].
-class FormidableFormSelector<F extends FormidableForm<Object?>, R>
+/// The selector receives the state, which also holds the Schema value
+/// (`state.value`, null while the Form is invalid), so it can follow any part
+/// of the Form. The Form comes from [form] or from the closest Form Scope of
+/// type [F], and [S] is the state type, as in [FormidableTypedFormBuilder].
+class FormidableTypedFormSelector<
+  F extends FormidableForm<Object?>,
+  S extends FormidableFormState,
+  R
+>
     extends StatelessWidget {
-  const FormidableFormSelector({
+  const FormidableTypedFormSelector({
     super.key,
     this.form,
     required this.selector,
@@ -76,13 +108,16 @@ class FormidableFormSelector<F extends FormidableForm<Object?>, R>
   });
 
   final F? form;
-  final R Function(F form) selector;
+  final R Function(S state) selector;
   final Widget Function(BuildContext context, R selected) builder;
+
+  /// Receives the previous and the next selected value and can still veto a
+  /// rebuild.
   final FormidableStateCondition<R>? buildWhen;
 
   @override
-  Widget build(BuildContext context) => ObservableSelector<F, R>(
-    observable: _FormChanges<F>(
+  Widget build(BuildContext context) => ObservableSelector<S, R>(
+    observable: _FormStates<F, S>(
       form ?? FormidableScope.of<F>(context, listen: true),
     ),
     selector: selector,
@@ -91,28 +126,66 @@ class FormidableFormSelector<F extends FormidableForm<Object?>, R>
   );
 }
 
-/// Observes a Form through its change channel: the "state" is the Form itself
-/// and listeners hear every change.
-final class _FormChanges<F extends FormidableForm<Object?>>
-    implements FormidableObservable<F> {
-  const _FormChanges(this._form);
+/// [FormidableTypedFormBuilder] typed as [FormidableFormState], for code
+/// that does not use the generated builders.
+class FormidableFormBuilder<F extends FormidableForm<Object?>>
+    extends FormidableTypedFormBuilder<F, FormidableFormState> {
+  const FormidableFormBuilder({
+    super.key,
+    super.form,
+    required super.builder,
+    super.buildWhen,
+  });
+}
+
+/// [FormidableTypedFormListener] typed as [FormidableFormState], for code
+/// that does not use the generated listeners.
+class FormidableFormListener<F extends FormidableForm<Object?>>
+    extends FormidableTypedFormListener<F, FormidableFormState> {
+  const FormidableFormListener({
+    super.key,
+    super.form,
+    required super.listener,
+    required super.child,
+    super.listenWhen,
+  });
+}
+
+/// [FormidableTypedFormSelector] typed as [FormidableFormState], for code
+/// that does not use the generated selectors.
+class FormidableFormSelector<F extends FormidableForm<Object?>, R>
+    extends FormidableTypedFormSelector<F, FormidableFormState, R> {
+  const FormidableFormSelector({
+    super.key,
+    super.form,
+    required super.selector,
+    required super.builder,
+    super.buildWhen,
+  });
+}
+
+/// Observes a Form as a source of states of type [S]. A generated Form narrows
+/// its `state` to the generated state type, so the cast always holds.
+final class _FormStates<F extends FormidableForm<Object?>, S>
+    implements FormidableObservable<S> {
+  const _FormStates(this._form);
 
   final F _form;
 
   @override
-  F get state => _form;
+  S get state => _form.state as S;
 
   @override
-  void addListener(void Function() listener) =>
-      _form.addChangeListener(listener);
+  void addListener(void Function() listener) => _form.addListener(listener);
 
   @override
   void removeListener(void Function() listener) =>
-      _form.removeChangeListener(listener);
+      _form.removeListener(listener);
 
+  // Widgets compare observables to notice that they follow another Form.
   @override
   bool operator ==(Object other) =>
-      other is _FormChanges<F> && identical(other._form, _form);
+      other is _FormStates<F, S> && identical(other._form, _form);
 
   @override
   int get hashCode => identityHashCode(_form);

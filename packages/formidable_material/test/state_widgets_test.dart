@@ -141,6 +141,27 @@ void main() {
       expect(seen, [true]);
     });
 
+    testWidgets('listenWhen compares the first change with the initial state', (
+      tester,
+    ) async {
+      final form = SignUpForm(username: 'angelo');
+      final seen = <String?>[];
+      await tester.pumpWidget(
+        app(
+          FormidableFieldListener<String>(
+            field: form.username,
+            listenWhen: (previous, current) => previous.dirty != current.dirty,
+            listener: (context, state) => seen.add(state.value),
+            child: const SizedBox(),
+          ),
+        ),
+      );
+
+      form.username.setValue('other'); // clean -> dirty, the first change
+
+      expect(seen, ['other']);
+    });
+
     testWidgets('stops listening when removed from the tree', (tester) async {
       final form = SignUpForm();
       var calls = 0;
@@ -275,7 +296,7 @@ void main() {
         ),
       );
 
-      form.username.setValue('ab'); // dirty changes only
+      form.username.setValue('ab'); // the status stays invalid
       await tester.pump();
       expect(builds, 1);
 
@@ -326,7 +347,7 @@ void main() {
       expect(seen, [FormidableStatus.valid]);
     });
 
-    testWidgets('the selector follows form.value, not only the state', (
+    testWidgets('the selector follows the Schema value held by the state', (
       tester,
     ) async {
       final form = SignUpForm(username: 'angelo');
@@ -335,7 +356,7 @@ void main() {
         app(
           FormidableFormSelector<SignUpForm, String?>(
             form: form,
-            selector: (form) => form.value?.username,
+            selector: (state) => (state.value as SignUp?)?.username,
             builder: (context, username) {
               builds++;
               return Text('u:$username');
@@ -345,7 +366,7 @@ void main() {
       );
       expect(find.text('u:angelo'), findsOneWidget);
 
-      // Valid -> valid: the Form state is equal, the value is not.
+      // Valid -> valid: the status does not change, the value does.
       form.username.setValue('angelo2');
       await tester.pump();
       expect(find.text('u:angelo2'), findsOneWidget);
@@ -365,7 +386,7 @@ void main() {
         app(
           FormidableFormSelector<SignUpForm, bool>(
             form: form,
-            selector: (form) => form.value != null,
+            selector: (state) => state.value != null,
             builder: (context, canSubmit) {
               builds++;
               return Text('can:$canSubmit');
@@ -403,7 +424,7 @@ void main() {
       await tester.pumpWidget(
         app(
           FormidableFormSelector<SignUpForm, int>(
-            selector: (form) => 0,
+            selector: (state) => 0,
             builder: (context, _) => const SizedBox(),
           ),
         ),
@@ -477,8 +498,8 @@ void main() {
       Widget build(SignUpForm form) => app(
         SignUpFormScope.value(
           form: form,
-          child: FormidableFormSelector<SignUpForm, String?>(
-            selector: (form) => form.username.value,
+          child: SignUpFormSelector<String?>(
+            selector: (state) => state.username.value,
             builder: (context, name) => Text('u:$name'),
           ),
         ),
