@@ -266,5 +266,43 @@ class Library {
         ['records', '@Passthrough()', 'created empty'],
       ),
     );
+
+    test(
+      'a cross-field rule on a Field Array fails',
+      () => fails(
+        '''
+@Formidable()
+class Tags {
+  const Tags({required this.tags, required this.other});
+
+  @FieldArray()
+  @MustMatch(#other)
+  final List<String> tags;
+
+  final List<String> other;
+}
+''',
+        ['@MustMatch', 'Field Array'],
+      ),
+    );
+
+    test(
+      'a cross-field rule that refers to a Field Array fails',
+      () => fails(
+        '''
+@Formidable()
+class Tags {
+  const Tags({required this.tags, required this.other});
+
+  @FieldArray()
+  final List<String> tags;
+
+  @MustMatch(#tags)
+  final List<String> other;
+}
+''',
+        ['@MustMatch', '#tags', 'Field Array'],
+      ),
+    );
   });
 }

@@ -1,3 +1,4 @@
+import '../cross_field/rule.dart';
 import '../validation/form_validator.dart';
 import '../validation/validation_error.dart';
 import 'effect.dart';
@@ -34,6 +35,7 @@ abstract class FormidableForm<S>
   List<FormidableEffect<FormidableForm<Object?>>> _effects = const [];
   List<FormidableFormValidator<FormidableForm<Object?>>> _formValidators =
       const [];
+  List<FormidableCrossFieldBinding> _crossFieldRules = const [];
   final Set<FormidableNode> _pending = {};
   bool _running = false;
   int _batchDepth = 0;
@@ -171,7 +173,8 @@ abstract class FormidableForm<S>
   }
 
   /// Registers the children of the Form, in Schema declaration order, its
-  /// Form [effects] and the [formValidators] declared on the Schema. A
+  /// Form [effects], the [formValidators] declared on the Schema and the
+  /// [crossFieldRules] declared on its Fields. A
   /// generated Form calls it once from its constructor, with itself as [F],
   /// which makes the compiler reject a Form Validator typed for another Form.
   ///
@@ -180,12 +183,14 @@ abstract class FormidableForm<S>
     List<FormidableNode> nodes, {
     List<FormidableEffect<FormidableForm<Object?>>> effects = const [],
     List<FormidableFormValidator<F>> formValidators = const [],
+    List<FormidableCrossFieldBinding> crossFieldRules = const [],
   }) {
     assert(_nodes.isEmpty, 'attach must be called once.');
     assert(this is F, 'attach must be given the type of the Form itself.');
     _nodes = List.unmodifiable(nodes);
     _effects = List.unmodifiable(effects);
     _formValidators = formValidators;
+    _crossFieldRules = List.unmodifiable(crossFieldRules);
     for (final node in _nodes) {
       node.bindPipeline(this);
     }
@@ -351,6 +356,7 @@ abstract class FormidableForm<S>
 
   bool get _hasFormValidators =>
       _formValidators.isNotEmpty ||
+      _crossFieldRules.isNotEmpty ||
       _childForms.any((form) => form._hasFormValidators);
 
   void _collectFormErrors(
@@ -369,6 +375,11 @@ abstract class FormidableForm<S>
           );
           (into[item.field] ??= []).add(item.error);
         }
+      }
+    }
+    for (final binding in _crossFieldRules) {
+      for (final error in binding.evaluate()) {
+        (into[binding.target] ??= []).add(error);
       }
     }
     for (final form in _childForms) {
