@@ -159,18 +159,26 @@ String emitForm(SchemaModel schema) {
   out.writeln('    required bool pending,');
   out.writeln('    required bool isSet,');
   out.writeln('    required List<FormidableValidationError> errors,');
-  out.writeln('    required ${schema.name}? value,');
-  out.writeln('  }) => ${schema.stateName}(');
-  out.writeln('    status: status,');
-  out.writeln('    dirty: dirty,');
-  out.writeln('    pending: pending,');
-  out.writeln('    isSet: isSet,');
-  out.writeln('    errors: errors,');
-  out.writeln('    value: value,');
+  out.writeln('  }) {');
   for (final f in fields) {
-    out.writeln('    ${f.name}: ${f.name}.state,');
+    // `this.`: a Field may be called like a parameter of this method.
+    out.writeln('    final ${f.name}\$ = this.${f.name}.state;');
   }
-  out.writeln('  );');
+  out.writeln('    return ${schema.stateName}(');
+  out.writeln('      form: FormidableFormMeta<${schema.name}>(');
+  out.writeln('        status: status,');
+  out.writeln('        dirty: dirty,');
+  out.writeln('        pending: pending,');
+  out.writeln('        isSet: isSet,');
+  out.writeln('        errors: errors,');
+  out.writeln('        // Built from the child states, on the first read.');
+  out.writeln('        buildValue: () => ${_constructFromStates(schema)},');
+  out.writeln('      ),');
+  for (final f in fields) {
+    out.writeln('      ${f.name}: ${f.name}\$,');
+  }
+  out.writeln('    );');
+  out.writeln('  }');
   out.writeln('}');
   out.writeln();
   out.write(_state(schema));
@@ -184,32 +192,28 @@ String _state(SchemaModel schema) {
   final name = schema.stateName;
   final out = StringBuffer()
     ..writeln(
-      '/// The state of a [${schema.formName}]: its status and the state of',
+      '/// The state of a [${schema.formName}]: the state of every Field, Nested',
     )
     ..writeln(
-      '/// every Field, Nested Form and Field Array below it, as one immutable',
+      '/// Form and Field Array below it, and its own status under [form], as one',
     )
-    ..writeln('/// snapshot with deep equality.')
+    ..writeln('/// immutable snapshot with deep equality.')
     ..writeln('final class $name extends FormidableFormState {')
     ..writeln('  $name({')
-    ..writeln('    required super.status,')
-    ..writeln('    required super.dirty,')
-    ..writeln('    required super.pending,')
-    ..writeln('    required super.isSet,')
-    ..writeln('    required super.errors,')
-    ..writeln('    required ${schema.name}? value,');
+    ..writeln('    required FormidableFormMeta<${schema.name}> form,');
   for (final f in fields) {
     out.writeln('    required this.${f.name},');
   }
   out
-    ..writeln('  }) : super(value: value);')
+    ..writeln('  }) : super(form: form);')
     ..writeln()
     ..writeln(
-      '  /// The Schema instance while the Form is valid, not pending and set,',
+      '  /// The status, flags, errors and Schema value of the Form. The value',
     )
-    ..writeln('  /// null otherwise. It does not take part in equality.')
+    ..writeln('  /// is lazy and does not take part in equality.')
     ..writeln('  @override')
-    ..writeln('  ${schema.name}? get value => super.value as ${schema.name}?;');
+    ..writeln('  FormidableFormMeta<${schema.name}> get form =>')
+    ..writeln('      super.form as FormidableFormMeta<${schema.name}>;');
   for (final f in fields) {
     out
       ..writeln()
@@ -233,10 +237,7 @@ String _state(SchemaModel schema) {
     )
     ..writeln()
     ..writeln('  @override')
-    ..writeln(
-      "  String toString() => '$name(status: \$status, dirty: \$dirty, '",
-    )
-    ..writeln("      'pending: \$pending, isSet: \$isSet, errors: \$errors'");
+    ..writeln("  String toString() => '$name(form: \$form'");
   for (final f in fields) {
     out.writeln("      ', ${f.name}: \$${f.name}'");
   }
@@ -338,6 +339,7 @@ String _array(FieldModel f) {
   final element = array.elementTypeSource;
   final String create;
   final String read;
+  final String readState;
   if (array.nested != null) {
     final form = array.nested!.formName;
     final injected = array.nested!.asyncParameters
@@ -347,6 +349,7 @@ String _array(FieldModel f) {
     create =
         'initial == null ? $form($injected) : $form.from(initial$fromInjected)';
     read = 'item.buildOutput()';
+    readState = 'state.form.value!';
   } else {
     final source = array.fieldArraySource!;
     final itemArguments = [
@@ -358,11 +361,15 @@ String _array(FieldModel f) {
     ];
     create = 'FormidableField<$element>(${itemArguments.join(', ')})';
     read = 'item.output';
+    readState = element.endsWith('?')
+        ? 'state.value'
+        : 'state.value as $element';
   }
   final arguments = [
     'create: (initial) => $create',
     'read: (item) => $read',
     'itemState: (item) => item.state',
+    'readState: (state) => $readState',
     if (f.validators.isNotEmpty)
       'validators: const [${f.validators.map((v) => v.replaceFirst('const ', '')).join(', ')}]',
     if (f.isRequired) 'required: true',
@@ -393,6 +400,43 @@ String _field(FieldModel f) {
     'initial: ${f.name}',
   ];
   return 'FormidableField<${f.typeSource}>(${arguments.join(', ')})';
+}
+
+/// The Schema constructor call, reading the value of every child from the
+/// child states (`email$`) instead of the live handles, so a state never
+/// reads a Form that has moved on.
+String _constructFromStates(SchemaModel schema) {
+  final arguments = [
+    for (final a in schema.constructorArguments)
+      a.isNamed
+          ? '${a.field.name}: ${_fromState(a.field)}'
+          : _fromState(a.field),
+  ];
+  return '${schema.name}(${arguments.join(', ')})';
+}
+
+/// The Schema value of [f], from its state `name$`. It mirrors [_output],
+/// which reads the live handle.
+String _fromState(FieldModel f) {
+  final state = '${f.name}\$';
+  if (f.isDynamic) return '$state.output';
+  if (f.isArray) {
+    final list = 'List<${f.array!.elementTypeSource}>';
+    return f.isNullable
+        ? '$state.outputOrNull as $list?'
+        : '$state.outputOrNull as $list';
+  }
+  if (f.isNested) {
+    return _isOptionalNested(f) ? '$state.form.value' : '$state.form.value!';
+  }
+  if (f.isPassthrough) return state;
+  // The state holds `T?`, which is `T` already when the Field is nullable.
+  final value = f.isNullable
+      ? '$state.value'
+      : '$state.value as ${f.typeSource}';
+  return f.defaultSource == null
+      ? value
+      : '$state.isSet ? $value : ${f.defaultSource}';
 }
 
 String _construct(SchemaModel schema) {

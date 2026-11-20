@@ -17,10 +17,14 @@ final class FormidableFieldArrayState<S> {
     this.touched = false,
     this.dirty = false,
     this.submitted = false,
+    Object? Function()? outputOrNull,
   }) : assert(ids.length == items.length),
        ids = List.unmodifiable(ids),
        items = List.unmodifiable(items),
-       errors = List.unmodifiable(errors);
+       errors = List.unmodifiable(errors),
+       _outputOrNull = outputOrNull;
+
+  final Object? Function()? _outputOrNull;
 
   /// The identifiers of the items, in order. A move changes the order, so the
   /// state differs and listeners are called.
@@ -41,6 +45,13 @@ final class FormidableFieldArrayState<S> {
 
   /// Whether the Form was submitted since the array was created.
   final bool submitted;
+
+  /// The list of the values of the items, built from the states in [items] (so
+  /// it never reads an array that has moved on), or the default of the array
+  /// while it is empty, or null. The static type of the list is the type of an
+  /// item, `List<T>`. It is what the generated state of the Form builds its
+  /// Schema value from, and it does not take part in equality.
+  Object? get outputOrNull => _outputOrNull?.call();
 
   /// How many items the array has.
   int get length => ids.length;

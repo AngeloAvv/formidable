@@ -93,7 +93,7 @@ void main() {
 
       form.patch(name: 'M');
       expect(form.name.state.errors, [isA<FormidableMinLengthError>()]);
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
     });
 
     test('never marks a Field as touched', () {
@@ -151,10 +151,10 @@ void main() {
       final form = contactForm();
 
       form.replace(const Contact(id: 2, name: 'Marco'));
-      expect(form.state.dirty, isTrue);
+      expect(form.state.form.dirty, isTrue);
 
       form.replace(const Contact(id: 1, name: 'Angelo', phone: '123'));
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
     });
   });
 
@@ -171,8 +171,8 @@ void main() {
       expect(form.note.value, 'none');
       expect(form.note.isSet, isTrue);
       expect(form.id.value, 1);
-      expect(form.state.dirty, isFalse);
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.dirty, isFalse);
+      expect(form.state.form.status, FormidableStatus.valid);
     });
 
     test('clears errors and touched', () {
@@ -218,7 +218,7 @@ void main() {
       expect(form.country.value, 'IT');
       expect(form.province.value, 'MI');
       expect(form.revision.value, 0);
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
     });
   });
 
@@ -226,11 +226,11 @@ void main() {
     test('makes the current state the initial state', () {
       final form = contactForm();
       form.patch(name: 'Marco', phone: '456', id: 3);
-      expect(form.state.dirty, isTrue);
+      expect(form.state.form.dirty, isTrue);
 
       form.commit();
 
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
       expect(form.name.state.dirty, isFalse);
       expect(form.phone.state.dirty, isFalse);
       expect(form.name.value, 'Marco');
@@ -257,7 +257,7 @@ void main() {
       form.commit();
 
       expect(notifications, 1);
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
     });
 
     test('a Field changed back to the committed value is clean', () {
@@ -277,10 +277,10 @@ void main() {
       final form = contactForm();
 
       form.patch(name: 'Marco', phone: '456');
-      expect(form.state.dirty, isTrue);
+      expect(form.state.form.dirty, isTrue);
 
       form.patch(name: 'Angelo', phone: '123');
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
     });
 
     test('takes its initial snapshot after the creation-time Form Effects', () {
@@ -289,7 +289,7 @@ void main() {
       // The Effects derived the label while the Form was being created.
       expect(form.label.value, 'IT/MI');
       expect(form.label.state.dirty, isFalse);
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
 
       form.reset();
       expect(form.label.value, 'IT/MI');

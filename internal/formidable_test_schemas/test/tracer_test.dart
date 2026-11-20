@@ -136,7 +136,7 @@ void main() {
 
         expect(fieldNotifications, 3);
         expect(formNotifications, 3);
-        expect(form.state.status, FormidableStatus.valid);
+        expect(form.state.form.status, FormidableStatus.valid);
       });
 
       test('stop after a listener is removed or the Form is disposed', () {

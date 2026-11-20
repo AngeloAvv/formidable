@@ -39,14 +39,14 @@ FilledButton(
 
 **Use it when** the user must be told what to fix. Pressing the button is what reveals the errors.
 
-## Declarative: a Form Selector over `value` drives the button
+## Declarative: a Form Selector over `state.form.value` drives the button
 
-A [Form Selector](/form/state) reads the state of the Form after every change and rebuilds only when what it selects changes. `state.value` is the Schema instance while the Form is valid and null otherwise, so the selector can answer "can this be sent?":
+A [Form Selector](/form/state) reads the state of the Form after every change and rebuilds only when what it selects changes. `state.form.value` is the Schema instance while the Form is valid and null otherwise, so the selector can answer "can this be sent?":
 
 ```dart
 // example/lib/contact/contact_material.dart
 ContactFormSelector<bool>(
-  selector: (state) => state.value != null && state.dirty,
+  selector: (state) => state.form.value != null && state.form.dirty,
   builder: (context, canSave) => FilledButton(
     onPressed: canSave ? () => _save(form) : null,
     child: const Text('Save'),
@@ -91,7 +91,7 @@ A button that is off tells the user nothing about *why*. With the default error 
 const Text('Save is on while the form is valid and has changes.'),
 ```
 
-`form.state.errors`, `form.value` and `submit()` always see every error, whatever the [error display policy](/form/submit#when-errors-are-shown) decides to show.
+`form.state.form.errors`, `form.value` and `submit()` always see every error, whatever the [error display policy](/form/submit#when-errors-are-shown) decides to show.
 
 ## Which pattern, in short
 

@@ -223,7 +223,7 @@ void main() {
 
       expect(form.weight.inputError, isNull);
       expect(form.weight.state.errors, isEmpty);
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.status, FormidableStatus.valid);
       expect(await form.submit(), isA<FormidableSubmitValid<Measurements>>());
     });
 

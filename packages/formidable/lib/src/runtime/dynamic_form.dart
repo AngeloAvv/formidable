@@ -38,8 +38,23 @@ final class FormidableDynamicTypeError extends StateError {
 /// changes, so a widget that follows it rebuilds then and only then. Equality
 /// is deep.
 final class FormidableDynamicFormState {
-  FormidableDynamicFormState(Map<String, Object> states)
-    : states = Map.unmodifiable(states);
+  FormidableDynamicFormState(
+    Map<String, Object> states, {
+    Map<String, Object? Function(Object state)> readers = const {},
+  }) : states = Map.unmodifiable(states),
+       _readers = readers;
+
+  final Map<String, Object? Function(Object state)> _readers;
+
+  /// The values of the registered Fields and Nested Forms, by key, in
+  /// registration order, built from the states this one holds (so it never
+  /// reads a Dynamic Form that has moved on). A Nested Form that is Unset has
+  /// null. Read it only while the Form is valid, like any output. It does not
+  /// take part in equality.
+  Map<String, Object?> get output => {
+    for (final entry in states.entries)
+      entry.key: _readers[entry.key]!(entry.value),
+  };
 
   /// The state of every registered node, by key, in registration order: a
   /// [FormidableFieldState] for a Field, the generated state of a Nested Form
@@ -232,6 +247,13 @@ final class FormidableDynamicForm
         },
         clear: field.clear,
         output: () => field.output,
+        read: (state) {
+          final fieldState = state as FormidableFieldState<T>;
+          if (fieldState.isSet) return fieldState.value as T;
+          if (defaultValue != null) return defaultValue;
+          if (null is T) return null;
+          throw StateError('A required Field is Unset and has no output.');
+        },
         state: () => field.state,
       ),
     );
@@ -250,6 +272,7 @@ final class FormidableDynamicForm
         form,
         clear: form.clear,
         output: () => form.outputOrNull,
+        read: (state) => (state as FormidableFormState).form.value,
         state: () => form.state,
       ),
     );
@@ -388,9 +411,12 @@ final class FormidableDynamicForm
   }
 
   void _publish() {
-    _state = FormidableDynamicFormState({
-      for (final entry in _entries.entries) entry.key: entry.value.state(),
-    });
+    _state = FormidableDynamicFormState(
+      {for (final entry in _entries.entries) entry.key: entry.value.state()},
+      readers: {
+        for (final entry in _entries.entries) entry.key: entry.value.read,
+      },
+    );
   }
 
   void _notifyIfChanged() {
@@ -476,6 +502,7 @@ final class _Entry {
     this.write,
     required this.clear,
     required this.output,
+    required this.read,
     required this.state,
   });
 
@@ -486,6 +513,9 @@ final class _Entry {
   final void Function(Object?)? write;
   final void Function() clear;
   final Object? Function() output;
+
+  /// The value of the node from one of its states.
+  final Object? Function(Object state) read;
 
   /// The current state of the node, a [FormidableFieldState] or the state of
   /// the Nested Form.

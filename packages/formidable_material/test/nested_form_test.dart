@@ -27,12 +27,13 @@ void main() {
             ),
             FormidableFormBuilder<AddressForm>(
               form: context.checkoutForm.shipping,
-              builder: (context, state) =>
-                  Text('shipping:${state.status.name}:${state.dirty}'),
+              builder: (context, state) => Text(
+                'shipping:${state.form.status.name}:${state.form.dirty}',
+              ),
             ),
             FormidableFormBuilder<CheckoutForm>(
               builder: (context, state) =>
-                  Text('checkout:${state.status.name}'),
+                  Text('checkout:${state.form.status.name}'),
             ),
           ],
         ),
@@ -51,7 +52,7 @@ void main() {
     await tester.pump();
 
     expect(form.billing.street.value, 'Via Roma');
-    expect(form.state.dirty, isTrue);
+    expect(form.state.form.dirty, isTrue);
     expect(find.text('checkout:valid'), findsOneWidget);
   });
 
@@ -126,7 +127,7 @@ void main() {
         CheckoutFormScope.value(
           form: form,
           child: CheckoutFormSelector<String?>(
-            selector: (state) => state.value?.billing.street,
+            selector: (state) => state.form.value?.billing.street,
             builder: (context, street) => Text('street:$street'),
           ),
         ),

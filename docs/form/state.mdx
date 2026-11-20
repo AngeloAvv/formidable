@@ -25,18 +25,20 @@ Every Field, Field Array and Form holds an immutable **state snapshot** and noti
 
 ## Form state
 
-`form.state` is typed after the Form. The generator writes one state class per Schema, for example `SignUpFormState`, and `SignUpForm.state` returns it. It extends `FormidableFormState`:
+`form.state` is typed after the Form. The generator writes one state class per Schema, for example `SignUpFormState`, and `SignUpForm.state` returns it. It extends `FormidableFormState`.
 
-| Member | Meaning |
+The metadata of the Form is under `state.form`, a `FormidableFormMeta<SignUp>`. The Fields live next to it, so a Schema field can be called `status`, `dirty`, `pending` or `errors` without hiding anything. The generic `FormidableFormState`, used by the widgets that do not know the Schema, has the same `form`, so `state.form.status` reads the same either way.
+
+| Member of `state.form` | Meaning |
 | --- | --- |
 | `status` | `invalid` while any Field has errors |
 | `dirty` | Any Field is dirty |
 | `pending` | Any Field is still waiting for the result of an [Async Validator](/validation/async) |
 | `errors` | Errors of the Form as a whole, not tied to a Field |
 | `isSet` | False only for an optional [Nested Form](/schema/nested-forms) that is Unset |
-| `value` | The Schema instance while the Form is valid and not pending, null otherwise (typed as `SignUp?` in the generated state) |
+| `value` | The Schema instance while the Form is valid, not pending and set, null otherwise (typed as `SignUp?` in the generated state). It is lazy, see below |
 
-And, on the generated state, one member per child, with the name of the Schema field:
+And, on the generated state, one member per child, with the name of the Schema field (the name `form` is the only one a Schema field cannot use):
 
 | Child | Type of its member |
 | --- | --- |
@@ -51,12 +53,17 @@ final state = form.state; // SignUpFormState
 state.username.value;     // String?
 state.address.street;     // FormidableFieldState<String>, in a Nested Form
 state.phones.items.first; // PhoneFormState, in a Field Array
-state.value;              // SignUp?
+state.form.status;        // FormidableStatus
+state.form.value;         // SignUp?
 ```
 
-Equality is deep. Editing an item of a Field Array, adding, removing or moving one, or changing a Field of a Nested Form gives a state that is `!=` to the previous one. `value` does not take part in equality: it is derived from the states of the children, and a Schema is not required to define `==`.
+Equality is deep. Editing an item of a Field Array, adding, removing or moving one, or changing a Field of a Nested Form gives a state that is `!=` to the previous one. `state.form.value` does not take part in equality: it is derived from the states of the children, and a Schema is not required to define `==`.
 
-`form.value` is the same Schema instance as `form.state.value`, computed on every read:
+### The value is lazy
+
+The Schema constructor does not run when a state is published, so typing in a Field does not build a Schema nobody reads. `state.form.value` builds it from the states of the children on the first read, caches it, and gives the same instance on every later read of that state. Because it is built from the state and not from the live Form, a state you kept still gives the value it had, even after the Form moved on.
+
+`form.value` is the `state.form.value` of the current state:
 
 ```dart
 final signUp = form.value;
@@ -117,13 +124,13 @@ SignUpFormBuilder(
 )
 
 SignUpFormListener(
-  listenWhen: (previous, next) => previous.status != next.status,
-  listener: (context, state) => log('${state.status}'),
+  listenWhen: (previous, next) => previous.form.status != next.form.status,
+  listener: (context, state) => log('${state.form.status}'),
   child: ...,
 )
 
 SignUpFormSelector<bool>(
-  selector: (state) => state.value != null,
+  selector: (state) => state.form.value != null,
   builder: (context, canSubmit) => FilledButton(
     onPressed: canSubmit ? () => save(context.signUpForm.value!) : null,
     child: const Text('Sign up'),
@@ -131,9 +138,9 @@ SignUpFormSelector<bool>(
 )
 ```
 
-Each takes an optional `form`. Without one it looks up the closest `SignUpFormScope`, and throws an error that names the missing scope when there is none. `SignUpFormSelector` rebuilds only when the selected value changes, so a selector on `state.value != null` enables a button when the Form is valid and does not rebuild while the user types.
+Each takes an optional `form`. Without one it looks up the closest `SignUpFormScope`, and throws an error that names the missing scope when there is none. `SignUpFormSelector` rebuilds only when the selected value changes, so a selector on `state.form.value != null` enables a button when the Form is valid and does not rebuild while the user types.
 
-For code that does not use the generator, `FormidableFormBuilder<SignUpForm>`, `FormidableFormListener<SignUpForm>` and `FormidableFormSelector<SignUpForm, R>` do the same with the state typed as `FormidableFormState`. `FormidableTypedFormBuilder<SignUpForm, SignUpFormState>` and its Listener and Selector are what the generated widgets extend; use them to get the typed state without the generated widgets.
+For code that does not use the generator, `FormidableFormBuilder<SignUpForm>`, `FormidableFormListener<SignUpForm>` and `FormidableFormSelector<SignUpForm, R>` do the same with the state typed as `FormidableFormState`, so you read `state.form.status` there too. `FormidableTypedFormBuilder<SignUpForm, SignUpFormState>` and its Listener and Selector are what the generated widgets extend; use them to get the typed state without the generated widgets.
 
 ## Field Array widgets
 

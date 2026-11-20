@@ -71,7 +71,7 @@ void main() {
             const TextField(key: Key('other')),
             FormidableFormBuilder<LoginForm>(
               builder: (context, state) => Text(
-                'form:${state.errors.map((e) => e.toString()).join(',')}',
+                'form:${state.form.errors.map((e) => e.toString()).join(',')}',
               ),
             ),
           ],

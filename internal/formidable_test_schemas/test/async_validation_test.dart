@@ -335,19 +335,19 @@ void main() {
       fakeAsync((async) {
         final (:form, :usernames, :emails) = _create();
 
-        expect(form.state.pending, isFalse);
+        expect(form.state.form.pending, isFalse);
         form.username.setValue('alice');
         form.email.setValue('a@b.c');
-        expect(form.state.pending, isTrue);
+        expect(form.state.form.pending, isTrue);
 
         async.elapse(_debounce);
         usernames.answer('alice', taken: false);
         async.flushMicrotasks();
-        expect(form.state.pending, isTrue);
+        expect(form.state.form.pending, isTrue);
 
         emails.answer('a@b.c', taken: false);
         async.flushMicrotasks();
-        expect(form.state.pending, isFalse);
+        expect(form.state.form.pending, isFalse);
       });
     });
   });
@@ -360,7 +360,7 @@ void main() {
           email: 'a@b.c',
         );
 
-        expect(form.state.status, FormidableStatus.valid);
+        expect(form.state.form.status, FormidableStatus.valid);
         expect(form.value, isNull);
 
         async.elapse(_debounce);

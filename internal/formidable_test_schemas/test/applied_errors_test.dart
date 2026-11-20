@@ -38,7 +38,7 @@ void main() {
 
       expect(form.username.state.errors, [const _Taken()]);
       expect(form.username.state.status, FormidableStatus.invalid);
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
       expect(form.value, isNull);
     });
 
@@ -141,8 +141,8 @@ void main() {
       );
 
       expect(form.username.state.errors, [const _Taken()]);
-      expect(form.state.errors, [const _Down()]);
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.errors, [const _Down()]);
+      expect(form.state.form.status, FormidableStatus.invalid);
     });
 
     test('Form errors alone make the Form invalid and notify once', () {
@@ -153,7 +153,7 @@ void main() {
       form.applyErrors(formErrors: [const _Down()]);
 
       expect(count, 1);
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
       expect(form.value, isNull);
     });
 
@@ -162,8 +162,8 @@ void main() {
 
       form.note.setValue('hello');
 
-      expect(form.state.errors, isEmpty);
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.errors, isEmpty);
+      expect(form.state.form.status, FormidableStatus.valid);
     });
 
     test('Form errors survive a write that changes nothing', () {
@@ -172,7 +172,7 @@ void main() {
       form.note.clear();
       form.username.setValue('angelo');
 
-      expect(form.state.errors, [const _Down()]);
+      expect(form.state.form.errors, [const _Down()]);
     });
 
     test('Form errors do not block a new submit, which clears them', () async {
@@ -181,7 +181,7 @@ void main() {
       final result = await form.submit();
 
       expect(result, isA<FormidableSubmitValid<Account>>());
-      expect(form.state.errors, isEmpty);
+      expect(form.state.form.errors, isEmpty);
     });
   });
 }

@@ -95,7 +95,7 @@ void main() {
       form.reset();
 
       expect(form.confirmation.state.errors, isEmpty);
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.status, FormidableStatus.valid);
       expect(notifications, 1);
     });
 
@@ -154,7 +154,7 @@ void main() {
 
       form.password.setValue('another-one');
 
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
       expect(notifications, greaterThan(0));
     });
 
