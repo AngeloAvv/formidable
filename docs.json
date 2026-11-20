@@ -24,7 +24,10 @@
     },
     {
       "group": "Validation",
-      "pages": [{ "title": "Validators", "href": "/validation" }]
+      "pages": [
+        { "title": "Validators", "href": "/validation" },
+        { "title": "Messages and localization", "href": "/validation/messages" }
+      ]
     },
     {
       "group": "Form",

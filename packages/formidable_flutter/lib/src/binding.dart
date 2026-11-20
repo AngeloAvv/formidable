@@ -13,7 +13,7 @@ import 'package:formidable/formidable.dart';
 class FormidableBinding<T> extends ChangeNotifier {
   FormidableBinding({
     required this.field,
-    required this._resolveMessage,
+    required this.resolveMessage,
     FocusNode? focusNode,
     TextEditingController? textController,
     this._formatText,
@@ -30,7 +30,9 @@ class FormidableBinding<T> extends ChangeNotifier {
 
   final FormidableField<T> field;
   final FocusNode focusNode;
-  final String Function(FormidableValidationError error) _resolveMessage;
+
+  /// Turns a Validation Error into the text shown for it.
+  final String Function(FormidableValidationError error) resolveMessage;
   final String Function(T value)? _formatText;
   final T? Function(String text)? _parseText;
   final bool _ownsFocusNode;
@@ -57,7 +59,7 @@ class FormidableBinding<T> extends ChangeNotifier {
   String? get errorText {
     final state = field.state;
     if (!state.touched || state.errors.isEmpty) return null;
-    return _resolveMessage(state.errors.first);
+    return resolveMessage(state.errors.first);
   }
 
   /// Controls the text of a text widget and stays in sync with the Field.

@@ -22,6 +22,7 @@ class FormidableTextField extends StatelessWidget {
     this.maxLines = 1,
     this.autofocus = false,
     this.focusNode,
+    this.messages,
   });
 
   final FormidableField<String> field;
@@ -36,10 +37,14 @@ class FormidableTextField extends StatelessWidget {
   /// Used instead of the focus node owned by the Binding. Never disposed here.
   final FocusNode? focusNode;
 
+  /// Messages for this field only, ahead of the config and the localizations.
+  final FormidableMessages? messages;
+
   @override
   Widget build(BuildContext context) => FormidableBindingBuilder<String>(
     field: field,
     focusNode: focusNode,
+    messages: messages,
     formatText: (value) => value,
     parseText: (text) => text.isEmpty ? null : text,
     builder: (context, binding) => TextField(

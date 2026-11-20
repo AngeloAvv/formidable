@@ -17,6 +17,7 @@ class FormidableBindingBuilder<T> extends StatefulWidget {
     this.textController,
     this.formatText,
     this.parseText,
+    this.messages,
   });
 
   final FormidableField<T> field;
@@ -38,6 +39,10 @@ class FormidableBindingBuilder<T> extends StatefulWidget {
   /// widgets.
   final T? Function(String text)? parseText;
 
+  /// Messages for this widget only. They win over the config registry, the
+  /// localizations and the string form of the error.
+  final FormidableMessages? messages;
+
   @override
   State<FormidableBindingBuilder<T>> createState() =>
       _FormidableBindingBuilderState<T>();
@@ -53,8 +58,13 @@ class _FormidableBindingBuilderState<T>
     textController: widget.textController,
     formatText: widget.formatText,
     parseText: widget.parseText,
-    resolveMessage: (error) => formidableMessageOf(context, error),
+    resolveMessage: _resolveMessage,
   );
+
+  // Looked up when an error is shown, so that this widget depends on the
+  // locale and the config only while there is an error to explain.
+  String _resolveMessage(FormidableValidationError error) =>
+      formidableMessageOf(context, error, overrides: widget.messages);
 
   @override
   void didUpdateWidget(FormidableBindingBuilder<T> oldWidget) {
