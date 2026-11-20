@@ -1,0 +1,34 @@
+---
+title: Choice and equality Validators
+description: Built-in rules for booleans, allowlists and constants
+---
+
+# Choice and equality Validators
+
+```dart
+@Formidable()
+class SignUp {
+  const SignUp({required this.acceptedTerms, required this.plan});
+
+  @Accepted()
+  final bool acceptedTerms;
+
+  @OneOf(['free', 'pro'])
+  final String plan;
+}
+```
+
+| Annotation | Accepts | Error |
+|---|---|---|
+| `@IsTrue()`, alias `@Accepted()` | `true` | `FormidableIsTrueError()` |
+| `@IsFalse()`, alias `@Declined()` | `false` | `FormidableIsFalseError()` |
+| `@OneOf([...], ignoreCase: false)` | one of the listed values | `FormidableOneOfError(allowed, actual)` |
+| `@NoneOf([...], ignoreCase: false)` | any value but the listed ones | `FormidableNoneOfError(disallowed, actual)` |
+| `@EqualTo(value)` | a value equal to the constant | `FormidableEqualToError(expected, actual)` |
+| `@NotEqualTo(value)` | a value different from the constant | `FormidableNotEqualToError(unexpected)` |
+
+`@OneOf`, `@NoneOf`, `@EqualTo` and `@NotEqualTo` fit a Field of any type. The values are constants, so they can be strings, numbers, booleans or enum values. With `ignoreCase: true`, strings are compared without regard to case; other values are compared as usual.
+
+`@IsTrue` is the usual terms checkbox: an unchecked box is Unset or `false`, and `@Required()` or a non-nullable type decides which. To compare a Field with another Field, such as a password confirmation, use a cross-field rule.
+
+Every error has a message in English, Italian, Spanish, French and German. Enum values are shown by name. See [Messages and localization](/validation/messages).

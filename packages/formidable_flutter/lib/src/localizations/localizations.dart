@@ -2,7 +2,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:formidable/formidable.dart';
 
+import 'categories/choices.dart';
 import 'categories/combinators.dart';
+import 'categories/dates.dart';
+import 'categories/numbers.dart';
 import 'categories/parsing.dart';
 import 'categories/presence.dart';
 import 'categories/strings.dart';
@@ -19,7 +22,10 @@ import 'categories/strings.dart';
 /// not compile.
 abstract class FormidableLocalizations
     with
+        FormidableChoiceMessages,
         FormidableCombinatorMessages,
+        FormidableDateMessages,
+        FormidableNumberMessages,
         FormidableParsingMessages,
         FormidablePresenceMessages,
         FormidableStringMessages {
@@ -63,13 +69,19 @@ abstract class FormidableLocalizations
       presenceMessageOf(error) ??
       stringMessageOf(error) ??
       combinatorMessageOf(error) ??
-      parsingMessageOf(error);
+      parsingMessageOf(error) ??
+      numberMessageOf(error) ??
+      dateMessageOf(error) ??
+      choiceMessageOf(error);
 }
 
 /// English.
 class FormidableLocalizationsEn extends FormidableLocalizations
     with
+        FormidableChoiceMessagesEn,
         FormidableCombinatorMessagesEn,
+        FormidableDateMessagesEn,
+        FormidableNumberMessagesEn,
         FormidableParsingMessagesEn,
         FormidablePresenceMessagesEn,
         FormidableStringMessagesEn {
@@ -79,7 +91,10 @@ class FormidableLocalizationsEn extends FormidableLocalizations
 /// Italian.
 class FormidableLocalizationsIt extends FormidableLocalizations
     with
+        FormidableChoiceMessagesIt,
         FormidableCombinatorMessagesIt,
+        FormidableDateMessagesIt,
+        FormidableNumberMessagesIt,
         FormidableParsingMessagesIt,
         FormidablePresenceMessagesIt,
         FormidableStringMessagesIt {
@@ -89,7 +104,10 @@ class FormidableLocalizationsIt extends FormidableLocalizations
 /// Spanish.
 class FormidableLocalizationsEs extends FormidableLocalizations
     with
+        FormidableChoiceMessagesEs,
         FormidableCombinatorMessagesEs,
+        FormidableDateMessagesEs,
+        FormidableNumberMessagesEs,
         FormidableParsingMessagesEs,
         FormidablePresenceMessagesEs,
         FormidableStringMessagesEs {
@@ -99,7 +117,10 @@ class FormidableLocalizationsEs extends FormidableLocalizations
 /// French.
 class FormidableLocalizationsFr extends FormidableLocalizations
     with
+        FormidableChoiceMessagesFr,
         FormidableCombinatorMessagesFr,
+        FormidableDateMessagesFr,
+        FormidableNumberMessagesFr,
         FormidableParsingMessagesFr,
         FormidablePresenceMessagesFr,
         FormidableStringMessagesFr {
@@ -109,7 +130,10 @@ class FormidableLocalizationsFr extends FormidableLocalizations
 /// German.
 class FormidableLocalizationsDe extends FormidableLocalizations
     with
+        FormidableChoiceMessagesDe,
         FormidableCombinatorMessagesDe,
+        FormidableDateMessagesDe,
+        FormidableNumberMessagesDe,
         FormidableParsingMessagesDe,
         FormidablePresenceMessagesDe,
         FormidableStringMessagesDe {
