@@ -36,4 +36,27 @@ void main() {
 
     expect(find.text('Please fix the errors above.'), findsOneWidget);
   });
+
+  testWidgets('the name field shows a clear button once there is text', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+    expect(find.byKey(const Key('clear-name')), findsNothing);
+
+    await tester.enterText(find.byType(CupertinoTextField).first, 'Angelo');
+    await tester.pump();
+    expect(find.byKey(const Key('clear-name')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('clear-name')));
+    await tester.pump();
+
+    expect(find.byKey(const Key('clear-name')), findsNothing);
+    expect(
+      tester
+          .widget<CupertinoTextField>(find.byType(CupertinoTextField).first)
+          .controller!
+          .text,
+      isEmpty,
+    );
+  });
 }
