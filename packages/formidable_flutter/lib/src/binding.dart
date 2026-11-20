@@ -157,19 +157,40 @@ class FormidableBinding<T> extends ChangeNotifier {
   ///
   /// The Codec decides what [text] means: a value, no value (the Field becomes
   /// Unset) or a parse error (the Field is rejected, even when it is optional).
+  ///
+  /// The controller keeps what the user typed, even when a Normalizer rewrote
+  /// it in the Field (`@Trim()` does not eat the space of "New York" as it is
+  /// typed). It shows the Field again only when the Field changes from
+  /// somewhere else: code, a reset, another widget.
   void onTextChanged(String text) {
-    switch (_codec!.parse(text)) {
-      case FormidableParsedValue<T>(:final value):
-        field.setValue(value);
-      case FormidableParsedUnset<T>():
-        field.clear();
-      case FormidableParseFailure<T>(:final error):
-        field.reject(error);
+    _writing = true;
+    try {
+      switch (_codec!.parse(text)) {
+        case FormidableParsedValue<T>(:final value):
+          field.setValue(value);
+        case FormidableParsedUnset<T>():
+          field.clear();
+        case FormidableParseFailure<T>(:final error):
+          field.reject(error);
+      }
+    } finally {
+      _writing = false;
     }
+    _typed = (
+      isSet: field.isSet,
+      value: field.value,
+      inputError: field.inputError,
+    );
   }
 
   /// The user interacted with a widget that cannot take focus and left it.
   void onTouched() => field.markAsTouched();
+
+  // True while onTextChanged writes the Field: that change is the user's.
+  bool _writing = false;
+
+  // What the Field held right after the last text the user typed.
+  ({bool isSet, T? value, FormidableValidationError? inputError})? _typed;
 
   void _onFieldChanged() {
     _syncText();
@@ -205,6 +226,19 @@ class FormidableBinding<T> extends ChangeNotifier {
     final controller = _textController;
     final codec = _codec;
     if (controller == null || codec == null) return;
+    if (!force && _writing) return;
+    final typed = _typed;
+    if (typed != null) {
+      // The Field still holds what the user's last input made of it: the
+      // controller is the user's, not a stale copy of the Field.
+      if (!force &&
+          typed.isSet == field.isSet &&
+          typed.value == field.value &&
+          typed.inputError == field.inputError) {
+        return;
+      }
+      _typed = null;
+    }
     final fieldValue = field.isSet ? field.value : null;
     if (!force && _showsField(codec.parse(controller.text), fieldValue)) return;
     final text = fieldValue == null ? '' : codec.format(fieldValue);
