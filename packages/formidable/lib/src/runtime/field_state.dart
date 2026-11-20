@@ -14,6 +14,7 @@ final class FormidableFieldState<T> {
     this.dirty = false,
     this.enabled = true,
     this.submitted = false,
+    this.pending = false,
   }) : errors = List.unmodifiable(errors);
 
   /// The chosen value, or null while the Field is Unset.
@@ -40,6 +41,11 @@ final class FormidableFieldState<T> {
   /// also makes the Field touched.
   final bool submitted;
 
+  /// Whether an Async Validator is still checking the Field's value, or an
+  /// asynchronous Form Validator that reads it is. The errors of a pending
+  /// check are not in [errors] yet.
+  final bool pending;
+
   FormidableStatus get status =>
       errors.isEmpty ? FormidableStatus.valid : FormidableStatus.invalid;
 
@@ -52,6 +58,7 @@ final class FormidableFieldState<T> {
       other.dirty == dirty &&
       other.enabled == enabled &&
       other.submitted == submitted &&
+      other.pending == pending &&
       _sameErrors(other.errors, errors);
 
   @override
@@ -62,6 +69,7 @@ final class FormidableFieldState<T> {
     dirty,
     enabled,
     submitted,
+    pending,
     Object.hashAll(errors),
   );
 
@@ -69,7 +77,7 @@ final class FormidableFieldState<T> {
   String toString() =>
       'FormidableFieldState(value: $value, isSet: $isSet, '
       'touched: $touched, dirty: $dirty, enabled: $enabled, '
-      'submitted: $submitted, errors: $errors)';
+      'submitted: $submitted, pending: $pending, errors: $errors)';
 
   static bool _sameErrors(
     List<FormidableValidationError> a,

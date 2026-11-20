@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:formidable/formidable.dart';
 
+import 'categories/asynchronous.dart';
 import 'categories/choices.dart';
 import 'categories/combinators.dart';
 import 'categories/cross_field.dart';
@@ -24,6 +25,7 @@ import 'categories/strings.dart';
 /// not compile.
 abstract class FormidableLocalizations
     with
+        FormidableAsyncMessages,
         FormidableChoiceMessages,
         FormidableCombinatorMessages,
         FormidableCrossFieldMessages,
@@ -76,6 +78,7 @@ abstract class FormidableLocalizations
       combinatorMessageOf(error) ??
       crossFieldMessageOf(error) ??
       parsingMessageOf(error) ??
+      asyncMessageOf(error) ??
       numberMessageOf(error) ??
       dateMessageOf(error) ??
       choiceMessageOf(error);
@@ -84,6 +87,7 @@ abstract class FormidableLocalizations
 /// English.
 class FormidableLocalizationsEn extends FormidableLocalizations
     with
+        FormidableAsyncMessagesEn,
         FormidableChoiceMessagesEn,
         FormidableCombinatorMessagesEn,
         FormidableCrossFieldMessagesEn,
@@ -99,6 +103,7 @@ class FormidableLocalizationsEn extends FormidableLocalizations
 /// Italian.
 class FormidableLocalizationsIt extends FormidableLocalizations
     with
+        FormidableAsyncMessagesIt,
         FormidableChoiceMessagesIt,
         FormidableCombinatorMessagesIt,
         FormidableCrossFieldMessagesIt,
@@ -114,6 +119,7 @@ class FormidableLocalizationsIt extends FormidableLocalizations
 /// Spanish.
 class FormidableLocalizationsEs extends FormidableLocalizations
     with
+        FormidableAsyncMessagesEs,
         FormidableChoiceMessagesEs,
         FormidableCombinatorMessagesEs,
         FormidableCrossFieldMessagesEs,
@@ -129,6 +135,7 @@ class FormidableLocalizationsEs extends FormidableLocalizations
 /// French.
 class FormidableLocalizationsFr extends FormidableLocalizations
     with
+        FormidableAsyncMessagesFr,
         FormidableChoiceMessagesFr,
         FormidableCombinatorMessagesFr,
         FormidableCrossFieldMessagesFr,
@@ -144,6 +151,7 @@ class FormidableLocalizationsFr extends FormidableLocalizations
 /// German.
 class FormidableLocalizationsDe extends FormidableLocalizations
     with
+        FormidableAsyncMessagesDe,
         FormidableChoiceMessagesDe,
         FormidableCombinatorMessagesDe,
         FormidableCrossFieldMessagesDe,

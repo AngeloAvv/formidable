@@ -2,6 +2,7 @@
 /// Validation Errors. It has no Flutter dependency.
 library;
 
+export 'src/annotations/async_validator.dart';
 export 'src/annotations/effects.dart';
 export 'src/annotations/formidable.dart';
 export 'src/annotations/passthrough.dart';
@@ -31,6 +32,8 @@ export 'src/runtime/passthrough.dart';
 export 'src/runtime/pipeline.dart';
 export 'src/runtime/status.dart';
 export 'src/runtime/submit_result.dart';
+export 'src/validation/async_form_validator.dart';
+export 'src/validation/async_validator.dart';
 export 'src/validation/form_validator.dart';
 export 'src/validation/required_error.dart';
 export 'src/validation/validation_error.dart';

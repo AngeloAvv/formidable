@@ -23,7 +23,8 @@ Before it decides, `submit()`:
 
 1. clears the errors applied to the Form as a whole;
 2. marks **every** Field as touched and submitted, so every error can show;
-3. when the Form is invalid, focuses the **first invalid Field in Schema declaration order**. Fields that are disabled or not shown by any widget are skipped.
+3. waits for every pending [Async Validator](/validation/async), so it never decides on an unchecked value;
+4. when the Form is invalid, focuses the **first invalid Field in Schema declaration order**. Fields that are disabled or not shown by any widget are skipped.
 
 Formidable does not track your own side effects, so there is no "submitting" state.
 

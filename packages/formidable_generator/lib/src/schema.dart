@@ -31,6 +31,14 @@ const _crossFieldRuleChecker = TypeChecker.typeNamed(
   FormidableCrossFieldRule,
   inPackage: 'formidable',
 );
+const _asyncValidatorChecker = TypeChecker.typeNamed(
+  AsyncValidator,
+  inPackage: 'formidable',
+);
+const _asyncFormValidatorChecker = TypeChecker.typeNamed(
+  AsyncFormValidator,
+  inPackage: 'formidable',
+);
 
 const _formValidatorChecker = TypeChecker.typeNamed(
   FormidableFormValidator,
@@ -46,6 +54,8 @@ final class SchemaModel {
     required this.name,
     required this.fields,
     required this.constructorArguments,
+    this.asyncParameters = const [],
+    this.asyncFormValidators = const [],
     this.formValidators = const [],
     this.effects = const [],
     this.warnings = const [],
@@ -62,6 +72,14 @@ final class SchemaModel {
 
   /// Const expressions that rebuild the Form Validators, in annotation order.
   final List<String> formValidators;
+
+  /// The injected Async Validators and asynchronous Form Validators of the
+  /// Schema: one required parameter of each generated constructor, once per
+  /// class even when several Fields name it.
+  final List<AsyncParameter> asyncParameters;
+
+  /// The parameters of the asynchronous Form Validators, in annotation order.
+  final List<AsyncParameter> asyncFormValidators;
 
   /// Const `Effects(...)` expressions of the Schema, in annotation order.
   final List<String> effects;
@@ -94,6 +112,17 @@ final class CrossFieldRuleModel {
   final List<String> references;
 }
 
+/// A validator instance the caller injects into the generated Form.
+final class AsyncParameter {
+  const AsyncParameter({required this.name, required this.typeSource});
+
+  /// The parameter name: the validator class name in lowerCamelCase.
+  final String name;
+
+  /// The validator class as written.
+  final String typeSource;
+}
+
 final class FieldModel {
   const FieldModel({
     required this.name,
@@ -102,6 +131,7 @@ final class FieldModel {
     required this.validators,
     required this.normalizers,
     this.crossFieldRules = const [],
+    this.asyncValidators = const [],
     required this.defaultSource,
     required this.isRequired,
     required this.isPassthrough,
@@ -122,6 +152,8 @@ final class FieldModel {
 
   /// The cross-field rules of the Field, in annotation order.
   final List<CrossFieldRuleModel> crossFieldRules;
+  /// The Async Validators of the Field, in annotation order.
+  final List<AsyncParameter> asyncValidators;
 
   /// The constructor default of the Schema field, or null.
   final String? defaultSource;
@@ -143,7 +175,15 @@ final class FieldModel {
 
 /// What the emitters need to know about the Schema a Field nests.
 final class NestedModel {
-  const NestedModel({required this.formName, required this.requiresInitial});
+  const NestedModel({
+    required this.formName,
+    required this.requiresInitial,
+    this.asyncParameters = const [],
+  });
+
+  /// The injected validators of the nested Schema. The parent Form takes them
+  /// too and hands them down.
+  final List<AsyncParameter> asyncParameters;
 
   /// The generated Form of the nested Schema, for example `AddressForm`.
   final String formName;
@@ -237,6 +277,14 @@ SchemaModel readSchema(Element element, [List<ClassElement> path = const []]) {
             'value.',
   ];
 
+  final asyncFormValidators = _readAsyncFormValidators(element);
+  final asyncParameters = _collectAsyncParameters(
+    name,
+    models.values.toList(),
+    asyncFormValidators,
+    element,
+  );
+
   return SchemaModel(
     name: name,
     fields: [for (final field in fields) models[field.name!]!],
@@ -244,6 +292,8 @@ SchemaModel readSchema(Element element, [List<ClassElement> path = const []]) {
       for (final p in parameters)
         ConstructorArgument(field: models[p.name]!, isNamed: p.isNamed),
     ],
+    asyncParameters: asyncParameters,
+    asyncFormValidators: asyncFormValidators,
     formValidators: [
       for (final annotation in element.metadata.annotations)
         if (_isFormValidator(annotation))
@@ -296,11 +346,14 @@ FieldModel _readField(
   final validators = <String>[];
   final normalizers = <String>[];
   final crossFieldRules = <CrossFieldRuleModel>[];
+  final asyncValidators = <AsyncParameter>[];
   for (final annotation in field.metadata.annotations) {
     final value = annotation.computeConstantValue();
     final type = value?.type;
     if (type == null) continue;
-    if (_normalizerChecker.isAssignableFromType(type)) {
+    if (_asyncValidatorChecker.isExactlyType(type) && type is InterfaceType) {
+      asyncValidators.add(_readAsyncValidator(field, type));
+    } else if (_normalizerChecker.isAssignableFromType(type)) {
       normalizers.add('const ${annotation.toSource().substring(1)}');
     } else if (_validatorChecker.isAssignableFromType(type)) {
       _checkValidatorFits(field, value!);
@@ -320,6 +373,7 @@ FieldModel _readField(
     validators: validators,
     normalizers: normalizers,
     crossFieldRules: crossFieldRules,
+    asyncValidators: asyncValidators,
     defaultSource: defaultSource,
     isRequired: _requiredChecker.hasAnnotationOf(field),
     isPassthrough: _passthroughChecker.hasAnnotationOf(field),
@@ -391,7 +445,118 @@ NestedModel? _readNested(
   return NestedModel(
     formName: nestedSchema.formName,
     requiresInitial: requiresInitial,
+    asyncParameters: nestedSchema.asyncParameters,
   );
+}
+
+/// The validator class named by `@AsyncValidator<V>()` on [field], checked to
+/// fit the Field.
+AsyncParameter _readAsyncValidator(FieldElement field, InterfaceType type) {
+  final owner = field.enclosingElement.name;
+  if (_passthroughChecker.hasAnnotationOf(field)) {
+    throw InvalidGenerationSourceError(
+      '@AsyncValidator cannot be used on "${field.name}" of $owner: a '
+      'Passthrough Field is never validated. Remove the annotation, or the '
+      '@Passthrough().',
+      element: field,
+    );
+  }
+  final validator = type.typeArguments.single;
+  if (validator is! InterfaceType ||
+      validator.element.name == 'FormidableAsyncValidator') {
+    throw InvalidGenerationSourceError(
+      '@AsyncValidator on "${field.name}" of $owner must name the class of '
+      'the validator, for example @AsyncValidator<UsernameAvailable>().',
+      element: field,
+    );
+  }
+  final accepted = <InterfaceType>[validator, ...validator.allSupertypes]
+      .where((t) => t.element.name == 'FormidableAsyncValidator')
+      .map((t) => t.typeArguments.single)
+      .firstOrNull;
+  if (accepted != null) {
+    final typeSystem = field.library.typeSystem;
+    final fieldType = typeSystem.promoteToNonNull(field.type);
+    if (!typeSystem.isAssignableTo(fieldType, accepted)) {
+      throw InvalidGenerationSourceError(
+        '@AsyncValidator<${validator.element.name}> cannot be used on '
+        '"${field.name}" of $owner: it validates '
+        '${accepted.getDisplayString()}, but the Field is '
+        '${field.type.getDisplayString()}. Use an Async Validator that '
+        'accepts ${field.type.getDisplayString()}, or change the Field type.',
+        element: field,
+      );
+    }
+  }
+  return _asyncParameter(validator);
+}
+
+AsyncParameter _asyncParameter(InterfaceType validator) {
+  final name = validator.element.name!;
+  return AsyncParameter(
+    name: '${name[0].toLowerCase()}${name.substring(1)}',
+    typeSource: validator.getDisplayString(),
+  );
+}
+
+/// The `@AsyncFormValidator<V>()` annotations of [element].
+List<AsyncParameter> _readAsyncFormValidators(ClassElement element) {
+  final parameters = <AsyncParameter>[];
+  for (final annotation in element.metadata.annotations) {
+    final type = annotation.computeConstantValue()?.type;
+    if (type is! InterfaceType ||
+        !_asyncFormValidatorChecker.isExactlyType(type)) {
+      continue;
+    }
+    final validator = type.typeArguments.single;
+    if (validator is! InterfaceType ||
+        validator.element.name == 'FormidableAsyncFormValidator') {
+      throw InvalidGenerationSourceError(
+        '@AsyncFormValidator on ${element.name} must name the class of the '
+        'validator, for example @AsyncFormValidator<PostalCodeMatchesCity>().',
+        element: element,
+      );
+    }
+    parameters.add(_asyncParameter(validator));
+  }
+  return parameters;
+}
+
+/// Every injected validator of the Schema once, after checking that its
+/// parameter name is free.
+List<AsyncParameter> _collectAsyncParameters(
+  String schema,
+  List<FieldModel> fields,
+  List<AsyncParameter> formValidators,
+  ClassElement element,
+) {
+  final fieldNames = {for (final f in fields) f.name, 'source'};
+  final byName = <String, AsyncParameter>{};
+  for (final parameter in [
+    for (final f in fields) ...f.asyncValidators,
+    for (final f in fields) ...?f.nested?.asyncParameters,
+    ...formValidators,
+  ]) {
+    if (fieldNames.contains(parameter.name)) {
+      throw InvalidGenerationSourceError(
+        'The Async Validator ${parameter.typeSource} of $schema becomes the '
+        'constructor parameter "${parameter.name}", which is already the '
+        'name of a Field of $schema. Rename the validator class.',
+        element: element,
+      );
+    }
+    final known = byName[parameter.name];
+    if (known != null && known.typeSource != parameter.typeSource) {
+      throw InvalidGenerationSourceError(
+        '${known.typeSource} and ${parameter.typeSource} would both become '
+        'the constructor parameter "${parameter.name}" of $schema. Rename one '
+        'of the validator classes.',
+        element: element,
+      );
+    }
+    byName[parameter.name] = parameter;
+  }
+  return byName.values.toList();
 }
 
 /// Fails the build when the value a Validator [object] accepts cannot be the

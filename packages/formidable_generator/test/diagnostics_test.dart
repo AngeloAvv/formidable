@@ -655,4 +655,152 @@ class SignUp {
       expect(result.outputs, isEmpty);
     });
   });
+
+  group('Async Validator diagnostics', () {
+    const emailCheck = '''
+class EmailAvailable extends FormidableAsyncValidator<String> {
+  @override
+  Future<List<FormidableValidationError>> validate(String value) async =>
+      const [];
+}
+''';
+
+    Future<TestBuilderResult> build(String schema) =>
+        _build(formBuilder, '$_prelude\n$emailCheck\n$schema');
+
+    test('succeeds and writes the part file for a valid Schema', () async {
+      final result = await build('''
+@Formidable()
+class SignUp {
+  const SignUp({required this.email, required this.backup});
+
+  @AsyncValidator<EmailAvailable>()
+  final String email;
+
+  @AsyncValidator<EmailAvailable>()
+  final String? backup;
+}
+''');
+
+      expect(result.succeeded, isTrue);
+      expect(result.outputs.map((id) => id.path), [
+        'lib/schema.formidable.dart',
+      ]);
+    });
+
+    test(
+      'fails when the Async Validator does not fit the Field type',
+      () async {
+        final result = await build('''
+@Formidable()
+class SignUp {
+  const SignUp({required this.age});
+
+  @AsyncValidator<EmailAvailable>()
+  final int age;
+}
+''');
+
+        expect(result.succeeded, isFalse);
+        expect(
+          result.errors.join('\n'),
+          allOf(
+            contains('EmailAvailable'),
+            contains('"age"'),
+            contains('int'),
+            contains('String'),
+          ),
+        );
+      },
+    );
+
+    test('fails when no validator class is named', () async {
+      final result = await build('''
+@Formidable()
+class SignUp {
+  const SignUp({required this.email});
+
+  @AsyncValidator()
+  final String email;
+}
+''');
+
+      expect(result.succeeded, isFalse);
+      expect(result.errors.join('\n'), contains('must name the class'));
+    });
+
+    test('fails on a Passthrough Field', () async {
+      final result = await build('''
+@Formidable()
+class SignUp {
+  const SignUp({required this.email});
+
+  @Passthrough()
+  @AsyncValidator<EmailAvailable>()
+  final String email;
+}
+''');
+
+      expect(result.succeeded, isFalse);
+      expect(
+        result.errors.join('\n'),
+        allOf(contains('Passthrough'), contains('"email"')),
+      );
+    });
+
+    test('fails when the parameter name is the name of a Field', () async {
+      final result = await build('''
+@Formidable()
+class SignUp {
+  const SignUp({required this.emailAvailable, required this.email});
+
+  final String emailAvailable;
+
+  @AsyncValidator<EmailAvailable>()
+  final String email;
+}
+''');
+
+      expect(result.succeeded, isFalse);
+      expect(result.errors.join('\n'), contains('"emailAvailable"'));
+    });
+
+    test('fails when an asynchronous Form Validator names no class', () async {
+      final result = await build('''
+@Formidable()
+@AsyncFormValidator()
+class SignUp {
+  const SignUp({required this.email});
+
+  final String email;
+}
+''');
+
+      expect(result.succeeded, isFalse);
+      expect(result.errors.join('\n'), contains('must name the class'));
+    });
+
+    test('accepts an asynchronous Form Validator on the Schema', () async {
+      final result = await build('''
+@Formidable()
+@AsyncFormValidator<EmailAndName>()
+class SignUp {
+  const SignUp({required this.email});
+
+  final String email;
+}
+
+class EmailAndName extends FormidableAsyncFormValidator<SignUpForm> {
+  @override
+  List<FormidableField<Object?>> dependencies(SignUpForm form) => [form.email];
+
+  @override
+  Future<List<FormidableFieldError>> validate(SignUpForm form) async =>
+      const [];
+}
+''');
+
+      expect(result.succeeded, isTrue);
+    });
+  });
 }

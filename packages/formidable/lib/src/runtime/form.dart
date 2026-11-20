@@ -1,4 +1,8 @@
 import '../cross_field/rule.dart';
+import 'dart:async';
+
+import '../validation/async_form_validator.dart';
+import '../validation/async_validator.dart';
 import '../validation/form_validator.dart';
 import '../validation/validation_error.dart';
 import 'effect.dart';
@@ -35,6 +39,8 @@ abstract class FormidableForm<S>
   List<FormidableFormValidator<FormidableForm<Object?>>> _formValidators =
       const [];
   List<FormidableCrossFieldBinding> _crossFieldRules = const [];
+  List<_AsyncFormRun> _asyncRuns = const [];
+  final List<Completer<void>> _waiters = [];
   final Set<FormidableNode> _pending = {};
   bool _running = false;
   int _batchDepth = 0;
@@ -170,8 +176,8 @@ abstract class FormidableForm<S>
   }
 
   /// Registers the children of the Form, in Schema declaration order, its
-  /// Form [effects], the [formValidators] declared on the Schema and the
-  /// [crossFieldRules] declared on its Fields. A
+  /// Form [effects], the [formValidators] declared on the Schema, the
+  /// [crossFieldRules] declared on its Fields and its [asyncFormValidators]. A
   /// generated Form calls it once from its constructor, with itself as [F],
   /// which makes the compiler reject a Form Validator typed for another Form.
   ///
@@ -181,6 +187,7 @@ abstract class FormidableForm<S>
     List<FormidableEffect<FormidableForm<Object?>>> effects = const [],
     List<FormidableFormValidator<F>> formValidators = const [],
     List<FormidableCrossFieldBinding> crossFieldRules = const [],
+    List<FormidableAsyncFormValidator<F>> asyncFormValidators = const [],
   }) {
     assert(_nodes.isEmpty, 'attach must be called once.');
     assert(this is F, 'attach must be given the type of the Form itself.');
@@ -188,6 +195,10 @@ abstract class FormidableForm<S>
     _effects = List.unmodifiable(effects);
     _formValidators = formValidators;
     _crossFieldRules = List.unmodifiable(crossFieldRules);
+    _asyncRuns = [
+      for (final validator in asyncFormValidators)
+        _AsyncFormRun(this, validator),
+    ];
     for (final node in _nodes) {
       node.bindPipeline(this);
     }
@@ -274,6 +285,11 @@ abstract class FormidableForm<S>
       _runFormValidators();
       for (final node in _nodes) {
         node.revalidate();
+      }
+      if (_driveAsyncFormValidators()) {
+        for (final node in _nodes) {
+          node.revalidate();
+        }
       }
     } finally {
       _holdTree(-1);
@@ -367,6 +383,99 @@ abstract class FormidableForm<S>
     }
   }
 
+  /// The asynchronous Form Validators of this Form and of its Nested Forms.
+  Iterable<_AsyncFormRun> _runsBelow() sync* {
+    yield* _asyncRuns;
+    for (final node in _nodes) {
+      if (node is FormidableForm<Object?>) yield* node._runsBelow();
+    }
+  }
+
+  /// Starts, keeps or cancels the check of every asynchronous Form Validator
+  /// of this Form and its Nested Forms so that it matches the current values
+  /// of its dependencies, then gives every Field the errors and the pending
+  /// flag that result from it. Returns whether any Field has to be
+  /// revalidated.
+  bool _driveAsyncFormValidators() {
+    final runs = _runsBelow().toList();
+    if (runs.isEmpty) return false;
+    for (final run in runs) {
+      final owner = run.owner;
+      final dependencies = run.validator.dependencies(owner);
+      assert(
+        dependencies.isNotEmpty,
+        'An asynchronous Form Validator must depend on at least one Field.',
+      );
+      run.dependencies = dependencies;
+      // An Unset optional Nested Form is not validated.
+      if (!owner.isSet ||
+          !dependencies.every((field) => field.readyForFormCheck)) {
+        run.cancel();
+        continue;
+      }
+      final input = [for (final field in dependencies) field.value];
+      if (run.input != null && _sameValues(run.input!, input)) continue;
+      run.cancel();
+      run.input = input;
+      run.pending = true;
+      final token = run.token;
+      run.timer = Timer(
+        run.validator.debounce,
+        () => owner._executeAsyncForm(run, token),
+      );
+    }
+    var changed = false;
+    for (final field in _fieldsBelow()) {
+      final errors = <FormidableValidationError>[];
+      var pending = false;
+      for (final run in runs) {
+        if (run.dependencies.contains(field) && run.pending) pending = true;
+        for (final item in run.errors) {
+          if (item.field == field) errors.add(item.error);
+        }
+      }
+      field.replaceAsyncFormResult(errors, pending: pending);
+      changed = true;
+    }
+    return changed;
+  }
+
+  Future<void> _executeAsyncForm(_AsyncFormRun run, int token) async {
+    List<FormidableFieldError> errors;
+    try {
+      errors = await run.validator.validate(this);
+    } on Object catch (error) {
+      errors = [
+        FormidableFieldError(
+          run.dependencies.first,
+          FormidableAsyncCheckFailedError(error),
+        ),
+      ];
+    }
+    // A newer value, a cancel or dispose made this result stale.
+    if (token != run.token || isDisposed) return;
+    run.timer = null;
+    run.pending = false;
+    run.errors = errors;
+    final fields = _fieldsBelow().toSet();
+    for (final item in errors) {
+      assert(
+        fields.contains(item.field),
+        'An asynchronous Form Validator addressed an error to a Field that '
+        'is not in this Form.',
+      );
+    }
+    settle();
+  }
+
+  static bool _sameValues(List<Object?> a, List<Object?> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
   void _runEffects({required bool initial}) {
     var changed = initial ? <FormidableNode>{} : _takePending();
     if (!_hasEffects) return;
@@ -434,9 +543,16 @@ abstract class FormidableForm<S>
   /// Decides whether the Form is valid and builds the Schema instance.
   ///
   /// It first makes every Field touched and submitted, so that every error can
-  /// show. When the Form is invalid it moves the focus to the first invalid
+  /// show, then waits for every pending Async Validator, so that a value that
+  /// was not checked yet never passes. The wait includes the debounce of the
+  /// check, and it lasts until nothing is pending, even when a Field changes
+  /// meanwhile. If the Form is disposed while it waits, the result is invalid
+  /// with no errors. When the Form is invalid it moves the focus to the first invalid
   /// Field in Schema declaration order that is enabled and shown by a widget.
   Future<FormidableSubmitResult<S>> submit() async {
+    markSubmitted();
+    await _untilSettled();
+    if (isDisposed) return FormidableSubmitInvalid<S>(const {});
     markSubmitted();
     final errors =
         <FormidableField<Object?>, List<FormidableValidationError>>{};
@@ -446,6 +562,27 @@ abstract class FormidableForm<S>
       return FormidableSubmitInvalid<S>(Map.unmodifiable(errors));
     }
     return FormidableSubmitValid<S>(buildOutput());
+  }
+
+  /// Completes when no node is pending.
+  Future<void> _untilSettled() async {
+    while (_nodes.any((node) => node.isPending) && !isDisposed) {
+      final waiter = Completer<void>();
+      _waiters.add(waiter);
+      void check() {
+        if (!_nodes.any((node) => node.isPending) && !waiter.isCompleted) {
+          waiter.complete();
+        }
+      }
+
+      addListener(check);
+      try {
+        await waiter.future;
+      } finally {
+        removeListener(check);
+        _waiters.remove(waiter);
+      }
+    }
   }
 
   // FormidableNode, for a Form that is nested in another one.
@@ -505,6 +642,12 @@ abstract class FormidableForm<S>
 
   @override
   void dispose() {
+    for (final run in _asyncRuns) {
+      run.cancel();
+    }
+    for (final waiter in List.of(_waiters)) {
+      if (!waiter.isCompleted) waiter.complete();
+    }
     for (final node in _nodes) {
       _unfollow(node);
       node.dispose();
@@ -541,4 +684,30 @@ abstract class FormidableForm<S>
     pending: isPending,
     errors: _formErrors,
   );
+}
+
+/// The state of one asynchronous Form Validator: the values it is checking or
+/// has checked, its timer and its result.
+final class _AsyncFormRun {
+  _AsyncFormRun(this.owner, this.validator);
+
+  final FormidableForm<Object?> owner;
+  final FormidableAsyncFormValidator<FormidableForm<Object?>> validator;
+  List<FormidableField<Object?>> dependencies = const [];
+  Timer? timer;
+  // Grows whenever the check is cancelled or restarted, so that the result of
+  // an older check can tell that it is stale.
+  int token = 0;
+  List<Object?>? input;
+  bool pending = false;
+  List<FormidableFieldError> errors = const [];
+
+  void cancel() {
+    timer?.cancel();
+    timer = null;
+    token++;
+    input = null;
+    pending = false;
+    errors = const [];
+  }
 }

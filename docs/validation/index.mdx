@@ -12,9 +12,11 @@ The built-in catalog has one reference page per category:
 - [String Validators](/validation/strings): length, content, character classes, passwords and words.
 - [Format Validators](/validation/formats): email, URL, identifiers, colors, encodings and checksums.
 
-The other categories, cross-field rules and asynchronous validation arrive in later releases.
+The other categories arrive in later releases.
 
 Rules that span several Fields, such as `@MustMatch(#password)`, are covered in [Cross-field rules](/validation/cross-field).
+
+Checks that need the network, such as "is this username taken?", are covered in [Asynchronous validation](/validation/async).
 
 Write your own rules in [Custom Validators](/validation/custom).
 
@@ -25,3 +27,5 @@ How an error turns into the text the user reads, in five languages, is covered i
 - [Number Validators](/validation/numbers)
 - [Date Validators](/validation/dates)
 - [Choice and equality Validators](/validation/choices)
+
+Rules that call a service run through [Asynchronous validation](/validation/async).
