@@ -3,6 +3,7 @@
 library;
 
 export 'src/annotations/async_validator.dart';
+export 'src/annotations/dynamic.dart';
 export 'src/annotations/effects.dart';
 export 'src/annotations/formidable.dart';
 export 'src/annotations/passthrough.dart';
@@ -21,6 +22,7 @@ export 'src/cross_field/rule.dart';
 export 'src/files/file.dart';
 export 'src/normalizers/normalizer.dart';
 export 'src/normalizers/trim.dart';
+export 'src/runtime/dynamic_form.dart';
 export 'src/runtime/effect.dart';
 export 'src/runtime/field.dart';
 export 'src/runtime/field_state.dart';
