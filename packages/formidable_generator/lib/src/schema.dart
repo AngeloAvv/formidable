@@ -12,6 +12,10 @@ const _requiredChecker = TypeChecker.typeNamed(
   Required,
   inPackage: 'formidable',
 );
+const _passthroughChecker = TypeChecker.typeNamed(
+  Passthrough,
+  inPackage: 'formidable',
+);
 const _validatorChecker = TypeChecker.typeNamed(
   FormidableValidator,
   inPackage: 'formidable',
@@ -52,6 +56,8 @@ final class FieldModel {
     required this.isNullable,
     required this.validators,
     required this.defaultSource,
+    required this.isRequired,
+    required this.isPassthrough,
   });
 
   final String name;
@@ -65,6 +71,12 @@ final class FieldModel {
 
   /// The constructor default of the Schema field, or null.
   final String? defaultSource;
+
+  /// Whether the Field has `@Required()`.
+  final bool isRequired;
+
+  /// Whether the Field has `@Passthrough()`.
+  final bool isPassthrough;
 
   /// The type with a trailing `?`, for optional parameters.
   String get optionalTypeSource => isNullable ? typeSource : '$typeSource?';
@@ -143,10 +155,12 @@ SchemaModel readSchema(Element element) {
   final warnings = [
     for (final field in fields)
       if (_requiredChecker.hasAnnotationOf(field) &&
-          !models[field.name!]!.isNullable)
+          !models[field.name!]!.isNullable &&
+          models[field.name!]!.defaultSource == null)
         '@Required() on "${field.name}" of $name has no effect: a '
-            'non-nullable Field is already required. Remove it, or make the '
-            'Field nullable if choosing null should count as a value.',
+            'non-nullable Field without a default is already required. Remove '
+            'it, or make the Field nullable if choosing null should count as a '
+            'value.',
   ];
 
   return SchemaModel(
@@ -195,5 +209,7 @@ FieldModel _readField(FieldElement field, String? defaultSource) {
     isNullable: field.type.nullabilitySuffix == NullabilitySuffix.question,
     validators: validators,
     defaultSource: defaultSource,
+    isRequired: _requiredChecker.hasAnnotationOf(field),
+    isPassthrough: _passthroughChecker.hasAnnotationOf(field),
   );
 }

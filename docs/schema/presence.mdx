@@ -1,0 +1,90 @@
+---
+title: Required and optional Fields
+description: How a Field can be Unset, hold null, fall back to a default or be a Passthrough
+---
+
+# Required and optional Fields
+
+A Field has a presence that is separate from its value. It is either **Unset**, or it holds a value of its type, and that value can be `null` when the type is nullable. "Required" means "not Unset". It does not mean "not null". The reasoning is in [ADR-0003](https://github.com/AngeloAvv/formidable/blob/main/docs/adr/0003-unset-is-not-null.md).
+
+## The Schema type decides
+
+| Schema field | Required? | When it is Unset, the output is |
+| --- | --- | --- |
+| `final String email;` | yes | no output: submit is blocked |
+| `final String? nickname;` | no | `null` |
+| `final String bio;` with a constructor default of `''` | no | the default, `''` |
+| `@Required() final bool? mood;` | yes | no output: submit is blocked |
+
+An Unset Field produces, in this order: its default, then `null` if the type is nullable, then an error. The error is a `FormidableRequiredError`.
+
+```dart
+@Formidable()
+class Profile {
+  const Profile({this.nickname, this.bio = '', required this.email});
+
+  final String? nickname; // optional
+  final String bio;       // optional, falls back to ''
+  final String email;     // required
+}
+```
+
+A Field with a default starts with that default. Calling `clear()` makes it Unset, and the output uses the default again.
+
+## Unset is not null
+
+On a nullable Field, `setValue(null)` is a value, and `clear()` makes the Field Unset:
+
+```dart
+final form = ProfileForm(email: 'a@b.c');
+
+form.nickname.isSet;        // false: Unset
+form.nickname.setValue(null);
+form.nickname.isSet;        // true: null was chosen
+form.nickname.clear();
+form.nickname.isSet;        // false again
+```
+
+`value` is `null` in both cases, so read `isSet` to tell them apart. The Field state snapshot (`form.nickname.state`) also carries `isSet`.
+
+`setValue` takes exactly the Field's type: the compiler rejects `null` for a non-nullable Field.
+
+## Forcing a choice with `@Required()`
+
+Put `@Required()` on a nullable Field when the user must choose, and `null` is one of the choices. A typical case is three radio buttons: *no preference* (`null`), *yes* and *no*.
+
+```dart
+@Required()
+final bool? mood;
+```
+
+While the Field is Unset, submit is blocked with a `FormidableRequiredError`. Choosing `null` is accepted.
+
+## Blank text is Unset
+
+A text widget treats a completely empty text as Unset, not as an empty string. `FormidableTextField` does this for you. Selecting the option that stands for `null` in a radio group is a value, and sets the Field to `null`.
+
+## Passthrough Fields
+
+A Passthrough Field has to be supplied when the Form is created and can never be Unset, for example the identifier in an edit form. It is not bound to a widget, but the Form can still change it.
+
+```dart
+@Formidable()
+class EditUser {
+  const EditUser({required this.id, required this.name});
+
+  @Passthrough()
+  final int id;
+
+  final String name;
+}
+
+final form = EditUserForm(id: 7); // `id` is a required parameter
+form.id.value;                    // 7, never null for a non-nullable type
+form.id.setValue(8);              // can be written
+form.id.addListener(() {});       // and observed
+```
+
+- A non-nullable Passthrough Field without a default is a required parameter of the partial Form constructor. A nullable one, or one with a default, is optional.
+- Its handle is a `FormidablePassthrough<T>`. Unlike a Field handle it has no `clear()`, no errors and no touched state.
+- It never makes the Form invalid.

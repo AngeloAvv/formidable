@@ -11,16 +11,24 @@ String emitForm(SchemaModel schema) {
   final out = StringBuffer();
 
   final partialParameters = fields
-      .map((f) => '${f.optionalTypeSource} ${f.name}')
+      .map(_partialParameter)
       .join(', ');
   final partialForwards = fields
-      .map((f) => '${f.name}: ${f.name} == null ? null : (value: ${f.name})')
+      .map(_partialForward)
       .join(', ');
   final fromForwards = fields
-      .map((f) => '${f.name}: (value: source.${f.name})')
+      .map(
+        (f) => f.isPassthrough
+            ? '${f.name}: source.${f.name}'
+            : '${f.name}: (value: source.${f.name})',
+      )
       .join(', ');
   final privateParameters = fields
-      .map((f) => '({${f.typeSource} value})? ${f.name}')
+      .map(
+        (f) => f.isPassthrough
+            ? 'required ${f.typeSource} ${f.name}'
+            : '({${f.typeSource} value})? ${f.name}',
+      )
       .join(', ');
 
   out.writeln('class $form extends FormidableForm<${schema.name}> {');
@@ -43,7 +51,7 @@ String emitForm(SchemaModel schema) {
   out.writeln('  }');
   for (final f in fields) {
     out.writeln();
-    out.writeln('  final FormidableField<${f.typeSource}> ${f.name};');
+    out.writeln('  final ${_handleType(f)} ${f.name};');
   }
   out.writeln();
   out.writeln('  @override');
@@ -52,10 +60,36 @@ String emitForm(SchemaModel schema) {
   return out.toString().trimRight();
 }
 
+/// A Passthrough Field must be given when it is non-nullable and has no
+/// default. Otherwise it is optional.
+bool _isRequiredParameter(FieldModel f) =>
+    f.isPassthrough && !f.isNullable && f.defaultSource == null;
+
+String _partialParameter(FieldModel f) {
+  if (_isRequiredParameter(f)) return 'required ${f.typeSource} ${f.name}';
+  return '${f.optionalTypeSource} ${f.name}';
+}
+
+String _partialForward(FieldModel f) {
+  if (!f.isPassthrough) {
+    return '${f.name}: ${f.name} == null ? null : (value: ${f.name})';
+  }
+  if (f.defaultSource != null && !_isRequiredParameter(f)) {
+    return '${f.name}: ${f.name} ?? ${f.defaultSource}';
+  }
+  return '${f.name}: ${f.name}';
+}
+
+String _handleType(FieldModel f) => f.isPassthrough
+    ? 'FormidablePassthrough<${f.typeSource}>'
+    : 'FormidableField<${f.typeSource}>';
+
 String _field(FieldModel f) {
+  if (f.isPassthrough) return 'FormidablePassthrough<${f.typeSource}>(${f.name})';
   final arguments = [
     if (f.validators.isNotEmpty)
       'validators: const [${f.validators.map((v) => v.replaceFirst('const ', '')).join(', ')}]',
+    if (f.isRequired) 'required: true',
     if (f.defaultSource != null) 'defaultValue: ${f.defaultSource}',
     'initial: ${f.name}',
   ];
