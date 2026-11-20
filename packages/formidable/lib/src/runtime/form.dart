@@ -46,6 +46,7 @@ abstract class FormidableForm<S>
   FormidablePipeline? _parent;
   bool _optional = false;
   bool _initiallySet = true;
+  List<FormidableValidationError> _formErrors = const [];
 
   /// The children of the Form, in Schema declaration order.
   List<FormidableNode> get nodes => _nodes;
@@ -207,8 +208,15 @@ abstract class FormidableForm<S>
     // A Nested Form has no pipeline of its own: its parent runs everyone's
     // Effects, so one change settles the whole tree.
     final parent = _parent;
-    if (parent != null) return parent.change(node, mutate);
+    if (parent != null) {
+      return parent.change(node, () {
+        if (!mutate()) return false;
+        _formErrors = const [];
+        return true;
+      });
+    }
     if (!mutate()) return;
+    _formErrors = const [];
     _pending.add(node);
     // An Effect wrote a Field: the running pass picks the change up.
     if (!_running && _batchDepth == 0) _run();
@@ -377,14 +385,40 @@ abstract class FormidableForm<S>
   /// is valid. Implemented by the generated Form.
   S buildOutput();
 
-  /// Decides whether the Form is valid and builds the Schema instance. The
-  /// errors of Nested Forms are included, addressed by the handle of the Field
-  /// they belong to.
+  /// Adds errors that only the caller can find, usually the answer of a
+  /// server.
+  ///
+  /// [fieldErrors] are applied to their Fields, see
+  /// [FormidableField.applyErrors]; the errors of a Field are replaced, and a
+  /// Field that is missing from the map keeps its own. [formErrors] belong to
+  /// the Form as a whole and show in [FormidableFormState.errors]; they replace
+  /// the Form errors applied before.
+  ///
+  /// Both make the Form invalid. Field errors clear on the next change to that
+  /// Field. Form errors clear on the next change to any Field, and when
+  /// `submit()` starts.
+  void applyErrors({
+    Map<FormidableField<Object?>, List<FormidableValidationError>> fieldErrors =
+        const {},
+    List<FormidableValidationError> formErrors = const [],
+  }) {
+    _formErrors = List.unmodifiable(formErrors);
+    fieldErrors.forEach((field, errors) => field.applyErrors(errors));
+    _onNodeChanged();
+  }
+
+  /// Decides whether the Form is valid and builds the Schema instance.
+  ///
+  /// It first makes every Field touched and submitted, so that every error can
+  /// show. When the Form is invalid it moves the focus to the first invalid
+  /// Field in Schema declaration order that is enabled and shown by a widget.
   Future<FormidableSubmitResult<S>> submit() async {
+    markSubmitted();
     final errors =
         <FormidableField<Object?>, List<FormidableValidationError>>{};
     collectErrors(errors);
     if (errors.isNotEmpty) {
+      errors.keys.where((field) => field.canFocus).firstOrNull?.focus();
       return FormidableSubmitInvalid<S>(Map.unmodifiable(errors));
     }
     return FormidableSubmitValid<S>(buildOutput());
@@ -393,13 +427,30 @@ abstract class FormidableForm<S>
   // FormidableNode, for a Form that is nested in another one.
 
   @override
-  bool get isValid => !isSet || _nodes.every((node) => node.isValid);
+  bool get isValid =>
+      !isSet || (_formErrors.isEmpty && _nodes.every((node) => node.isValid));
 
   @override
   bool get isDirty => _nodes.any((node) => node.isDirty);
 
   @override
   bool get isPending => isSet && _nodes.any((node) => node.isPending);
+
+  /// Marks every Field of a set Nested Form as touched and submitted, and
+  /// drops its applied Form errors, like `submit()` does for the root Form. An
+  /// Unset optional Nested Form is left alone, so it does not show errors for
+  /// Fields the user never meant to fill in.
+  @override
+  void markSubmitted() {
+    if (!isSet) return;
+    if (_formErrors.isNotEmpty) {
+      _formErrors = const [];
+      _onNodeChanged();
+    }
+    for (final node in _nodes) {
+      node.markSubmitted();
+    }
+  }
 
   /// Adds the errors of every Field below this Form to [into]. An Unset
   /// optional Nested Form has none: it is not part of the output.
@@ -464,5 +515,6 @@ abstract class FormidableForm<S>
     status: isValid ? FormidableStatus.valid : FormidableStatus.invalid,
     dirty: isDirty,
     pending: isPending,
+    errors: _formErrors,
   );
 }

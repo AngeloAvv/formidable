@@ -3,6 +3,7 @@ import 'package:formidable_material/formidable_material.dart';
 import 'package:material_ui/material_ui.dart';
 
 import 'sign_up.dart';
+import 'widgets_page.dart';
 import 'sign_up.formidable_scope.dart';
 
 /// Demonstrates one text Field from Schema to widget: the Form Scope creates
@@ -14,7 +15,17 @@ class SignUpPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) => SignUpFormScope(
     child: Scaffold(
-      appBar: AppBar(title: const Text('Sign up')),
+      appBar: AppBar(
+        title: const Text('Sign up'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const WidgetsPage()),
+            ),
+            child: const Text('Material widgets'),
+          ),
+        ],
+      ),
       body: const Padding(padding: EdgeInsets.all(16), child: _SignUpBody()),
     ),
   );

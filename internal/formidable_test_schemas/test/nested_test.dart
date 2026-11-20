@@ -492,4 +492,70 @@ void main() {
       expect(form.home.zip.isSet, isFalse);
     });
   });
+
+  group('Nested Form submit and applied errors', () {
+    test('submit marks the Fields of every set level as submitted', () async {
+      final form = OrderForm(title: 'T');
+
+      await form.submit();
+
+      expect(form.owner.home.street.state.submitted, isTrue);
+      expect(form.owner.home.street.state.touched, isTrue);
+      expect(form.owner.name.state.submitted, isTrue);
+    });
+
+    test('submit leaves an Unset optional Nested Form alone', () async {
+      final form = ContactForm();
+
+      await form.submit();
+
+      expect(form.home.street.state.submitted, isTrue);
+      expect(form.work.street.state.submitted, isFalse);
+      expect(form.work.street.state.touched, isFalse);
+    });
+
+    test('applies errors to Fields of a Nested Form', () async {
+      final form = ContactForm.from(
+        const Contact(
+          name: 'Angelo',
+          home: Address(street: 'Via Roma'),
+          billing: Address(street: 'Via Milano'),
+        ),
+      );
+      expect(form.state.status, FormidableStatus.valid);
+
+      form.applyErrors(
+        fieldErrors: {
+          form.home.street: [const PasswordMismatch()],
+        },
+      );
+
+      expect(form.home.street.state.errors, [const PasswordMismatch()]);
+      expect(form.home.state.status, FormidableStatus.invalid);
+      expect(form.state.status, FormidableStatus.invalid);
+      final result = await form.submit() as FormidableSubmitInvalid<Contact>;
+      expect(result.fieldErrors.keys, [form.home.street]);
+    });
+
+    test('applies errors to a Nested Form as a whole, until it changes', () {
+      final form = ContactForm.from(
+        const Contact(
+          name: 'Angelo',
+          home: Address(street: 'Via Roma'),
+          billing: Address(street: 'Via Milano'),
+        ),
+      );
+
+      form.home.applyErrors(formErrors: [const PasswordMismatch()]);
+
+      expect(form.home.state.errors, [const PasswordMismatch()]);
+      expect(form.home.state.status, FormidableStatus.invalid);
+      expect(form.state.status, FormidableStatus.invalid);
+
+      form.home.zip.setValue('00100');
+
+      expect(form.home.state.errors, isEmpty);
+      expect(form.state.status, FormidableStatus.valid);
+    });
+  });
 }

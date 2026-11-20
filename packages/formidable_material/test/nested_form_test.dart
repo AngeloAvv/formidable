@@ -139,4 +139,41 @@ void main() {
 
     expect(find.text('street:Via Milano'), findsOneWidget);
   });
+
+  testWidgets('submit focuses the first invalid Field of a Nested Form', (
+    tester,
+  ) async {
+    final billing = FocusNode();
+    addTearDown(billing.dispose);
+    final form = CheckoutForm(name: 'Angelo');
+    await tester.pumpWidget(
+      app(
+        CheckoutFormScope.value(
+          form: form,
+          child: Builder(
+            builder: (context) => Column(
+              children: [
+                FormidableTextField(
+                  field: context.checkoutForm.billing.street,
+                  focusNode: billing,
+                ),
+                const TextField(key: Key('other')),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(billing.hasFocus, isFalse);
+
+    final result = await form.submit();
+    await tester.pump();
+
+    expect(result, isA<FormidableSubmitInvalid<Checkout>>());
+    expect(billing.hasFocus, isTrue);
+    expect(
+      find.text(const FormidableRequiredError().toString()),
+      findsOneWidget,
+    );
+  });
 }
