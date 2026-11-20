@@ -1,6 +1,7 @@
 import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'cupertino_widgets_page.dart';
 import 'sign_up_page.dart';
 
 void main() => runApp(const ExampleApp());
@@ -18,5 +19,6 @@ class ExampleApp extends StatelessWidget {
     ],
     supportedLocales: FormidableLocalizations.supportedLocales,
     home: const SignUpPage(),
+    routes: {'/cupertino': (_) => const CupertinoWidgetsPage()},
   );
 }
