@@ -95,6 +95,26 @@ class FormidableBinding<T> extends ChangeNotifier {
   /// The widget has no value any more.
   void onCleared() => field.clear();
 
+  /// The user chose [value] in a widget that is not a text input, such as a
+  /// checkbox, a switch or a picker.
+  ///
+  /// Sets the Field and marks it touched: such a widget has no moment where it
+  /// "loses focus", so the first interaction is what counts. [value] can be
+  /// null when the type of the Field allows it, because choosing null is a
+  /// value and not an Unset Field.
+  void onPicked(T value) {
+    field.setValue(value);
+    field.markAsTouched();
+  }
+
+  /// The user removed the value of a widget that is not a text input.
+  ///
+  /// Clears the Field (it becomes Unset) and marks it touched.
+  void onUnpicked() {
+    field.clear();
+    field.markAsTouched();
+  }
+
   /// The user typed [text] into a text widget.
   ///
   /// The Codec decides what [text] means: a value, no value (the Field becomes
