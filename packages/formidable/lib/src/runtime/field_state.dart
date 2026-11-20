@@ -13,6 +13,7 @@ final class FormidableFieldState<T> {
     required this.touched,
     this.dirty = false,
     this.enabled = true,
+    this.submitted = false,
   }) : errors = List.unmodifiable(errors);
 
   /// The chosen value, or null while the Field is Unset.
@@ -35,6 +36,10 @@ final class FormidableFieldState<T> {
   /// validated and does not block submit.
   final bool enabled;
 
+  /// Whether the Form was submitted since the Field was created. Submitting
+  /// also makes the Field touched.
+  final bool submitted;
+
   FormidableStatus get status =>
       errors.isEmpty ? FormidableStatus.valid : FormidableStatus.invalid;
 
@@ -46,6 +51,7 @@ final class FormidableFieldState<T> {
       other.touched == touched &&
       other.dirty == dirty &&
       other.enabled == enabled &&
+      other.submitted == submitted &&
       _sameErrors(other.errors, errors);
 
   @override
@@ -55,13 +61,15 @@ final class FormidableFieldState<T> {
     touched,
     dirty,
     enabled,
+    submitted,
     Object.hashAll(errors),
   );
 
   @override
   String toString() =>
       'FormidableFieldState(value: $value, isSet: $isSet, '
-      'touched: $touched, dirty: $dirty, enabled: $enabled, errors: $errors)';
+      'touched: $touched, dirty: $dirty, enabled: $enabled, '
+      'submitted: $submitted, errors: $errors)';
 
   static bool _sameErrors(
     List<FormidableValidationError> a,

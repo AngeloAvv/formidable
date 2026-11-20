@@ -1,6 +1,9 @@
 import 'package:flutter/widgets.dart';
 import 'package:formidable/formidable.dart';
 
+import 'config.dart';
+import 'error_display.dart';
+
 /// The part of the widget tree where a Form is available.
 ///
 /// The default constructor owns the Form: it creates it once and disposes it.
@@ -9,14 +12,19 @@ import 'package:formidable/formidable.dart';
 /// class with the concrete Form type.
 class FormidableScope<F extends FormidableForm<Object?>>
     extends StatefulWidget {
-  const FormidableScope({super.key, required this.create, required this.child})
-    : _form = null;
+  const FormidableScope({
+    super.key,
+    required this.create,
+    this.errorDisplay,
+    required this.child,
+  }) : _form = null;
 
   /// Exposes [form], which is owned elsewhere. The scope never disposes it, so
   /// whoever created it must.
   const FormidableScope.value({
     super.key,
     required F this._form,
+    this.errorDisplay,
     required this.child,
   }) : create = null;
 
@@ -25,6 +33,10 @@ class FormidableScope<F extends FormidableForm<Object?>>
   final F Function()? create;
 
   final F? _form;
+
+  /// When the errors of the Fields of this Form are shown. Null follows
+  /// [FormidableConfig.errorDisplay].
+  final FormidableErrorDisplay? errorDisplay;
 
   final Widget child;
 
@@ -67,6 +79,16 @@ class FormidableScope<F extends FormidableForm<Object?>>
                     .getInheritedWidgetOfExactType<_FormidableInherited<F>>())
           ?.form;
 
+  /// The policy that applies to widgets below [context]: the one of the
+  /// closest scope that sets one, else the one of the config, else
+  /// [FormidableErrorDisplay.touched]. Registers a dependency.
+  static FormidableErrorDisplay errorDisplayOf(BuildContext context) =>
+      context
+          .dependOnInheritedWidgetOfExactType<_FormidableErrorDisplayScope>()
+          ?.errorDisplay ??
+      FormidableConfig.maybeOf(context)?.errorDisplay ??
+      FormidableErrorDisplay.touched;
+
   @override
   State<FormidableScope<F>> createState() => _FormidableScopeState<F>();
 }
@@ -85,8 +107,13 @@ class _FormidableScopeState<F extends FormidableForm<Object?>>
   }
 
   @override
-  Widget build(BuildContext context) =>
-      _FormidableInherited<F>(form: _form, child: widget.child);
+  Widget build(BuildContext context) => _FormidableInherited<F>(
+    form: _form,
+    child: _FormidableErrorDisplayScope(
+      errorDisplay: widget.errorDisplay,
+      child: widget.child,
+    ),
+  );
 }
 
 class _FormidableInherited<F extends FormidableForm<Object?>>
@@ -100,4 +127,17 @@ class _FormidableInherited<F extends FormidableForm<Object?>>
   @override
   bool updateShouldNotify(_FormidableInherited<F> oldWidget) =>
       !identical(form, oldWidget.form);
+}
+
+class _FormidableErrorDisplayScope extends InheritedWidget {
+  const _FormidableErrorDisplayScope({
+    required this.errorDisplay,
+    required super.child,
+  });
+
+  final FormidableErrorDisplay? errorDisplay;
+
+  @override
+  bool updateShouldNotify(_FormidableErrorDisplayScope oldWidget) =>
+      errorDisplay != oldWidget.errorDisplay;
 }

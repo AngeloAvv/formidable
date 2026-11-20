@@ -30,6 +30,7 @@ class FormidableTextField<T> extends StatelessWidget {
     this.focusNode,
     this.codec,
     this.messages,
+    this.errorDisplay,
   });
 
   final FormidableField<T> field;
@@ -50,12 +51,16 @@ class FormidableTextField<T> extends StatelessWidget {
   /// Messages for this field only, ahead of the config and the localizations.
   final FormidableMessages? messages;
 
+  /// When the error shows. Null follows the Form Scope, then the config.
+  final FormidableErrorDisplay? errorDisplay;
+
   @override
   Widget build(BuildContext context) => FormidableBindingBuilder<T>(
     field: field,
     focusNode: focusNode,
     codec: codec,
     messages: messages,
+    errorDisplay: errorDisplay,
     builder: (context, binding) => TextField(
       controller: binding.textController,
       focusNode: binding.focusNode,

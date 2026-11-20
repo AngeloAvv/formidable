@@ -16,6 +16,9 @@ String emitForm(SchemaModel schema) {
   final partialForwards = fields
       .map(_partialForward)
       .join(', ');
+  final patchParameters = fields
+      .map((f) => '${f.optionalTypeSource} ${f.name}')
+      .join(', ');
   final fromForwards = fields
       .map(
         (f) => f.isPassthrough
@@ -49,12 +52,31 @@ String emitForm(SchemaModel schema) {
   final effects = schema.effects.isEmpty
       ? ''
       : ', effects: [${schema.effects.map((e) => '...$e.effects').join(', ')}]';
-  out.writeln('    attach([$nodes]$effects);');
+  final validators = schema.formValidators.isEmpty
+      ? ''
+      : ', formValidators: [${schema.formValidators.join(', ')}]';
+  out.writeln('    attach<$form>([$nodes]$effects$validators);');
   out.writeln('  }');
   for (final f in fields) {
     out.writeln();
     out.writeln('  final ${_handleType(f)} ${f.name};');
   }
+  out.writeln();
+  out.writeln('  /// Writes only the Fields that are given, as one change. A null');
+  out.writeln('  /// argument leaves the Field as it is: use `clear()` or');
+  out.writeln('  /// `setValue` on the Field, or [replace], to write null.');
+  out.writeln('  void patch({$patchParameters}) => batch(() {');
+  for (final f in fields) {
+    out.writeln('    if (${f.name} != null) this.${f.name}.setValue(${f.name});');
+  }
+  out.writeln('  });');
+  out.writeln();
+  out.writeln('  /// Writes every Field from [source], as one change.');
+  out.writeln('  void replace(${schema.name} source) => batch(() {');
+  for (final f in fields) {
+    out.writeln('    ${f.name}.setValue(source.${f.name});');
+  }
+  out.writeln('  });');
   out.writeln();
   out.writeln('  @override');
   out.writeln('  ${schema.name} buildOutput() => ${_construct(schema)};');
