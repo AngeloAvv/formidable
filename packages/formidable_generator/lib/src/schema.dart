@@ -198,6 +198,7 @@ FieldModel _readField(FieldElement field, String? defaultSource) {
   for (final annotation in field.metadata.annotations) {
     final type = annotation.computeConstantValue()?.type;
     if (type != null && _validatorChecker.isAssignableFromType(type)) {
+      _checkValidatorFits(field, type);
       // The part file shares the Schema library's scope, so the annotation
       // source can be reused as a const expression as it is written.
       validators.add('const ${annotation.toSource().substring(1)}');
@@ -211,5 +212,36 @@ FieldModel _readField(FieldElement field, String? defaultSource) {
     defaultSource: defaultSource,
     isRequired: _requiredChecker.hasAnnotationOf(field),
     isPassthrough: _passthroughChecker.hasAnnotationOf(field),
+  );
+}
+
+/// Fails the build when the value a Validator of [validatorType] accepts
+/// cannot be the value of [field].
+///
+/// A Validator is called only with a chosen non-null value, or with null when
+/// it accepts null, so the check is on the non-null type of the Field: a
+/// `MinLength` (a `String` Validator) fits both `String` and `String?`.
+void _checkValidatorFits(FieldElement field, DartType validatorType) {
+  if (validatorType is! InterfaceType) return;
+  final accepted = validatorType.allSupertypes
+      .where(
+        (t) =>
+            t.element.name == 'FormidableValidator' &&
+            _validatorChecker.isExactlyType(t),
+      )
+      .map((t) => t.typeArguments.single)
+      .firstOrNull;
+  if (accepted == null) return;
+  final typeSystem = field.library.typeSystem;
+  final fieldType = typeSystem.promoteToNonNull(field.type);
+  if (typeSystem.isAssignableTo(fieldType, accepted)) return;
+  final validator = validatorType.element.name;
+  throw InvalidGenerationSourceError(
+    '@$validator cannot be used on "${field.name}" of '
+    '${field.enclosingElement?.name}: it validates '
+    '${accepted.getDisplayString()}, but the Field is '
+    '${field.type.getDisplayString()}. Use a Validator that accepts '
+    '${field.type.getDisplayString()}, or change the Field type.',
+    element: field,
   );
 }

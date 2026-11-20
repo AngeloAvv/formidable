@@ -30,6 +30,24 @@ import 'package:formidable/formidable.dart';
 part 'schema.formidable.dart';
 ''';
 
+const _isEven = '''
+class IsEven extends FormidableValidator<int> {
+  const IsEven();
+
+  @override
+  List<FormidableValidationError> validate(int value) => const [];
+}
+''';
+
+const _notBlank = '''
+class NotBlank extends FormidableValidator<Object> {
+  const NotBlank();
+
+  @override
+  List<FormidableValidationError> validate(Object value) => const [];
+}
+''';
+
 void main() {
   final formBuilder = formidableBuilder(BuilderOptions.empty);
   final scopeBuilder = formidableScopeBuilder(BuilderOptions.empty);
@@ -165,6 +183,105 @@ class SignUp extends Base {
         );
       },
     );
+  });
+
+  group('Validator type fit', () {
+    Future<TestBuilderResult> build({
+      required String annotations,
+      required String type,
+      String declarations = '',
+    }) => _build(formBuilder, '''
+$_prelude
+$declarations
+@Formidable()
+class Account {
+  const Account({required this.value});
+
+  $annotations
+  final $type value;
+}
+''');
+
+    test('fails when a Validator does not fit the Field type', () async {
+      final result = await build(annotations: '@MinLength(3)', type: 'int');
+
+      expect(result.succeeded, isFalse);
+      expect(
+        result.errors.join('\n'),
+        allOf(
+          contains('MinLength'),
+          contains('"value"'),
+          contains('int'),
+          contains('String'),
+        ),
+      );
+    });
+
+    test('names the offending Validator among several', () async {
+      final result = await build(
+        annotations: '@MinLength(3)\n  @IsEven()',
+        type: 'int',
+        declarations: _isEven,
+      );
+
+      expect(result.succeeded, isFalse);
+      final errors = result.errors.join('\n');
+      expect(errors, contains('MinLength'));
+      expect(errors, isNot(contains('IsEven')));
+    });
+
+    test('accepts a Validator typed for the Field type', () async {
+      final result = await build(annotations: '@MinLength(3)', type: 'String');
+
+      expect(result.succeeded, isTrue);
+    });
+
+    test('accepts a non-nullable Validator on a nullable Field', () async {
+      final result = await build(annotations: '@MinLength(3)', type: 'String?');
+
+      expect(result.succeeded, isTrue);
+    });
+
+    test('accepts a Validator typed for a supertype of the Field', () async {
+      final result = await build(
+        annotations: '@NotBlank()',
+        type: 'String',
+        declarations: _notBlank,
+      );
+
+      expect(result.succeeded, isTrue);
+    });
+
+    test('accepts a custom Validator typed for the Field', () async {
+      final result = await build(
+        annotations: '@IsEven()',
+        type: 'int',
+        declarations: _isEven,
+      );
+
+      expect(result.succeeded, isTrue);
+    });
+
+    test('rejects a custom Validator typed for another type', () async {
+      final result = await build(
+        annotations: '@IsEven()',
+        type: 'String',
+        declarations: _isEven,
+      );
+
+      expect(result.succeeded, isFalse);
+      expect(result.errors.join('\n'), contains('IsEven'));
+    });
+
+    test('checks the type arguments of a generic Validator', () async {
+      final result = await build(
+        annotations: '@AnyOf([MinLength(3)])',
+        type: 'int',
+      );
+
+      expect(result.succeeded, isFalse);
+      expect(result.errors.join('\n'), contains('AnyOf'));
+    });
   });
 
   group('Required warning', () {
