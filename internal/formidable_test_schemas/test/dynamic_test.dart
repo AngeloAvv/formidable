@@ -226,7 +226,7 @@ void main() {
         final result = await form.submit();
 
         final invalid = result as FormidableSubmitInvalid<Survey>;
-        expect(invalid.fieldErrors.keys, [age]);
+        expect(invalid.errors.keys, [age]);
         expect(age.state.touched, isTrue);
       },
     );
@@ -282,7 +282,7 @@ void main() {
 
       final result = await form.submit();
 
-      expect((result as FormidableSubmitInvalid<Survey>).fieldErrors.keys, [
+      expect((result as FormidableSubmitInvalid<Survey>).errors.keys, [
         home.street,
       ]);
     });

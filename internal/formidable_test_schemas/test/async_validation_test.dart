@@ -415,8 +415,8 @@ void main() {
         async.flushMicrotasks();
 
         final invalid = result as FormidableSubmitInvalid<Registration>;
-        expect(invalid.fieldErrors[form.username], [const TakenError('alice')]);
-        expect(invalid.fieldErrors.containsKey(form.email), isFalse);
+        expect(invalid.errors[form.username], [const TakenError('alice')]);
+        expect(invalid.errors.containsKey(form.email), isFalse);
       });
     });
 

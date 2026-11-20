@@ -1,5 +1,4 @@
 import '../validation/validation_error.dart';
-import 'field.dart';
 import 'node.dart';
 import 'notifier.dart';
 import 'pipeline.dart';
@@ -97,6 +96,6 @@ final class FormidablePassthrough<T>
 
   @override
   void collectErrors(
-    Map<FormidableField<Object?>, List<FormidableValidationError>> into,
+    Map<FormidableNode, List<FormidableValidationError>> into,
   ) {}
 }

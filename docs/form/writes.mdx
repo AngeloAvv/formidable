@@ -19,6 +19,19 @@ form.patch(name: '  Marco ', note: 'vip');
 - It is one change: the Form Effects run once after the last write, and the Form and each changed Field notify once, so there are no intermediate rebuilds.
 - **`null` means "leave unchanged", not "write null".** A null argument is the same as an omitted one, so `form.patch(phone: null)` does nothing. To choose null for a nullable Field, call `form.phone.setValue(null)` or use `replace`. To make a Field Unset, call `clear()`.
 
+### Writing a chosen null in one change
+
+`patch` cannot write null, but `batch` can. It runs any writes as one change, exactly like `patch`: one notification, and the Form Effects run once after the last write.
+
+```dart
+form.batch(() {
+  form.notes.setValue(null); // a chosen null on a nullable Field
+  form.name.setValue('Marco');
+});
+```
+
+Use it when a change mixes nulls with other values and must not show an intermediate state. `batch` can wrap any writes, and writes to Nested Forms join the change of their parent.
+
 ## replace
 
 `replace` sets every Field, Passthrough Fields included, from a Schema instance, as one change. Use it to load fresh data into an open form.

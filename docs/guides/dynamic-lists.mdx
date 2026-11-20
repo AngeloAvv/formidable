@@ -199,7 +199,7 @@ FormidableFieldArrayBuilder<FormidableField<String>, String>(
 
 ## 6. Submit
 
-`submit()` touches every Field of every item and returns the errors of the items in `fieldErrors` and the errors of the arrays in `arrayErrors`. A valid result has a typed `List<Stop>`:
+`submit()` touches every Field of every item and returns the errors of the items and of the arrays in one `errors` map, keyed by handle, in tree order. A valid result has a typed `List<Stop>`:
 
 ```dart
 // example/lib/trip/trip_material.dart

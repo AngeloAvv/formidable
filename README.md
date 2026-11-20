@@ -18,7 +18,7 @@ form.username.setValue('angelo');
 
 switch (await form.submit()) {
   case FormidableSubmitValid(:final value): // a SignUp
-  case FormidableSubmitInvalid(:final fieldErrors):
+  case FormidableSubmitInvalid(:final errors):
 }
 ```
 

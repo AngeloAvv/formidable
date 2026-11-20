@@ -55,7 +55,7 @@ void main() {
       final form = _valid()..username.applyErrors([const _Taken()]);
 
       final result = await form.submit() as FormidableSubmitInvalid<Account>;
-      expect(result.fieldErrors[form.username], [const _Taken()]);
+      expect(result.errors[form.username], [const _Taken()]);
 
       form.username.setValue('other');
 

@@ -181,7 +181,7 @@ void main() {
 
       final result = await form.submit() as FormidableSubmitInvalid<Person>;
 
-      expect(result.fieldErrors.keys.toList(), [
+      expect(result.errors.keys.toList(), [
         form.name,
         form.phones.items[1].node.number,
         form.phones.items[2].node.number,
@@ -224,8 +224,31 @@ void main() {
 
       final result = await form.submit() as FormidableSubmitInvalid<Team>;
 
-      expect(result.arrayErrors[form.members], [
+      expect(result.errors[form.members], [
         const FormidableMaxItemsError(max: 3, actual: 4),
+      ]);
+    });
+
+    test('Fields and Field Arrays share one map, in tree order', () async {
+      final form = TeamForm();
+      form.members
+        ..add(const Telephone(number: '1'))
+        ..add(const Telephone(number: '2'))
+        ..add(const Telephone(number: '3'))
+        ..add(const Telephone(number: '4'));
+
+      final result = await form.submit() as FormidableSubmitInvalid<Team>;
+
+      expect(result.errors[form.members], [
+        const FormidableMaxItemsError(max: 3, actual: 4),
+      ]);
+      expect(result.errors[form.members.items[0].node.number], isNotNull);
+      expect(result.errors.keys.toList(), [
+        form.members,
+        form.members.items[0].node.number,
+        form.members.items[1].node.number,
+        form.members.items[2].node.number,
+        form.members.items[3].node.number,
       ]);
     });
 
@@ -485,7 +508,7 @@ void main() {
       final result = await form.submit() as FormidableSubmitInvalid<Company>;
 
       final deep = form.teams.items.first.node.members.items.first.node.number;
-      expect(result.fieldErrors.keys, [deep]);
+      expect(result.errors.keys, [deep]);
     });
 
     test('a deep array error is reported with its handle', () async {
@@ -495,7 +518,7 @@ void main() {
       final result = await form.submit() as FormidableSubmitInvalid<Company>;
 
       expect(
-        result.arrayErrors.keys.single,
+        result.errors.keys.single,
         same(form.teams.items.first.node.members),
       );
     });

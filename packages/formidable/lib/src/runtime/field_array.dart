@@ -222,8 +222,9 @@ final class FormidableFieldArray<N extends FormidableNode, T>
 
   @override
   void collectErrors(
-    Map<FormidableField<Object?>, List<FormidableValidationError>> into,
+    Map<FormidableNode, List<FormidableValidationError>> into,
   ) {
+    if (_state.errors.isNotEmpty) into[this] = _state.errors;
     for (final item in _items) {
       item.node.collectErrors(into);
     }

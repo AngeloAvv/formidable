@@ -176,7 +176,7 @@ void main() {
       expect(form.weight.state.errors, [error]);
       final result = await form.submit();
       final invalid = result as FormidableSubmitInvalid<Measurements>;
-      expect(invalid.fieldErrors[form.weight], [error]);
+      expect(invalid.errors[form.weight], [error]);
     });
 
     test('is replaced by a value, and by clear()', () async {

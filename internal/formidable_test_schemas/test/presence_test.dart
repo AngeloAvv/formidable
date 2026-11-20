@@ -10,8 +10,8 @@ void main() {
       final result = await form.submit();
 
       final invalid = result as FormidableSubmitInvalid<Presence>;
-      expect(invalid.fieldErrors.keys, [form.mood]);
-      expect(invalid.fieldErrors[form.mood], [isA<FormidableRequiredError>()]);
+      expect(invalid.errors.keys, [form.mood]);
+      expect(invalid.errors[form.mood], [isA<FormidableRequiredError>()]);
     });
 
     test('accepts null as a chosen value', () async {
@@ -47,7 +47,7 @@ void main() {
 
         final missing = await PresenceForm(mood: false).submit();
         final invalid = missing as FormidableSubmitInvalid<Presence>;
-        expect(invalid.fieldErrors.keys, hasLength(1)); // email, no output
+        expect(invalid.errors.keys, hasLength(1)); // email, no output
       },
     );
 

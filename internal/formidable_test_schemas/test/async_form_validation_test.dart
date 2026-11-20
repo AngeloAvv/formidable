@@ -151,7 +151,7 @@ void main() {
         async.flushMicrotasks();
 
         final invalid = result as FormidableSubmitInvalid<Shipping>;
-        expect(invalid.fieldErrors[form.city], [const CityMismatchError()]);
+        expect(invalid.errors[form.city], [const CityMismatchError()]);
       });
     });
 

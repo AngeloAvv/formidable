@@ -95,8 +95,12 @@ String emitForm(SchemaModel schema) {
   );
   out.writeln('  /// argument leaves the Field as it is: use `clear()` or');
   out.writeln(
-    '  /// `setValue` on the Field, or [replace], to write null. A Nested',
+    '  /// `setValue` on the Field, or [replace], to write null. To write a',
   );
+  out.writeln(
+    '  /// chosen null together with other Fields as one change, wrap the',
+  );
+  out.writeln('  /// writes in [batch]. A Nested');
   out.writeln(
     '  /// Form takes a Schema instance and replaces all its Fields; patch',
   );

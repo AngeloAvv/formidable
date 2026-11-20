@@ -209,7 +209,7 @@ void main() {
         async.flushMicrotasks();
 
         final invalid = result! as FormidableSubmitInvalid<Club>;
-        expect(invalid.fieldErrors.keys, [second.username]);
+        expect(invalid.errors.keys, [second.username]);
         expect(first.username.state.errors, isEmpty);
       });
     });

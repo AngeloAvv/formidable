@@ -25,7 +25,7 @@ Future<void> _submit(SignUpForm form) async {
 `submit()` first touches every Field so that every error shows, then waits for the pending [Async Validators](/validation/async), then returns:
 
 - `FormidableSubmitValid(:final value)` with the Schema instance, or
-- `FormidableSubmitInvalid(:final fieldErrors)` with every invalid Field, keyed by its typed handle. The focus has already moved to the first invalid Field.
+- `FormidableSubmitInvalid(:final errors)` with every invalid Field and every Field Array that has errors, keyed by its typed handle, in tree order. The focus has already moved to the first invalid Field.
 
 The button is wired in one line:
 

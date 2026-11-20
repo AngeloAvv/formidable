@@ -1,6 +1,4 @@
 import '../validation/validation_error.dart';
-import 'field.dart';
-import 'field_array.dart';
 import 'node.dart';
 
 /// The outcome of `submit()`: valid with the Schema instance, or invalid with
@@ -18,21 +16,11 @@ final class FormidableSubmitValid<S> extends FormidableSubmitResult<S> {
 
 /// At least one Field is invalid.
 final class FormidableSubmitInvalid<S> extends FormidableSubmitResult<S> {
-  const FormidableSubmitInvalid(
-    this.fieldErrors, {
-    this.arrayErrors = const {},
-  });
+  const FormidableSubmitInvalid(this.errors);
 
-  /// The errors of every invalid Field, addressed by its typed handle.
-  final Map<FormidableField<Object?>, List<FormidableValidationError>>
-  fieldErrors;
-
-  /// The errors of the Field Arrays themselves (a minimum number of items, an
-  /// empty required array), addressed by their typed handle. The errors of the
-  /// items are in [fieldErrors], in tree order.
-  final Map<
-    FormidableFieldArray<FormidableNode, Object?>,
-    List<FormidableValidationError>
-  >
-  arrayErrors;
+  /// The errors of every invalid Field and of every Field Array that has
+  /// errors of its own (a minimum number of items, an empty required array),
+  /// addressed by its typed handle, in tree order. A Field Array comes before
+  /// the Fields of its items.
+  final Map<FormidableNode, List<FormidableValidationError>> errors;
 }

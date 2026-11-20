@@ -83,8 +83,8 @@ form.username.setValue('ab');
 switch (await form.submit()) {
   case FormidableSubmitValid(:final value):
     print('Welcome, ${value.username}'); // value is a SignUp
-  case FormidableSubmitInvalid(:final fieldErrors):
-    print(fieldErrors[form.username]); // [FormidableMinLengthError(minLength: 4, actualLength: 2)]
+  case FormidableSubmitInvalid(:final errors):
+    print(errors[form.username]); // [FormidableMinLengthError(minLength: 4, actualLength: 2)]
 }
 ```
 

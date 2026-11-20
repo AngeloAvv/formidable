@@ -337,7 +337,7 @@ final class FormidableField<T>
 
   @override
   void collectErrors(
-    Map<FormidableField<Object?>, List<FormidableValidationError>> into,
+    Map<FormidableNode, List<FormidableValidationError>> into,
   ) {
     if (_state.errors.isNotEmpty) into[this] = _state.errors;
   }

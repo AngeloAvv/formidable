@@ -14,10 +14,14 @@ final result = await form.submit();
 switch (result) {
   case FormidableSubmitValid(:final value):
     await api.signUp(value);
-  case FormidableSubmitInvalid(:final fieldErrors):
-    // Every invalid Field, keyed by its typed handle.
+  case FormidableSubmitInvalid(:final errors):
+    // Every invalid Field and Field Array, keyed by its typed handle.
+    print(errors[form.email]);
+    print(errors[form.members]); // a Field Array, e.g. MinItems
 }
 ```
+
+`errors` is one map in tree order. Its keys are the handles of the Fields and of the Field Arrays that have errors; a Field Array comes before the Fields of its items. The errors of a Field Array are the errors of the array itself (a minimum number of items, an empty required array), never the errors of its items.
 
 Before it decides, `submit()`:
 

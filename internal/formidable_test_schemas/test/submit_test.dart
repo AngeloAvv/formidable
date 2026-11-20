@@ -89,11 +89,7 @@ void main() {
 
       final result = await form.submit() as FormidableSubmitInvalid<Account>;
 
-      expect(result.fieldErrors.keys, [
-        form.username,
-        form.password,
-        form.code,
-      ]);
+      expect(result.errors.keys, [form.username, form.password, form.code]);
     });
 
     test('focuses the first invalid Field in declaration order', () async {

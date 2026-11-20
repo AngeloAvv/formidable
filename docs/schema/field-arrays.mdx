@@ -79,7 +79,7 @@ An **empty array is Unset**, and the rules of [required and optional Fields](/sc
 
 Validators of the array run only while it has items, like the Validators of a Field run only while it has a value. The state of the array (`form.phones.state`) has `ids`, `length`, `errors` (the errors of the array itself, not of its items), `touched`, `dirty` and `submitted`. The errors of the items are errors of their own Fields.
 
-`submit()` collects both: the errors of every Field of every item in `fieldErrors`, in tree order, and the errors of the arrays themselves in `arrayErrors`, keyed by the array handle.
+`submit()` collects both in one map, `errors` of `FormidableSubmitInvalid`, in tree order: `errors[form.members]` holds the errors of the array itself and comes before the errors of the Fields of its items, each keyed by its own handle.
 
 ## Behavior shared with Nested Forms
 

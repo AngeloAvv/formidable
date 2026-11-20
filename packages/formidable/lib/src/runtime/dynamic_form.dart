@@ -357,7 +357,7 @@ final class FormidableDynamicForm
 
   @override
   void collectErrors(
-    Map<FormidableField<Object?>, List<FormidableValidationError>> into,
+    Map<FormidableNode, List<FormidableValidationError>> into,
   ) {
     for (final node in children) {
       node.collectErrors(into);

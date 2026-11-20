@@ -164,9 +164,7 @@ void main() {
       final result =
           await form.submit() as FormidableSubmitInvalid<Registration>;
 
-      expect(result.fieldErrors[form.confirmation], [
-        const PasswordMismatchError(),
-      ]);
+      expect(result.errors[form.confirmation], [const PasswordMismatchError()]);
     });
 
     test('submits once the Fields agree', () async {

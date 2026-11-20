@@ -399,7 +399,7 @@ abstract class FormidableForm<S>
       _childForms.any((form) => form._hasFormValidators);
 
   void _collectFormErrors(
-    Map<FormidableField<Object?>, List<FormidableValidationError>> into,
+    Map<FormidableNode, List<FormidableValidationError>> into,
   ) {
     if (!isSet) return;
     if (_formValidators.isNotEmpty) {
@@ -446,41 +446,6 @@ abstract class FormidableForm<S>
       case FormidableFieldArray<FormidableNode, Object?>():
         for (final item in node.items) {
           yield* _fieldsOf(item.node);
-        }
-      default:
-    }
-  }
-
-  /// Adds the Field Arrays below this Form that have errors of their own to
-  /// [into], in tree order. An Unset optional Nested Form has none.
-  void _collectArrayErrors(
-    Map<
-      FormidableFieldArray<FormidableNode, Object?>,
-      List<FormidableValidationError>
-    >
-    into,
-  ) {
-    if (!isSet) return;
-    for (final node in _flatNodes) {
-      _arrayErrorsOf(node, into);
-    }
-  }
-
-  static void _arrayErrorsOf(
-    FormidableNode node,
-    Map<
-      FormidableFieldArray<FormidableNode, Object?>,
-      List<FormidableValidationError>
-    >
-    into,
-  ) {
-    switch (node) {
-      case FormidableForm<Object?>():
-        node._collectArrayErrors(into);
-      case FormidableFieldArray<FormidableNode, Object?>():
-        if (node.state.errors.isNotEmpty) into[node] = node.state.errors;
-        for (final item in node.items) {
-          _arrayErrorsOf(item.node, into);
         }
       default:
     }
@@ -658,21 +623,15 @@ abstract class FormidableForm<S>
     await _untilSettled();
     if (isDisposed) return FormidableSubmitInvalid<S>(const {});
     markSubmitted();
-    final errors =
-        <FormidableField<Object?>, List<FormidableValidationError>>{};
+    final errors = <FormidableNode, List<FormidableValidationError>>{};
     collectErrors(errors);
-    final arrayErrors =
-        <
-          FormidableFieldArray<FormidableNode, Object?>,
-          List<FormidableValidationError>
-        >{};
-    _collectArrayErrors(arrayErrors);
-    if (errors.isNotEmpty || arrayErrors.isNotEmpty) {
-      errors.keys.where((field) => field.canFocus).firstOrNull?.focus();
-      return FormidableSubmitInvalid<S>(
-        Map.unmodifiable(errors),
-        arrayErrors: Map.unmodifiable(arrayErrors),
-      );
+    if (errors.isNotEmpty) {
+      errors.keys
+          .whereType<FormidableField<Object?>>()
+          .where((field) => field.canFocus)
+          .firstOrNull
+          ?.focus();
+      return FormidableSubmitInvalid<S>(Map.unmodifiable(errors));
     }
     return FormidableSubmitValid<S>(buildOutput());
   }
@@ -733,11 +692,11 @@ abstract class FormidableForm<S>
     _flushTree();
   }
 
-  /// Adds the errors of every Field below this Form to [into]. An Unset
-  /// optional Nested Form has none: it is not part of the output.
+  /// Adds the errors of every Field and Field Array below this Form to [into].
+  /// An Unset optional Nested Form has none: it is not part of the output.
   @override
   void collectErrors(
-    Map<FormidableField<Object?>, List<FormidableValidationError>> into,
+    Map<FormidableNode, List<FormidableValidationError>> into,
   ) {
     if (!isSet) return;
     for (final node in _nodes) {

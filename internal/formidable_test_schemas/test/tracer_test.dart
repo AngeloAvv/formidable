@@ -12,9 +12,7 @@ void main() {
 
       expect(result, isA<FormidableSubmitInvalid<SignUp>>());
       final invalid = result as FormidableSubmitInvalid<SignUp>;
-      expect(invalid.fieldErrors[form.username], [
-        isA<FormidableRequiredError>(),
-      ]);
+      expect(invalid.errors[form.username], [isA<FormidableRequiredError>()]);
     });
 
     test(
@@ -25,7 +23,7 @@ void main() {
         final result = await form.submit();
 
         final invalid = result as FormidableSubmitInvalid<SignUp>;
-        expect(invalid.fieldErrors[form.username], [
+        expect(invalid.errors[form.username], [
           const FormidableMinLengthError(minLength: 4, actualLength: 2),
         ]);
       },
@@ -47,8 +45,7 @@ void main() {
 
         final message = switch (await form.submit()) {
           FormidableSubmitValid(:final value) => 'valid ${value.username}',
-          FormidableSubmitInvalid(:final fieldErrors) =>
-            'invalid ${fieldErrors.length}',
+          FormidableSubmitInvalid(:final errors) => 'invalid ${errors.length}',
         };
 
         expect(message, 'valid angelo');

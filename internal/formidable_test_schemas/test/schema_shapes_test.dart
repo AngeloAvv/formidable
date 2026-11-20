@@ -22,7 +22,7 @@ void main() {
       final result = await form.submit();
 
       final invalid = result as FormidableSubmitInvalid<Customer>;
-      expect(invalid.fieldErrors[form.id], [isA<FormidableRequiredError>()]);
+      expect(invalid.errors[form.id], [isA<FormidableRequiredError>()]);
     });
 
     test('a Form built from an instance carries the inherited Field', () {
@@ -81,7 +81,7 @@ void main() {
       final result = await form.submit();
 
       final invalid = result as FormidableSubmitInvalid<Mixed>;
-      expect(invalid.fieldErrors.keys, [form.first, form.second]);
+      expect(invalid.errors.keys, [form.first, form.second]);
     });
 
     test('positional and named parameters land in the right place', () async {

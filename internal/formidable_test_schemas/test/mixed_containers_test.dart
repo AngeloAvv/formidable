@@ -50,7 +50,7 @@ void main() {
     final result = await form.submit();
 
     final invalid = result as FormidableSubmitInvalid<Itinerary>;
-    expect(invalid.fieldErrors.keys, [
+    expect(invalid.errors.keys, [
       form.phones.items[0].node.number,
       form.phones.items[1].node.number,
       secondNote,

@@ -56,6 +56,24 @@ void main() {
       expect(changes, 1);
     });
 
+    test('a chosen null is written atomically with batch', () {
+      final form = contactForm();
+      var changes = 0;
+      form.addChangeListener(() => changes++);
+
+      form.patch(phone: null); // null means "leave unchanged"
+      expect(form.phone.value, '123');
+
+      form.batch(() {
+        form.phone.setValue(null);
+        form.name.setValue('Marco');
+      });
+
+      expect(form.phone.value, isNull);
+      expect(form.name.value, 'Marco');
+      expect(changes, 1);
+    });
+
     test('without arguments, or with the current values, notifies nobody', () {
       final form = contactForm();
       var notifications = 0;

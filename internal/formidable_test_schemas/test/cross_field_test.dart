@@ -42,7 +42,7 @@ void main() {
 
       expect(result, isA<FormidableSubmitInvalid<PasswordChange>>());
       final invalid = result as FormidableSubmitInvalid<PasswordChange>;
-      expect(invalid.fieldErrors.keys, [form.confirmation]);
+      expect(invalid.errors.keys, [form.confirmation]);
     });
   });
 }

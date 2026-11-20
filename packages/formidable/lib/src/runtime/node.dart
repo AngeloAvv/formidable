@@ -1,5 +1,4 @@
 import '../validation/validation_error.dart';
-import 'field.dart';
 import 'pipeline.dart';
 
 /// A child of a Form, in Schema declaration order.
@@ -22,10 +21,10 @@ abstract interface class FormidableNode {
   /// Whether this node or anything below it is still waiting for a result.
   bool get isPending;
 
-  /// Adds the errors of every Field at or below this node to [into].
-  void collectErrors(
-    Map<FormidableField<Object?>, List<FormidableValidationError>> into,
-  );
+  /// Adds the errors of this node and of everything below it to [into], in
+  /// tree order: a Field Array's own errors come before the errors of its
+  /// items.
+  void collectErrors(Map<FormidableNode, List<FormidableValidationError>> into);
 
   /// Marks every Field at or below this node as touched and submitted. Called
   /// by the Form when `submit()` starts.

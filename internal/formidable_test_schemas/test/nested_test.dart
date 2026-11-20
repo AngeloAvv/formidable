@@ -86,14 +86,14 @@ void main() {
         final result = await form.submit() as FormidableSubmitInvalid<Contact>;
 
         expect(
-          result.fieldErrors.keys,
+          result.errors.keys,
           containsAll([form.home.street, form.billing.street]),
         );
         expect(
-          result.fieldErrors[form.home.street]!.single,
+          result.errors[form.home.street]!.single,
           isA<FormidableRequiredError>(),
         );
-        expect(result.fieldErrors.containsKey(form.work.street), isFalse);
+        expect(result.errors.containsKey(form.work.street), isFalse);
       },
     );
 
@@ -105,7 +105,7 @@ void main() {
 
       final result = await form.submit() as FormidableSubmitInvalid<Order>;
 
-      expect(result.fieldErrors.keys, [form.owner.home.street]);
+      expect(result.errors.keys, [form.owner.home.street]);
     });
 
     test('exposes value once every level is valid', () {
@@ -158,7 +158,7 @@ void main() {
         expect(form.work.isSet, isTrue);
         expect(form.state.status, FormidableStatus.invalid);
         final invalid = await form.submit() as FormidableSubmitInvalid<Contact>;
-        expect(invalid.fieldErrors.keys, [form.work.street]);
+        expect(invalid.errors.keys, [form.work.street]);
 
         form.work.street.setValue('Via Napoli');
         final valid = await form.submit() as FormidableSubmitValid<Contact>;
@@ -213,7 +213,7 @@ void main() {
       expect(form.billing.isSet, isTrue);
       expect(form.home.isSet, isTrue);
       final result = await form.submit() as FormidableSubmitInvalid<Contact>;
-      expect(result.fieldErrors.containsKey(form.billing.street), isTrue);
+      expect(result.errors.containsKey(form.billing.street), isTrue);
     });
 
     test('notifies the parent when an optional Nested Form becomes set', () {
@@ -534,7 +534,7 @@ void main() {
       expect(form.home.state.status, FormidableStatus.invalid);
       expect(form.state.status, FormidableStatus.invalid);
       final result = await form.submit() as FormidableSubmitInvalid<Contact>;
-      expect(result.fieldErrors.keys, [form.home.street]);
+      expect(result.errors.keys, [form.home.street]);
     });
 
     test('applies errors to a Nested Form as a whole, until it changes', () {
