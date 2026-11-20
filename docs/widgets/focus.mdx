@@ -20,7 +20,7 @@ class Shipping {
 }
 ```
 
-With one `FormidableTextField` per Field, pressing "next" on `name` focuses `street`, then `city`. On `city` the key is "done" and closes the keyboard.
+With one `FormidableMaterialTextField` per Field, pressing "next" on `name` focuses `street`, then `city`. On `city` the key is "done" and closes the keyboard.
 
 ## Which Fields count
 
@@ -39,7 +39,7 @@ A multiline text field keeps its newline key.
 Each widget can replace the action and the behaviour:
 
 ```dart
-FormidableTextField<String>(
+FormidableMaterialTextField<String>(
   field: form.name,
   textInputAction: TextInputAction.search, // a different key
   onEditingComplete: search,               // replaces moving focus

@@ -81,7 +81,7 @@ The callback receives the `BuildContext` of the widget that shows the message, s
 Widgets accept the same registry. It wins over everything else, for that widget only.
 
 ```dart
-FormidableTextField(
+FormidableMaterialTextField(
   field: form.username,
   messages: const FormidableMessages().on<FormidableRequiredError>(
     (context, error) => 'Pick a username.',

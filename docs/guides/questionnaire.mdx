@@ -90,18 +90,19 @@ void removeQuestions(SurveyForm form) {
 ```dart
 // example/lib/survey/survey_material.dart
 Widget _answer(SurveyForm form, Question question) => switch (question) {
-  NumberQuestion(:final key, :final label) => FormidableTextField<int>(
-    key: Key('answer-$key'),
-    field: form.answers.field<int>(key),
-    keyboardType: TextInputType.number,
-    decoration: InputDecoration(
-      labelText: label,
-      border: const OutlineInputBorder(),
+  NumberQuestion(:final key, :final label) =>
+    FormidableMaterialTextField<int>(
+      key: Key('answer-$key'),
+      field: form.answers.field<int>(key),
+      keyboardType: TextInputType.number,
+      decoration: InputDecoration(
+        labelText: label,
+        border: const OutlineInputBorder(),
+      ),
     ),
-  ),
   TextQuestion(:final key, :final label, :final required) =>
     required
-        ? FormidableTextField<String>(
+        ? FormidableMaterialTextField<String>(
             key: Key('answer-$key'),
             field: form.answers.field<String>(key),
             decoration: InputDecoration(
@@ -109,7 +110,7 @@ Widget _answer(SurveyForm form, Question question) => switch (question) {
               border: const OutlineInputBorder(),
             ),
           )
-        : FormidableTextField<String?>(
+        : FormidableMaterialTextField<String?>(
             key: Key('answer-$key'),
             field: form.answers.field<String?>(key),
             decoration: InputDecoration(
@@ -117,7 +118,7 @@ Widget _answer(SurveyForm form, Question question) => switch (question) {
               border: const OutlineInputBorder(),
             ),
           ),
-  YesNoQuestion(:final key, :final label) => FormidableSwitch(
+  YesNoQuestion(:final key, :final label) => FormidableMaterialSwitchListTile(
     key: Key('answer-$key'),
     field: form.answers.field<bool>(key),
     title: Text(label),

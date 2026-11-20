@@ -13,7 +13,7 @@ void main() {
       preferencesApp(field, onCreated: (created) => form = created);
 
   Widget picker(PreferencesForm form, {bool clearable = false}) =>
-      FormidableTimePicker<TimeOfDay>(
+      FormidableMaterialTimePicker<TimeOfDay>(
         field: form.reminder,
         decoration: const InputDecoration(labelText: 'Reminder'),
         initialTime: const TimeOfDay(hour: 9, minute: 30),
@@ -21,7 +21,7 @@ void main() {
         clearable: clearable,
       );
 
-  group('FormidableTimePicker', () {
+  group('FormidableMaterialTimePicker', () {
     testWidgets('shows nothing while the Field is Unset', (tester) async {
       await tester.pumpWidget(app(picker));
 
@@ -43,7 +43,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableTimePicker<TimeOfDay>(field: form.reminder)),
+        app(
+          (form) =>
+              FormidableMaterialTimePicker<TimeOfDay>(field: form.reminder),
+        ),
       );
 
       form.reminder.setValue(const TimeOfDay(hour: 18, minute: 5));

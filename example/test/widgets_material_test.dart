@@ -25,6 +25,23 @@ void main() {
     expect(find.byType(Slider), findsNWidgets(2));
   });
 
+  testWidgets('the nickname has a clear button while it has text', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+    expect(find.byTooltip('Clear'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'Ada');
+    await tester.pump();
+    expect(find.byTooltip('Clear'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Clear'));
+    await tester.pump();
+
+    expect(find.byTooltip('Clear'), findsNothing);
+    expect(find.text('Ada'), findsNothing);
+  });
+
   testWidgets('submitting an empty form asks to fix the errors', (
     tester,
   ) async {

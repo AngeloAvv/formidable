@@ -13,12 +13,12 @@ void main() {
   Widget app(Widget Function(PreferencesForm form) field) =>
       preferencesApp(field, onCreated: (created) => form = created);
 
-  group('FormidableCheckbox', () {
+  group('FormidableMaterialCheckbox', () {
     testWidgets('shows an Unset Field as unchecked and the value once set', (
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableCheckbox(field: form.terms)),
+        app((form) => FormidableMaterialCheckbox(field: form.terms)),
       );
       expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isFalse);
 
@@ -30,7 +30,7 @@ void main() {
 
     testWidgets('sets the Field when tapped', (tester) async {
       await tester.pumpWidget(
-        app((form) => FormidableCheckbox(field: form.terms)),
+        app((form) => FormidableMaterialCheckbox(field: form.terms)),
       );
 
       await tester.tap(find.byType(Checkbox));
@@ -49,7 +49,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableCheckbox(field: form.terms)),
+        app((form) => FormidableMaterialCheckbox(field: form.terms)),
       );
       expect(form.terms.state.touched, isFalse);
       expect(find.text('This field is required.'), findsNothing);
@@ -64,7 +64,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableCheckbox(field: form.terms)),
+        app((form) => FormidableMaterialCheckbox(field: form.terms)),
       );
 
       form.terms.markAsTouched();
@@ -73,13 +73,15 @@ void main() {
       expect(find.text('This field is required.'), findsOneWidget);
     });
 
-    testWidgets('with a title, tapping the title toggles the Field', (
+    testWidgets('as a list tile, tapping the title toggles the Field', (
       tester,
     ) async {
       await tester.pumpWidget(
         app(
-          (form) =>
-              FormidableCheckbox(field: form.terms, title: const Text('Terms')),
+          (form) => FormidableMaterialCheckboxListTile(
+            field: form.terms,
+            title: const Text('Terms'),
+          ),
         ),
       );
 
@@ -93,7 +95,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableCheckbox(field: form.beta, tristate: true)),
+        app(
+          (form) =>
+              FormidableMaterialCheckbox(field: form.beta, tristate: true),
+        ),
       );
 
       await tester.tap(find.byType(Checkbox)); // unset shows as false -> true

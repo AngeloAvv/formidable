@@ -16,7 +16,7 @@ void main() {
           create: () => form = TrimmedForm(),
           child: Builder(
             builder: (context) =>
-                FormidableTextField(field: context.trimmedForm.city),
+                FormidableMaterialTextField(field: context.trimmedForm.city),
           ),
         ),
       ),

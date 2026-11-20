@@ -8,7 +8,7 @@ description: Show and edit a Field with any widget
 A **Field Widget** shows one Field and writes what the user does back to it. Two layers provide them:
 
 - **The base**, `FormidableFieldWidget<T, V>` in `formidable_flutter`, keeps the value, the focus and the errors of one Field in sync with one widget. It draws nothing, so it works with any widget, including third-party ones and widgets that have no text controller at all (a slider, a color picker, a rating). It owns its focus node unless you pass your own, and it never disposes the one you pass. `FormidableTextFieldWidget<T>` is its specialization for text.
-- **Convenience widgets** for Material (`formidable_material`) and Cupertino (`formidable_cupertino`) are built on the base. The text fields take the whole API of `TextField` and `CupertinoTextField`.
+- **Convenience widgets** for Material (`formidable_material`) and Cupertino (`formidable_cupertino`) are built on the base. Each one takes the whole API of the Flutter widget it wraps, and keeps every parameter readable as a field.
 
 Material widgets for every common input are described in [Material widgets](/widgets/material), and their Cupertino counterparts in [Cupertino widgets](/widgets/cupertino). To make any other widget a Formidable widget, see [Your own Field Widgets](/widgets/custom).
 

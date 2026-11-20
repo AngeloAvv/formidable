@@ -27,7 +27,9 @@ void main() {
             FormidableLocalizations.delegate,
             ...GlobalMaterialLocalizations.delegates,
           ],
-          home: Scaffold(body: FormidableTextField<String>(field: field)),
+          home: Scaffold(
+            body: FormidableMaterialTextField<String>(field: field),
+          ),
         ),
       );
 
