@@ -28,6 +28,13 @@ abstract class FormidableAsyncValidator<T> {
 
   /// Whether a chosen value of null is passed to [validate].
   bool get acceptsNull => null is T;
+
+  /// Whether this Async Validator can be called with a value of type [V].
+  ///
+  /// The generator checks this when a Validator is an annotation. A Dynamic
+  /// Form has no annotations, so it asks the Async Validator at runtime
+  /// instead.
+  bool fitsValueType<V>() => <V>[] is List<T?>;
 }
 
 /// An Async Validator threw instead of answering, so the value could not be

@@ -229,6 +229,53 @@ class Tags {
       ),
     );
 
+    const asyncValidator = '''
+class UsernameFree extends FormidableAsyncValidator<String> {
+  @override
+  Future<List<FormidableValidationError>> validate(String value) async =>
+      const [];
+}
+''';
+
+    test(
+      '@AsyncValidator on the Field Array itself fails',
+      () => fails(
+        '''
+$asyncValidator
+@Formidable()
+class Tags {
+  const Tags({this.tags = const []});
+
+  @AsyncValidator<UsernameFree>()
+  @FieldArray()
+  final List<String> tags;
+}
+''',
+        ['"tags" of Tags', 'Field Array', '@AsyncValidator<UsernameFree>()'],
+      ),
+    );
+
+    test(
+      'an item Schema with an Async Validator builds',
+      () => builds('''
+$asyncValidator
+@Formidable()
+class Member {
+  const Member({required this.name});
+
+  @AsyncValidator<UsernameFree>()
+  final String name;
+}
+
+@Formidable()
+class Club {
+  const Club({this.members = const []});
+
+  final List<Member> members;
+}
+'''),
+    );
+
     test(
       'a list of a Schema that contains itself fails',
       () => fails(

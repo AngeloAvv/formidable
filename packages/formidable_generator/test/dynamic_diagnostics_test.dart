@@ -98,6 +98,28 @@ void main() {
       );
     });
 
+    test('@Dynamic() with an @AsyncValidator fails', () async {
+      final result = await _build(
+        _schema(
+          '@Dynamic()\n  @AsyncValidator<UsernameFree>()\n'
+          '  final Map<String, Object?> answers;',
+          extra: '''
+class UsernameFree extends FormidableAsyncValidator<String> {
+  @override
+  Future<List<FormidableValidationError>> validate(String value) async =>
+      const [];
+}
+''',
+        ),
+      );
+
+      expect(result.succeeded, isFalse);
+      expect(
+        result.errors.join('\n'),
+        allOf(contains('Dynamic Form'), contains('@AsyncValidator')),
+      );
+    });
+
     test('@Dynamic() with a Normalizer fails', () async {
       final result = await _build(
         _schema('@Dynamic()\n  @Trim()\n  final Map<String, Object?> answers;'),

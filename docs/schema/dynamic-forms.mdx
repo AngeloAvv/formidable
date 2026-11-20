@@ -41,6 +41,8 @@ final result = await form.submit();
 
 `register<T>(key, ...)` creates a `FormidableField<T>`. `T` is the exact type of the Field, nullability included, and follows the [presence rules](/schema/presence) of a Schema Field: `register<int>` is required, `register<int?>` is optional, and `defaultValue:` makes an Unset Field produce that default. `validators:` and `normalizers:` take the same instances you would use as annotations, only created at runtime. `required: true` is `@Required()`.
 
+`asyncValidators:` takes [Async Validator](/validation/async) instances, which you create yourself exactly as you pass them to a generated Form. They follow the same rules as on a declared Field: they run after the synchronous Validators pass and the debounce elapses, the Field is pending meanwhile, `submit()` waits for them, and removing the Field cancels its check. An Async Validator that does not accept `T` throws a `FormidableDynamicTypeError`, like a Validator does.
+
 A Validator that does not accept `T`, such as `MinLength` on an `int`, throws a `FormidableDynamicTypeError` at registration. Nothing is registered. A Validator typed for a supertype of `T` (`Min` is typed `num`, so it fits an `int`) is accepted.
 
 `registerForm(key, form)` registers a [Nested Form](/schema/nested-forms), for example to describe a dynamic section that has its own structure. Its value in the output is the Schema instance, or null while it is an Unset optional Nested Form.
@@ -89,4 +91,4 @@ A dynamic Field is a node of the Form like a declared one:
 | Problem | What to do |
 | --- | --- |
 | `@Dynamic()` on a type other than `Map<String, Object?>` (a nullable map, another value type, a list...) | Change the Field type. The map is the output of the registered values, so it has to be exactly this type. |
-| `@Dynamic()` with `@Passthrough()`, a Validator, a Normalizer or a default value | Remove it. Pass Validators and Normalizers when you register each Field. |
+| `@Dynamic()` with `@Passthrough()`, a Validator, a Normalizer, an `@AsyncValidator` or a default value | Remove it. Pass Validators, Normalizers and Async Validators when you register each Field. |

@@ -1,4 +1,5 @@
 import '../normalizers/normalizer.dart';
+import '../validation/async_validator.dart';
 import '../validation/validation_error.dart';
 import '../validation/validator.dart';
 import 'field.dart';
@@ -106,8 +107,11 @@ final class FormidableDynamicForm
   ///
   /// [T] is the exact type of the Field, nullability included: `register<int>`
   /// makes a required Field, `register<int?>` an optional one. [validators]
-  /// must accept [T], or this throws a [FormidableDynamicTypeError]. The other
-  /// arguments are those of [FormidableField].
+  /// must accept [T], or this throws a [FormidableDynamicTypeError]. So must
+  /// [asyncValidators]: the instances you pass live as long as the Field, like
+  /// the ones a generated Form takes, and run under the same rules (see
+  /// [FormidableAsyncValidator]). The other arguments are those of
+  /// [FormidableField].
   ///
   /// A value for [key] given when the Dynamic Form was created, or written to
   /// it before, is the starting value of the Field.
@@ -115,10 +119,20 @@ final class FormidableDynamicForm
     String key, {
     List<FormidableNormalizer<T>> normalizers = const [],
     List<FormidableValidator<Object?>> validators = const [],
+    List<FormidableAsyncValidator<Object?>> asyncValidators = const [],
     bool required = false,
     T? defaultValue,
   }) {
     _checkFree(key);
+    for (final validator in asyncValidators) {
+      if (!validator.fitsValueType<T>()) {
+        throw FormidableDynamicTypeError(
+          'The Async Validator ${validator.runtimeType} cannot be used on '
+          '"$key": the Field is registered as $T, which that Async Validator '
+          'does not accept.',
+        );
+      }
+    }
     for (final validator in validators) {
       if (!validator.fitsValueType<T>()) {
         throw FormidableDynamicTypeError(
@@ -142,6 +156,7 @@ final class FormidableDynamicForm
     final field = FormidableField<T>(
       normalizers: normalizers,
       validators: validators,
+      asyncValidators: asyncValidators,
       required: required,
       defaultValue: defaultValue,
       initial: initial,

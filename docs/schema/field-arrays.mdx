@@ -85,6 +85,7 @@ Validators of the array run only while it has items, like the Validators of a Fi
 
 - **Dirty, reset and commit.** Adding, removing or moving an item makes the Form dirty. `reset()` puts back the items the array had (the same Forms, each reset) and drops the new ones; `commit()` makes the current items the new initial state.
 - **Submit and focus.** `submit()` makes every item touched and submitted and focuses the first invalid Field in tree order. See [focus and keyboard actions](/widgets/focus).
+- **Async Validators.** The Fields of an item can have [Async Validators](/validation/async). The parent Form takes the instances once and gives them to every item it creates, so a new item checks its Fields like any other. The array waits for them on `submit()`, and removing an item cancels its pending checks. `@AsyncValidator` on the list itself is a build error: put it on a Field of the items.
 - **Notifications.** A listener of the array (`addListener`) is called when its state changes, for example when an item is added or moved. `addChangeListener` also fires for every change inside an item, as it does for a Nested Form.
 - **Disposal.** Removing an item disposes it, unless `reset()` could still bring it back. Disposing the parent disposes every item.
 
