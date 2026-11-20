@@ -1,7 +1,9 @@
 import 'package:formidable/formidable.dart';
+import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:formidable_material/formidable_material.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'color_picker.dart';
 import 'profile.dart';
 import 'profile.formidable_scope.dart';
 
@@ -115,6 +117,29 @@ class _ProfileBodyState extends State<_ProfileBody> {
             ButtonSegment(value: Layout.list, label: Text('List')),
           ],
         ),
+        const _Heading('Accent color'),
+        FormidableColorPicker(
+          field: form.accent,
+          colors: const [Colors.red, Colors.green, Colors.blue],
+        ),
+        const _Heading('Rating'),
+        FormidableFieldWidget<int, double>(
+          field: form.rating,
+          codec: const _RatingCodec(),
+          builder: (context, control) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Slider(
+                value: control.value ?? 0,
+                divisions: 4,
+                focusNode: control.focusNode,
+                onChanged: (position) =>
+                    control.didChange(position, touch: true),
+              ),
+              FormidableErrorLine(text: control.errorText),
+            ],
+          ),
+        ),
         const SizedBox(height: 24),
         FilledButton(onPressed: () => _save(form), child: const Text('Save')),
         if (_result != null) ...[
@@ -136,4 +161,16 @@ class _Heading extends StatelessWidget {
     padding: const EdgeInsets.only(top: 16),
     child: Text(text, style: Theme.of(context).textTheme.titleSmall),
   );
+}
+
+/// Maps a rating from 1 to 5 to a slider position from 0 to 1 and back.
+class _RatingCodec extends FormidableCodec<int, double> {
+  const _RatingCodec();
+
+  @override
+  double format(int value) => (value - 1) / 4;
+
+  @override
+  FormidableParseResult<int> parse(double input) =>
+      FormidableParsedValue((input * 4).round() + 1);
 }

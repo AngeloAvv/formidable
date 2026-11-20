@@ -15,10 +15,10 @@ const _blue = Color(0xFF0000FF);
 /// A picker made of tappable swatches: the widget under test never sees a
 /// Field, only what the control tells it.
 class _Swatches extends StatelessWidget {
-  const _Swatches({required this.control, this.colors = const [_red, _blue]});
+  const _Swatches({required this.control});
 
   final FormidableFieldWidgetState<Color?, Color?> control;
-  final List<Color> colors;
+  static const colors = [_red, _blue];
 
   @override
   Widget build(BuildContext context) => Focus(
@@ -49,7 +49,6 @@ class _Swatches extends StatelessWidget {
 /// A subclass, the way an app or a package ships its own Formidable widget.
 class _ColorPicker extends FormidableFieldWidget<Color?, Color?> {
   _ColorPicker({
-    super.key,
     required super.field,
     super.messages,
     super.errorDisplay,
