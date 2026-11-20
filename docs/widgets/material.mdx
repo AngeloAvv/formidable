@@ -1,0 +1,60 @@
+---
+title: Material widgets
+description: Checkbox, switch, radio group, slider, dropdown, date and time pickers and segmented control for Material
+---
+
+# Material widgets
+
+`formidable_material` ships one widget for each common input. Every one is a thin layer over the headless [Binding](/widgets), built on `material_ui`, and binds to a Field with no glue code:
+
+```dart
+FormidableCheckbox(field: form.acceptedTerms, title: const Text('I accept the terms'))
+```
+
+They all behave the same way:
+
+- **Touched.** A text field is touched when it loses focus. These widgets can't rely on that, so the first interaction marks the Field touched: toggling, picking, moving the thumb, or cancelling a dialog. The Validation Message shows from then on.
+- **Unset is not null.** An Unset Field is shown as "nothing chosen": an unchecked box, a switch that is off, no radio selected, the thumb at the minimum, an empty dropdown. The Field stays Unset until the user acts, and a required Field reports the missing value.
+- **Messages.** The Validation Message comes through the usual chain (see [Validation messages](/validation/messages)). Every widget takes `messages:` to override it for that widget only.
+- **Common parameters only.** Each widget exposes the parameters most code needs. For anything else, build the Material widget from a `FormidableBindingBuilder`.
+
+| Widget | Field type | Notes |
+| --- | --- | --- |
+| `FormidableCheckbox` | `bool`, `bool?` | `title` makes the whole row tappable. `tristate: true` lets a `bool?` Field choose null. |
+| `FormidableSwitch` | `bool` | `title` makes the whole row tappable. |
+| `FormidableRadioGroup<T>` | any `T` | `options` are `FormidableRadioOption(value:, title:)`. One option can have the value `null` (see below). |
+| `FormidableSlider<T>` | `double`, `int`, `num`, nullable or not | `min`, `max`, `divisions`, `labelBuilder`. An `int` Field gets rounded values. |
+| `FormidableDropdown<T>` | any `T` | `items` are the usual `DropdownMenuItem`s. `hint` shows while Unset. |
+| `FormidableDatePicker` | `DateTime`, `DateTime?` | Opens `showDatePicker`. `firstDate`, `lastDate`, `initialDate`, `format`, `clearable`. |
+| `FormidableTimePicker` | `TimeOfDay`, `TimeOfDay?` | Opens `showTimePicker`. `initialTime`, `format`, `clearable`. |
+| `FormidableSegmentedButton<T>` | any `T` | One segment at a time. `allowDeselect` lets the user go back to Unset. |
+
+## A radio option that means null
+
+A three-option group where one option means "no preference" is a common need. Declare the Field nullable and required, so that the user has to choose, and null is one of the choices:
+
+```dart
+@Required()
+final bool? contactByEmail;
+```
+
+```dart
+FormidableRadioGroup(
+  field: form.contactByEmail,
+  options: const [
+    FormidableRadioOption(value: null, title: Text('No preference')),
+    FormidableRadioOption(value: true, title: Text('Yes')),
+    FormidableRadioOption(value: false, title: Text('No')),
+  ],
+)
+```
+
+While the Field is Unset no option is selected, not even the null one, and the required error shows once the Field is touched. Choosing "No preference" sets the Field to null: it is no longer Unset, so the required error goes away. The dropdown and the segmented control work the same way.
+
+## Pickers
+
+The date and time pickers show a read-only field and open the Material dialog on tap. Cancelling the dialog changes nothing, but still marks the Field touched. While the Field is Unset the dialog opens on `initialDate` or `initialTime`, else on today or the current time. The text comes from the Material localizations unless you pass `format`. With `clearable: true` a button puts a Field that has a value back to Unset.
+
+## The example app
+
+The example app has a "Material widgets" page that shows every widget on one form.

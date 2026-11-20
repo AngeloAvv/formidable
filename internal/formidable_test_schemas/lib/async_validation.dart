@@ -142,3 +142,14 @@ class Shipping {
 
   final String note;
 }
+
+/// A Schema whose Nested Form has an asynchronous Form Validator: the parent
+/// Form takes the validator instance too and hands it down.
+@Formidable()
+class Order {
+  const Order({required this.shipping, required this.reference});
+
+  final Shipping shipping;
+
+  final String reference;
+}

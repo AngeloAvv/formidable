@@ -1,0 +1,53 @@
+---
+title: Number Validators
+description: Built-in rules for int and double Fields
+---
+
+# Number Validators
+
+These Validators judge a `num`, so they fit `int` and `double` Fields, nullable or not. `@Even`, `@Odd` and `@Port` judge an `int`, so they fit `int` Fields only. A `double` Field with `@Even()` fails the build.
+
+```dart
+@Formidable()
+class Order {
+  const Order({required this.quantity, required this.price, required this.port});
+
+  @Range(1, 99)
+  final int quantity;
+
+  @Positive()
+  @DecimalPlaces(2)
+  final double price;
+
+  @Port()
+  final int port;
+}
+```
+
+| Annotation | Accepts | Error |
+|---|---|---|
+| `@Min(10)` | at least 10. `@Min(10, exclusive: true)` needs more than 10 | `FormidableMinError(min, exclusive, actual)` |
+| `@Max(10)` | at most 10. `@Max(10, exclusive: true)` needs less than 10 | `FormidableMaxError(max, exclusive, actual)` |
+| `@Range(1, 5)` | from 1 to 5, both included | `FormidableRangeError(min, max, actual)` |
+| `@Positive()` | greater than zero | `FormidablePositiveError(actual)` |
+| `@PositiveOrZero()` | zero or greater | `FormidablePositiveOrZeroError(actual)` |
+| `@Negative()` | less than zero | `FormidableNegativeError(actual)` |
+| `@NegativeOrZero()` | zero or less | `FormidableNegativeOrZeroError(actual)` |
+| `@NonZero()` | anything but zero | `FormidableNonZeroError()` |
+| `@MultipleOf(5)` | multiples of 5, zero included | `FormidableMultipleOfError(divisor, actual)` |
+| `@Even()` | even integers | `FormidableEvenError(actual)` |
+| `@Odd()` | odd integers | `FormidableOddError(actual)` |
+| `@DecimalPlaces(2)` | at most 2 decimal places | `FormidableDecimalPlacesError(maxPlaces, actualPlaces)` |
+| `@Digits(3)` | an integer part of exactly 3 digits | `FormidableDigitsError(digits, actualDigits)` |
+| `@MinDigits(2)` | an integer part of at least 2 digits | `FormidableMinDigitsError(minDigits, actualDigits)` |
+| `@MaxDigits(2)` | an integer part of at most 2 digits | `FormidableMaxDigitsError(maxDigits, actualDigits)` |
+| `@Port()` | from 1 to 65535 | `FormidablePortError(actual)` |
+
+## Details
+
+- NaN never satisfies `@Min`, `@Max`, `@Range`, `@Positive`, `@PositiveOrZero`, `@Negative` or `@NegativeOrZero`. It is not zero, so `@NonZero` accepts it.
+- `@MultipleOf` tolerates floating point noise: `0.3` is a multiple of `0.1`. The divisor cannot be zero.
+- `@DecimalPlaces` counts the places of the shortest decimal representation of the number, so `3.0` has none and `1e-7` has seven.
+- The digit counts look at the integer part and ignore the sign: `-123` has three digits, `0` has one and a number that is not finite has none. Digits of the decimal part are the business of `@DecimalPlaces`.
+
+Every error has a message in English, Italian, Spanish, French and German. Numbers with a decimal part use the decimal comma in Italian, Spanish, French and German. See [Messages and localization](/validation/messages).

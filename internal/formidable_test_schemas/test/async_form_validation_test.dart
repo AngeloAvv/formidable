@@ -182,4 +182,32 @@ void main() {
       });
     });
   });
+
+  group('in a Nested Form', () {
+    test('is injected into the parent Form and runs for the nested Fields', () {
+      fakeAsync((async) {
+        final validator = PostalCodeMatchesCity();
+        final form = OrderForm(
+          shipping: const Shipping(
+            postalCode: '70121',
+            city: 'Roma',
+            note: 'n',
+          ),
+          reference: 'r',
+          postalCodeMatchesCity: validator,
+        );
+        FormidableSubmitResult<Order>? result;
+
+        expect(form.state.pending, isTrue);
+        form.submit().then((value) => result = value);
+        async.elapse(_debounce);
+        expect(validator.calls, ['70121/Roma']);
+        validator.answer('70121/Roma', mismatch: true);
+        async.flushMicrotasks();
+
+        expect(form.shipping.city.state.errors, [const CityMismatchError()]);
+        expect(result, isA<FormidableSubmitInvalid<Order>>());
+      });
+    });
+  });
 }

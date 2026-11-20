@@ -10,7 +10,7 @@ Two layers connect a Field to a widget:
 - **The headless Binding** (`FormidableBinding`, created by `FormidableBindingBuilder`) keeps the value, the focus and the errors of one Field in sync with one widget. It draws nothing, so it works with any widget, including third-party ones. It owns its focus node and text controller unless you pass your own, and it never disposes the ones you pass.
 - **Convenience widgets** for Material (`formidable_material`) and Cupertino (`formidable_cupertino`) are thin layers over the Binding.
 
-Available today: `FormidableTextField` for Material. Build any other widget from `FormidableBindingBuilder`:
+Material widgets for every common input are described in [Material widgets](/widgets/material), and their Cupertino counterparts in [Cupertino widgets](/widgets/cupertino). Build any other widget from `FormidableBindingBuilder`:
 
 ```dart
 FormidableBindingBuilder<String>(
@@ -24,4 +24,21 @@ FormidableBindingBuilder<String>(
 )
 ```
 
-The Binding picks a [Codec](/widgets/codecs) between the Field and its text, so the same code works for an `int` or a `DateTime` Field. `binding.errorText` is null until the Field is touched. A Field becomes touched when a focusable widget loses focus. Call `binding.onTouched()` for a widget that cannot take focus.
+The Binding picks a [Codec](/widgets/codecs) between the Field and its text, so the same code works for an `int` or a `DateTime` Field. `binding.errorText` is null until the Field is touched. A Field becomes touched when a focusable widget loses focus.
+
+Widgets that are not text inputs use these methods of the Binding instead of a Codec, because the value they show is the value of the Field:
+
+- `binding.onPicked(value)` sets the Field and marks it touched. A widget that cannot take focus has no "loses focus" moment, so its first interaction is what makes the Field touched. `value` can be null when the Field allows it, because choosing null is a value (see [Unset is not null](/schema/presence)).
+- `binding.onUnpicked()` puts the Field back to Unset and marks it touched.
+- `binding.onTouched()` only marks the Field touched, for an interaction that changed nothing, such as a cancelled dialog.
+
+```dart
+FormidableBindingBuilder<bool>(
+  field: form.acceptedTerms,
+  builder: (context, binding) => MyToggle(
+    on: binding.value ?? false,
+    onChanged: binding.onPicked,
+    errorText: binding.errorText,
+  ),
+)
+```

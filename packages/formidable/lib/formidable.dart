@@ -33,4 +33,8 @@ export 'src/validation/required_error.dart';
 export 'src/validation/validation_error.dart';
 export 'src/validation/validator.dart';
 export 'src/validators/any_of.dart';
+export 'src/validators/choices.dart';
+export 'src/validators/clock.dart';
+export 'src/validators/dates.dart';
 export 'src/validators/min_length.dart';
+export 'src/validators/numbers.dart';

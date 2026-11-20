@@ -22,13 +22,17 @@
       "group": "Schema",
       "pages": [
         { "title": "Declaring a Schema", "href": "/schema" },
-        { "title": "Required and optional Fields", "href": "/schema/presence" }
+        { "title": "Required and optional Fields", "href": "/schema/presence" },
+        { "title": "Nested Forms", "href": "/schema/nested-forms" }
       ]
     },
     {
       "group": "Validation",
       "pages": [
         { "title": "Validators", "href": "/validation" },
+        { "title": "Number Validators", "href": "/validation/numbers" },
+        { "title": "Date Validators", "href": "/validation/dates" },
+        { "title": "Choice and equality Validators", "href": "/validation/choices" },
         { "title": "Custom Validators", "href": "/validation/custom" },
         { "title": "Asynchronous validation", "href": "/validation/async" },
         { "title": "Normalizers", "href": "/validation/normalizers" },
@@ -48,6 +52,8 @@
     {
       "group": "Widgets",
       "pages": [{ "title": "Binding Fields to widgets", "href": "/widgets" },
+        { "title": "Material widgets", "href": "/widgets/material" },
+        { "title": "Cupertino widgets", "href": "/widgets/cupertino" },
         { "title": "Codecs", "href": "/widgets/codecs" }
       ]
     },
