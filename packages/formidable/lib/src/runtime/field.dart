@@ -3,6 +3,7 @@ import '../validation/required_error.dart';
 import '../validation/validation_error.dart';
 import '../validation/validator.dart';
 import 'field_state.dart';
+import 'focus_target.dart';
 import 'node.dart';
 import 'notifier.dart';
 import 'pipeline.dart';
@@ -22,7 +23,10 @@ final class FormidableField<T>
   /// - [normalizers] rewrite every value written to the Field, in order, before
   ///   validation, and only while the Field has a value. A Normalizer can turn
   ///   the value into Unset.
-  /// - [validators] run in order, only while the Field has a value.
+  /// - [validators] run in order, only while the Field has a value. They are
+  ///   typed `Object?` because a Validator typed for a supertype of [T] fits
+  ///   too, which Dart cannot express; the generator rejects a Validator that
+  ///   does not fit before the Form is generated.
   /// - [required] is `@Required()`: Unset blocks submit even if [T] allows null
   ///   or a default exists.
   /// - [defaultValue] is the constructor default of the Schema field. The Field
@@ -31,7 +35,7 @@ final class FormidableField<T>
   ///   null record starts the Field Unset (or at its default).
   FormidableField({
     List<FormidableNormalizer<T>> normalizers = const [],
-    List<FormidableValidator<T>> validators = const [],
+    List<FormidableValidator<Object?>> validators = const [],
     bool required = false,
     T? defaultValue,
     ({T value})? initial,
@@ -51,13 +55,18 @@ final class FormidableField<T>
   }
 
   final List<FormidableNormalizer<T>> _normalizers;
-  final List<FormidableValidator<T>> _validators;
+  final List<FormidableValidator<Object?>> _validators;
+  List<FormidableValidationError> _formErrors = const [];
   final bool _required;
   final T? _defaultValue;
   FormidablePipeline? _pipeline;
   T? _value;
   bool _isSet = false;
   bool _touched = false;
+  bool _enabled = true;
+  bool _submitted = false;
+  final List<FormidableFocusTarget> _focusTargets = [];
+  List<FormidableValidationError> _applied = const [];
   bool _stale = false;
   FormidableValidationError? _inputError;
   late FormidableFieldState<T> _state;
@@ -91,14 +100,67 @@ final class FormidableField<T>
   /// Makes the Field Unset.
   void clear() => _write(() => _assign(null));
 
+  /// Makes the Field take part in the Form again, and validates it.
+  void enable() => _setEnabled(true);
+
+  /// Takes the Field out of validation. It keeps its value and still
+  /// contributes to the output. An Unset Field that is required still blocks
+  /// submit, because no valid output exists without it.
+  void disable() => _setEnabled(false);
+
+  /// Shows [errors] on the Field, after the errors of its Validators, and makes
+  /// the Field invalid. Use it for errors that only a server can find. They
+  /// replace the errors applied before and go away on the next change of the
+  /// Field's value or presence. An empty list removes them right away.
+  ///
+  /// A disabled Field shows no applied errors.
+  void applyErrors(List<FormidableValidationError> errors) {
+    _applied = List.unmodifiable(errors);
+    _refresh();
+  }
+
+  void _setEnabled(bool enabled) {
+    if (_enabled == enabled) return;
+    _enabled = enabled;
+    _refresh();
+  }
+
+  /// Replaces the errors that the Form Validators address to this Field. They
+  /// are added after the Field's own errors. Called by the Form before it
+  /// revalidates; an application has no reason to call it.
+  void replaceFormErrors(List<FormidableValidationError> errors) {
+    if (_sameErrors(_formErrors, errors)) return;
+    _formErrors = List.unmodifiable(errors);
+    _stale = true;
+  }
+
+  /// Restores the initial value and presence, clears the errors and forgets
+  /// that the user touched the Field. Form Effects do not run.
+  @override
+  void reset() {
+    _assign(_initialIsSet ? (value: _initialValue as T) : null);
+    _touched = false;
+    _stale = true;
+    _settle();
+  }
+
+  /// Makes the current value and presence the new initial state, so the Field
+  /// is no longer dirty.
+  @override
+  void commit() {
+    _initialIsSet = _isSet;
+    _initialValue = _value;
+    _stale = true;
+    _settle();
+  }
+
   /// Rejects what the user typed: the Field becomes Unset and invalid with
   /// [error], even when it is optional, so that bad input never turns into a
   /// null silently. [error] replaces the required error.
   ///
   /// Widgets call it when a Codec fails to parse their input. The next
   /// [setValue] or [clear] lifts the rejection.
-  void reject(FormidableValidationError error) =>
-      _write(() => _reject(error));
+  void reject(FormidableValidationError error) => _write(() => _reject(error));
 
   /// The error given to [reject], or null when the last input was accepted.
   FormidableValidationError? get inputError => _inputError;
@@ -107,7 +169,38 @@ final class FormidableField<T>
   void markAsTouched() {
     if (_touched) return;
     _touched = true;
-    _commit();
+    _refresh();
+  }
+
+  /// Registers the widget that shows this Field, so that [focus] and [unfocus]
+  /// reach it. When several are registered the last one wins. Returns a
+  /// function that removes the registration.
+  void Function() registerFocusTarget(FormidableFocusTarget target) {
+    _focusTargets.add(target);
+    return () => _focusTargets.remove(target);
+  }
+
+  /// Whether [focus] can do something: the Field is enabled and a widget is
+  /// registered for it.
+  bool get canFocus => _enabled && _focusTargets.isNotEmpty;
+
+  /// Moves the input focus to the widget of the Field. It does nothing when
+  /// the Field is disabled or no widget shows it.
+  void focus() {
+    if (canFocus) _focusTargets.last.focus();
+  }
+
+  /// Takes the input focus away from the widget of the Field.
+  void unfocus() {
+    if (_focusTargets.isNotEmpty) _focusTargets.last.unfocus();
+  }
+
+  @override
+  void markSubmitted() {
+    if (_touched && _submitted) return;
+    _touched = true;
+    _submitted = true;
+    _refresh();
   }
 
   /// The value the Field contributes to the Schema instance.
@@ -142,7 +235,18 @@ final class FormidableField<T>
 
   @override
   void revalidate() {
-    if (_stale) _commit();
+    if (_stale) _refresh();
+  }
+
+  /// Brings the state up to date: through the Form when there is one, so it
+  /// notifies once for a batch of writes, otherwise on its own.
+  void _settle() {
+    final pipeline = _pipeline;
+    if (pipeline == null) {
+      _refresh();
+    } else {
+      pipeline.settle();
+    }
   }
 
   /// Runs [mutate] through the Form pipeline, or on its own when the Field is
@@ -150,7 +254,7 @@ final class FormidableField<T>
   void _write(bool Function() mutate) {
     final pipeline = _pipeline;
     if (pipeline == null) {
-      if (mutate()) _commit();
+      if (mutate()) _refresh();
     } else {
       pipeline.change(this, mutate);
     }
@@ -169,6 +273,7 @@ final class FormidableField<T>
     }
     _isSet = isSet;
     _value = value;
+    _applied = const [];
     _stale = true;
     return true;
   }
@@ -195,7 +300,7 @@ final class FormidableField<T>
   }
 
   /// Validates the current value and notifies listeners if the state changed.
-  void _commit() {
+  void _refresh() {
     _stale = false;
     _state = _stateFor();
     if (_state == _notified) return;
@@ -207,13 +312,30 @@ final class FormidableField<T>
     value: _value,
     isSet: _isSet,
     touched: _touched,
+    enabled: _enabled,
+    submitted: _submitted,
     dirty: _isSet != _initialIsSet || (_isSet && _value != _initialValue),
-    errors: _isSet
-        ? _validate(_value)
-        : _inputError != null
-        ? [_inputError!]
-        : _presenceErrors(),
+    errors: [
+      ...(_isSet
+          ? (_enabled ? _validate(_value) : const <FormidableValidationError>[])
+          : _inputError != null
+          ? [_inputError!]
+          : _presenceErrors()),
+      ..._formErrors,
+      if (_enabled) ..._applied,
+    ],
   );
+
+  static bool _sameErrors(
+    List<FormidableValidationError> a,
+    List<FormidableValidationError> b,
+  ) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
 
   /// Errors of an Unset Field: required unless something supplies the output.
   List<FormidableValidationError> _presenceErrors() {
@@ -225,7 +347,6 @@ final class FormidableField<T>
 
   List<FormidableValidationError> _validate(T? value) => [
     for (final validator in _validators)
-      if (value != null || validator.acceptsNull)
-        ...validator.validate(value as T),
+      if (value != null || validator.acceptsNull) ...validator.validate(value),
   ];
 }

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:formidable/formidable.dart';
 
+import 'categories/combinators.dart';
 import 'categories/parsing.dart';
 import 'categories/presence.dart';
 import 'categories/strings.dart';
@@ -18,6 +19,7 @@ import 'categories/strings.dart';
 /// not compile.
 abstract class FormidableLocalizations
     with
+        FormidableCombinatorMessages,
         FormidableParsingMessages,
         FormidablePresenceMessages,
         FormidableStringMessages {
@@ -60,12 +62,14 @@ abstract class FormidableLocalizations
   String? messageOf(FormidableValidationError error) =>
       presenceMessageOf(error) ??
       stringMessageOf(error) ??
+      combinatorMessageOf(error) ??
       parsingMessageOf(error);
 }
 
 /// English.
 class FormidableLocalizationsEn extends FormidableLocalizations
     with
+        FormidableCombinatorMessagesEn,
         FormidableParsingMessagesEn,
         FormidablePresenceMessagesEn,
         FormidableStringMessagesEn {
@@ -75,6 +79,7 @@ class FormidableLocalizationsEn extends FormidableLocalizations
 /// Italian.
 class FormidableLocalizationsIt extends FormidableLocalizations
     with
+        FormidableCombinatorMessagesIt,
         FormidableParsingMessagesIt,
         FormidablePresenceMessagesIt,
         FormidableStringMessagesIt {
@@ -84,6 +89,7 @@ class FormidableLocalizationsIt extends FormidableLocalizations
 /// Spanish.
 class FormidableLocalizationsEs extends FormidableLocalizations
     with
+        FormidableCombinatorMessagesEs,
         FormidableParsingMessagesEs,
         FormidablePresenceMessagesEs,
         FormidableStringMessagesEs {
@@ -93,6 +99,7 @@ class FormidableLocalizationsEs extends FormidableLocalizations
 /// French.
 class FormidableLocalizationsFr extends FormidableLocalizations
     with
+        FormidableCombinatorMessagesFr,
         FormidableParsingMessagesFr,
         FormidablePresenceMessagesFr,
         FormidableStringMessagesFr {
@@ -102,6 +109,7 @@ class FormidableLocalizationsFr extends FormidableLocalizations
 /// German.
 class FormidableLocalizationsDe extends FormidableLocalizations
     with
+        FormidableCombinatorMessagesDe,
         FormidableParsingMessagesDe,
         FormidablePresenceMessagesDe,
         FormidableStringMessagesDe {
