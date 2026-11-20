@@ -81,6 +81,21 @@ The builder runs again every time the Field changes. Its result is merged exactl
 
 The pickers draw their own clear button when `clearable` is set, in place of the `suffixIcon`.
 
+### A text style that depends on the state
+
+The text field also takes a `styleBuilder` next to `style`, built the same way as `decorationBuilder`: it receives the context and the control, runs again every time the Field changes, and returning null gives the default style. Pass `style` or `styleBuilder`, not both. For example, red text while the Field shows an error:
+
+```dart
+FormidableMaterialTextField<String>(
+  field: form.email,
+  styleBuilder: (context, control) => control.errorText == null
+      ? null
+      : TextStyle(color: Theme.of(context).colorScheme.error),
+)
+```
+
+`control.errorText` follows the error display policy, so the text turns red at the same time as the message shows.
+
 ### Keyboard action
 
 `textInputAction` defaults to "next" while another Field follows and "done" on the last one, and a multiline field keeps its newline key. Without `onEditingComplete`, the action moves focus to the next Field (see [Focus and keyboard actions](/widgets/focus)).

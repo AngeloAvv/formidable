@@ -53,7 +53,7 @@ The widget takes every parameter of `CupertinoTextField` (`style`, `padding`, `p
 
 ### Parts that depend on the Field
 
-Some parts of a text field depend on the state of the Field: a clear button that shows only once there is text, a border that turns red on an error. `decorationBuilder`, `prefixBuilder` and `suffixBuilder` build the `decoration`, the `prefix` and the `suffix` from the control of the Field Widget. They run again whenever the Field changes. Pass either the static parameter or its builder, not both.
+Some parts of a text field depend on the state of the Field: a clear button that shows only once there is text, a border that turns red on an error. `decorationBuilder`, `prefixBuilder`, `suffixBuilder` and `styleBuilder` build the `decoration`, the `prefix`, the `suffix` and the `style` from the control of the Field Widget. They run again whenever the Field changes. Pass either the static parameter or its builder, not both.
 
 ```dart
 FormidableCupertinoTextField(
@@ -77,6 +77,18 @@ FormidableCupertinoTextField(
 ```
 
 A builder returns null for "nothing" (no prefix, no suffix) or, for the decoration, the default of `CupertinoTextField`. `control.errorText` follows the error display policy, so the border turns red at the same time as the message shows.
+
+The text style has a builder too. `styleBuilder` sits next to `style`, works like the others (pass one or the other, it runs again whenever the Field changes, and null gives the default style) and is the way to, for example, turn the text red while the Field shows an error:
+
+```dart
+FormidableCupertinoTextField(
+  field: form.name,
+  placeholder: 'Name',
+  styleBuilder: (context, control) => control.errorText == null
+      ? null
+      : const TextStyle(color: CupertinoColors.destructiveRed),
+)
+```
 
 ## Pickers and Unset Fields
 
