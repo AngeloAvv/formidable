@@ -4,6 +4,7 @@ import 'package:formidable/formidable.dart';
 
 import 'categories/choices.dart';
 import 'categories/combinators.dart';
+import 'categories/cross_field.dart';
 import 'categories/dates.dart';
 import 'categories/formats.dart';
 import 'categories/numbers.dart';
@@ -25,6 +26,7 @@ abstract class FormidableLocalizations
     with
         FormidableChoiceMessages,
         FormidableCombinatorMessages,
+        FormidableCrossFieldMessages,
         FormidableDateMessages,
         FormidableFormatMessages,
         FormidableNumberMessages,
@@ -72,6 +74,7 @@ abstract class FormidableLocalizations
       stringMessageOf(error) ??
       formatMessageOf(error) ??
       combinatorMessageOf(error) ??
+      crossFieldMessageOf(error) ??
       parsingMessageOf(error) ??
       numberMessageOf(error) ??
       dateMessageOf(error) ??
@@ -83,6 +86,7 @@ class FormidableLocalizationsEn extends FormidableLocalizations
     with
         FormidableChoiceMessagesEn,
         FormidableCombinatorMessagesEn,
+        FormidableCrossFieldMessagesEn,
         FormidableDateMessagesEn,
         FormidableFormatMessagesEn,
         FormidableNumberMessagesEn,
@@ -97,6 +101,7 @@ class FormidableLocalizationsIt extends FormidableLocalizations
     with
         FormidableChoiceMessagesIt,
         FormidableCombinatorMessagesIt,
+        FormidableCrossFieldMessagesIt,
         FormidableDateMessagesIt,
         FormidableFormatMessagesIt,
         FormidableNumberMessagesIt,
@@ -111,6 +116,7 @@ class FormidableLocalizationsEs extends FormidableLocalizations
     with
         FormidableChoiceMessagesEs,
         FormidableCombinatorMessagesEs,
+        FormidableCrossFieldMessagesEs,
         FormidableDateMessagesEs,
         FormidableFormatMessagesEs,
         FormidableNumberMessagesEs,
@@ -125,6 +131,7 @@ class FormidableLocalizationsFr extends FormidableLocalizations
     with
         FormidableChoiceMessagesFr,
         FormidableCombinatorMessagesFr,
+        FormidableCrossFieldMessagesFr,
         FormidableDateMessagesFr,
         FormidableFormatMessagesFr,
         FormidableNumberMessagesFr,
@@ -139,6 +146,7 @@ class FormidableLocalizationsDe extends FormidableLocalizations
     with
         FormidableChoiceMessagesDe,
         FormidableCombinatorMessagesDe,
+        FormidableCrossFieldMessagesDe,
         FormidableDateMessagesDe,
         FormidableFormatMessagesDe,
         FormidableNumberMessagesDe,

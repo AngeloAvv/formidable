@@ -1,0 +1,132 @@
+---
+title: Cross-field rules
+description: Declare rules that span several Fields as annotations on the Field that receives the error
+---
+
+# Cross-field rules
+
+Some rules need more than one Field: "the confirmation must match the password", "the VAT number is required for companies", "fill in a phone or an email". Formidable ships these as annotations. You put the annotation on the Field that should show the error, and you name the other Fields by Dart symbol.
+
+```dart
+@Formidable()
+class SignUp {
+  const SignUp({
+    required this.password,
+    required this.confirmation,
+    required this.type,
+    this.vat,
+  });
+
+  final String password;
+
+  @MustMatch(#password)
+  final String confirmation;
+
+  final AccountType type;
+
+  @RequiredIf(#type, AccountType.company)
+  final String? vat;
+}
+```
+
+The error is a normal Validation Error on `confirmation` or `vat`. It is added after the Field's own errors, it never replaces them, and it blocks `submit()` and `form.value` like any other error.
+
+## What the generator checks
+
+`#password` is not a string that is looked up at runtime. The generator resolves each symbol to the typed handle of the Field, and the generated Form passes the handles to the rule. The build fails when:
+
+- a symbol is not a Field of the Schema (the message lists the Fields that exist),
+- a rule names its own Field, or a [Passthrough Field](/schema/presence),
+- the types of the Fields do not fit the rule, for example `@MustMatch` between a `String` and an `int`, `@DateRangeOrder` on a `String`, or `@RequiredIfAccepted` on something that is not a `bool`,
+- a constant given to the rule does not fit the Field it is compared with, for example `@RequiredIf(#count, 'x')` when `count` is an `int`.
+
+Nullability never matters: a `String?` Field fits a `String` rule.
+
+## When a rule runs
+
+A rule is re-evaluated whenever any Field of the Form changes and once when the Form is created. Unlike a [Validator](/validation), which only runs while its Field has a value, a rule also runs while its Field is Unset, because "required if" has to. Each rule below says what it does in that case.
+
+Several rules say a Field is **filled**. A Field is filled when it is set, its value is not null, and the value is not an empty string, collection or map. The number `0` and `false` are filled. The same check is available to your own code as `field.isFilled`.
+
+## Comparing Fields
+
+| Annotation | The Field must... |
+|---|---|
+| `@MustMatch(#other)` (alias `@Confirmed(#other)`) | equal the other Field. Both have the same type. Runs when the Field has a value; an Unset other Field matches nothing. |
+| `@Different(#other)` | differ from the other Field. Runs when both have a value. |
+| `@Compare(FormidableComparison.greaterThan, #other)` | be in the given relation with the other Field: `equalTo`, `notEqualTo`, `lessThan`, `lessThanOrEqualTo`, `greaterThan`, `greaterThanOrEqualTo`. Both are `Comparable` of the same type, or two numbers (an `int` can be compared with a `double`). Runs when both have a value that is not null. |
+| `@DateRangeOrder(#start)` | be a `DateTime` that is not before the start Field. Pass `allowSame: false` to require a strictly later date. Runs when both have a value. |
+
+```dart
+final DateTime start;
+
+@DateRangeOrder(#start)
+final DateTime end;
+```
+
+## Required if
+
+All of these add an error to the annotated Field when it is not filled and the condition holds. They run while the Field is Unset.
+
+| Annotation | The Field is required when... |
+|---|---|
+| `@RequiredIf(#other, value)` | the other Field is set to `value`. |
+| `@RequiredUnless(#other, value)` | the other Field is not set to `value`. An Unset other Field is not set to it, so the Field is required. |
+| `@RequiredWith([#a, #b])` | any of the other Fields is filled. |
+| `@RequiredWithAll([#a, #b])` | all of the other Fields are filled. |
+| `@RequiredWithout([#a, #b])` | any of the other Fields is not filled. |
+| `@RequiredWithoutAll([#a, #b])` | none of the other Fields is filled. |
+| `@RequiredIfAccepted(#flag)` | the `bool` Field is `true`. |
+| `@RequiredIfDeclined(#flag)` | the `bool` Field is `false`. |
+
+An Unset `bool` is neither accepted nor declined.
+
+## Prohibited and accepted
+
+| Annotation | Rule |
+|---|---|
+| `@ProhibitedIf(#other, value)` | the Field must not be filled when the other Field is set to `value`. |
+| `@ProhibitedUnless(#other, value)` | the Field must not be filled unless the other Field is set to `value`. |
+| `@Prohibits([#a, #b])` | when the Field is filled, none of the other Fields may be. The error goes on the Field that carries the annotation. |
+| `@AcceptedIf(#other, value)` | the `bool` Field must be `true` when the other Field is set to `value`. Unset is not `true`. |
+| `@DeclinedIf(#other, value)` | the `bool` Field must be `false` when the other Field is set to `value`. Unset is not `false`. |
+
+## Groups of Fields
+
+The count includes the Field that carries the annotation. Put the annotation on one Field of the group, and that Field shows the error.
+
+| Annotation | Rule |
+|---|---|
+| `@AtLeastOneOf([#phone])` | at least one of the Field and the named Fields is filled. |
+| `@ExactlyOneOf([#b, #c])` | exactly one is filled. |
+| `@AtMostOneOf([#y, #z])` | at most one is filled. |
+
+```dart
+@AtLeastOneOf([#phone])
+final String? email;
+final String? phone;
+```
+
+## Collections
+
+| Annotation | Rule |
+|---|---|
+| `@InList(#options)` | the value is an element of the list held by the other Field. The other Field is an `Iterable` of a type that can hold the value. An Unset list is empty, so nothing is in it. |
+| `@UniqueBy(#existing, key)` | no element of the other Field's list has the same key as the value. `key` is a top-level or static function that takes the element type. |
+
+```dart
+String lowerCase(String value) => value.toLowerCase();
+
+final List<String> existing;
+
+@UniqueBy(#existing, lowerCase)
+final String name;
+```
+
+## Messages
+
+Every error has a message in English, Italian, Spanish, French and German, through the same [localization chain](/validation/messages) as the other built-in errors. The errors carry the data a message needs: `FormidableCompareError.comparison` and `FormidableDateRangeOrderError.allowSame`. The messages do not name the other Field, because a Validation Error never holds a Field name.
+
+## Your own rules
+
+When a rule is not in this list, write a [Form Validator](/validation/custom). It receives your typed Form and addresses errors to Field handles, so it stays type-safe.

@@ -27,6 +27,11 @@ const _validatorChecker = TypeChecker.typeNamed(
   inPackage: 'formidable',
 );
 
+const _crossFieldRuleChecker = TypeChecker.typeNamed(
+  FormidableCrossFieldRule,
+  inPackage: 'formidable',
+);
+
 const _formValidatorChecker = TypeChecker.typeNamed(
   FormidableFormValidator,
   inPackage: 'formidable',
@@ -76,6 +81,19 @@ final class SchemaModel {
   String get scopeName => '${name}FormScope';
 }
 
+/// A cross-field rule as the emitter sees it: the annotation rebuilt as a const
+/// expression and the Fields it names, resolved from symbols to Field names.
+final class CrossFieldRuleModel {
+  const CrossFieldRuleModel({required this.source, required this.references});
+
+  /// The const expression that rebuilds the rule, for example
+  /// `const MustMatch(#password)`.
+  final String source;
+
+  /// The names of the referenced Fields, in the order of the rule's symbols.
+  final List<String> references;
+}
+
 final class FieldModel {
   const FieldModel({
     required this.name,
@@ -83,6 +101,7 @@ final class FieldModel {
     required this.isNullable,
     required this.validators,
     required this.normalizers,
+    this.crossFieldRules = const [],
     required this.defaultSource,
     required this.isRequired,
     required this.isPassthrough,
@@ -100,6 +119,9 @@ final class FieldModel {
 
   /// Const expressions that rebuild the Normalizers, in annotation order.
   final List<String> normalizers;
+
+  /// The cross-field rules of the Field, in annotation order.
+  final List<CrossFieldRuleModel> crossFieldRules;
 
   /// The constructor default of the Schema field, or null.
   final String? defaultSource;
@@ -201,7 +223,7 @@ SchemaModel readSchema(Element element, [List<ClassElement> path = const []]) {
       field.name!: _readField(field, defaults[field.name], element, [
         ...path,
         element,
-      ]),
+      ], fieldByName),
   };
 
   final warnings = [
@@ -268,10 +290,12 @@ FieldModel _readField(
   String? defaultSource,
   ClassElement owner,
   List<ClassElement> path,
+  Map<String, FieldElement> fieldByName,
 ) {
   final nested = _readNested(field, defaultSource, owner, path);
   final validators = <String>[];
   final normalizers = <String>[];
+  final crossFieldRules = <CrossFieldRuleModel>[];
   for (final annotation in field.metadata.annotations) {
     final value = annotation.computeConstantValue();
     final type = value?.type;
@@ -283,6 +307,10 @@ FieldModel _readField(
       // The part file shares the Schema library's scope, so the annotation
       // source can be reused as a const expression as it is written.
       validators.add('const ${annotation.toSource().substring(1)}');
+    } else if (_crossFieldRuleChecker.isAssignableFromType(type)) {
+      crossFieldRules.add(
+        _readCrossFieldRule(field, annotation, value!, fieldByName),
+      );
     }
   }
   return FieldModel(
@@ -291,6 +319,7 @@ FieldModel _readField(
     isNullable: field.type.nullabilitySuffix == NullabilitySuffix.question,
     validators: validators,
     normalizers: normalizers,
+    crossFieldRules: crossFieldRules,
     defaultSource: defaultSource,
     isRequired: _requiredChecker.hasAnnotationOf(field),
     isPassthrough: _passthroughChecker.hasAnnotationOf(field),
@@ -415,4 +444,232 @@ void _checkValidatorFits(FieldElement field, DartObject object) {
 bool _isFormValidator(ElementAnnotation annotation) {
   final type = annotation.computeConstantValue()?.type;
   return type != null && _formValidatorChecker.isAssignableFromType(type);
+}
+
+/// Reads a cross-field rule annotation of [field]: resolves its symbols to
+/// Fields of the same Schema and fails the build when a symbol is not a Field
+/// or when the types of the Fields do not fit the rule.
+CrossFieldRuleModel _readCrossFieldRule(
+  FieldElement field,
+  ElementAnnotation annotation,
+  DartObject rule,
+  Map<String, FieldElement> fieldByName,
+) {
+  final ruleType = rule.type as InterfaceType;
+  final ruleName = ruleType.element.name!;
+  final schemaName = field.enclosingElement.name;
+  String problem(String message) =>
+      '@$ruleName on "${field.name}" of $schemaName $message';
+
+  if (_passthroughChecker.hasAnnotationOf(field)) {
+    throw InvalidGenerationSourceError(
+      problem(
+        'cannot be used: "${field.name}" is a Passthrough Field, which has '
+        'no errors.',
+      ),
+      element: field,
+    );
+  }
+
+  final symbols = [
+    ?_inheritedField(rule, 'other')?.toSymbolValue(),
+    for (final symbol
+        in _inheritedField(rule, 'others')?.toListValue() ?? <DartObject>[])
+      ?symbol.toSymbolValue(),
+  ];
+  if (symbols.isEmpty) {
+    throw InvalidGenerationSourceError(
+      problem('does not name any Field.'),
+      element: field,
+    );
+  }
+
+  final typeSystem = field.library.typeSystem;
+  final references = <FieldElement>[];
+  for (final name in symbols) {
+    final referenced = fieldByName[name];
+    if (referenced == null) {
+      throw InvalidGenerationSourceError(
+        problem(
+          'refers to #$name, but $schemaName has no Field named "$name". '
+          'The Fields are: ${fieldByName.keys.join(', ')}.',
+        ),
+        element: field,
+      );
+    }
+    if (referenced.name == field.name) {
+      throw InvalidGenerationSourceError(
+        problem('refers to its own Field.'),
+        element: field,
+      );
+    }
+    if (_passthroughChecker.hasAnnotationOf(referenced)) {
+      throw InvalidGenerationSourceError(
+        problem(
+          'refers to #$name, which is a Passthrough Field. A Passthrough '
+          'Field cannot be used in a rule.',
+        ),
+        element: field,
+      );
+    }
+    references.add(referenced);
+  }
+
+  final typeProvider = field.library.typeProvider;
+  final target = typeSystem.promoteToNonNull(field.type);
+  final targetName = field.type.getDisplayString();
+
+  void mismatch(FieldElement referenced, String expected) {
+    throw InvalidGenerationSourceError(
+      problem(
+        'cannot use #${referenced.name}: the rule needs $expected, but '
+        '"${referenced.name}" is ${referenced.type.getDisplayString()}.',
+      ),
+      element: field,
+    );
+  }
+
+  final targetFit =
+      FormidableTargetFit.values[_inheritedField(
+        rule,
+        'targetFit',
+      )!.getField('index')!.toIntValue()!];
+  final targetOk = switch (targetFit) {
+    FormidableTargetFit.any => true,
+    FormidableTargetFit.boolean => typeSystem.isSubtypeOf(
+      target,
+      typeProvider.boolType,
+    ),
+    FormidableTargetFit.dateTime => _isDateTime(target),
+    FormidableTargetFit.comparable => _isComparable(target),
+  };
+  if (!targetOk) {
+    throw InvalidGenerationSourceError(
+      problem(
+        'cannot be used: it needs a Field of type '
+        '${switch (targetFit) {
+          FormidableTargetFit.boolean => 'bool',
+          FormidableTargetFit.dateTime => 'DateTime',
+          _ => 'Comparable (such as num, String or DateTime)',
+        }}, but "${field.name}" is $targetName.',
+      ),
+      element: field,
+    );
+  }
+
+  final referenceFit =
+      FormidableReferenceFit.values[_inheritedField(
+        rule,
+        'referenceFit',
+      )!.getField('index')!.toIntValue()!];
+  final typeArgument = ruleType.typeArguments.firstOrNull;
+  if (typeArgument != null &&
+      !typeSystem.isAssignableTo(target, typeArgument)) {
+    throw InvalidGenerationSourceError(
+      problem(
+        'cannot be used: it works on ${typeArgument.getDisplayString()}, but '
+        '"${field.name}" is $targetName.',
+      ),
+      element: field,
+    );
+  }
+
+  for (final referenced in references) {
+    final type = typeSystem.promoteToNonNull(referenced.type);
+    switch (referenceFit) {
+      case FormidableReferenceFit.any:
+        break;
+      case FormidableReferenceFit.boolean:
+        if (!typeSystem.isSubtypeOf(type, typeProvider.boolType)) {
+          mismatch(referenced, 'a bool Field');
+        }
+      case FormidableReferenceFit.dateTime:
+        if (!_isDateTime(type)) mismatch(referenced, 'a DateTime Field');
+      case FormidableReferenceFit.sameAsTarget:
+        if (!typeSystem.isAssignableTo(type, target) ||
+            !typeSystem.isAssignableTo(target, type)) {
+          mismatch(
+            referenced,
+            'the same type as "${field.name}" ($targetName)',
+          );
+        }
+      case FormidableReferenceFit.comparableWithTarget:
+        final bothNumbers =
+            typeSystem.isSubtypeOf(type, typeProvider.numType) &&
+            typeSystem.isSubtypeOf(target, typeProvider.numType);
+        if (!_isComparable(type) ||
+            !(bothNumbers ||
+                (typeSystem.isAssignableTo(type, target) &&
+                    typeSystem.isAssignableTo(target, type)))) {
+          mismatch(
+            referenced,
+            'a Field that can be compared with "${field.name}" '
+            '($targetName)',
+          );
+        }
+      case FormidableReferenceFit.iterableOfTarget:
+        final element = type is InterfaceType
+            ? type
+                  .asInstanceOf(typeProvider.iterableElement)
+                  ?.typeArguments
+                  .single
+            : null;
+        if (element == null || !typeSystem.isAssignableTo(target, element)) {
+          mismatch(
+            referenced,
+            'an Iterable of the type of "${field.name}" ($targetName)',
+          );
+        } else if (typeArgument != null &&
+            !typeSystem.isAssignableTo(element, typeArgument)) {
+          mismatch(
+            referenced,
+            'elements of type ${typeArgument.getDisplayString()}, the type '
+            'its key function takes',
+          );
+        }
+    }
+  }
+
+  if (_inheritedField(rule, 'hasOperand')?.toBoolValue() ?? false) {
+    final operandType = _inheritedField(rule, 'operand')?.type;
+    final first = references.first;
+    if (operandType != null &&
+        !typeSystem.isAssignableTo(operandType, first.type)) {
+      throw InvalidGenerationSourceError(
+        problem(
+          'compares #${first.name} with a value of type '
+          '${operandType.getDisplayString()}, but "${first.name}" is '
+          '${first.type.getDisplayString()}.',
+        ),
+        element: field,
+      );
+    }
+  }
+
+  return CrossFieldRuleModel(
+    source: 'const ${annotation.toSource().substring(1)}',
+    references: [for (final r in references) r.name!],
+  );
+}
+
+bool _isDateTime(DartType type) =>
+    type is InterfaceType &&
+    type.element.name == 'DateTime' &&
+    type.element.library.isDartCore;
+
+/// Whether [type] implements `Comparable`.
+bool _isComparable(DartType type) =>
+    type is InterfaceType &&
+    [type, ...type.allSupertypes].any(
+      (t) => t.element.name == 'Comparable' && t.element.library.isDartCore,
+    );
+
+/// A field of a constant [object] declared on it or on one of its
+/// superclasses. `DartObject.getField` only sees the class of the object.
+DartObject? _inheritedField(DartObject object, String name) {
+  for (DartObject? o = object; o != null; o = o.getField('(super)')) {
+    final value = o.getField(name);
+    if (value != null) return value;
+  }
+  return null;
 }
