@@ -1,4 +1,3 @@
-import 'package:formidable/formidable.dart';
 import 'package:formidable_test_schemas/pipeline_order.dart';
 import 'package:test/test.dart';
 
