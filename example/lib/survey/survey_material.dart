@@ -81,7 +81,7 @@ class _SurveyBodyState extends State<_SurveyBody> {
                 border: const OutlineInputBorder(),
               ),
             ),
-    YesNoQuestion(:final key, :final label) => FormidableMaterialSwitch(
+    YesNoQuestion(:final key, :final label) => FormidableMaterialSwitchListTile(
       key: Key('answer-$key'),
       field: form.answers.field<bool>(key),
       title: Text(label),

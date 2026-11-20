@@ -45,13 +45,28 @@ class _ProfileBodyState extends State<_ProfileBody> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        FormidableMaterialCheckbox(
+        FormidableMaterialCheckboxListTile(
           field: form.acceptedTerms,
           title: const Text('I accept the terms'),
         ),
-        FormidableMaterialSwitch(
+        FormidableMaterialSwitchListTile(
           field: form.notifications,
           title: const Text('Notifications'),
+        ),
+        const SizedBox(height: 16),
+        FormidableMaterialTextField<String?>(
+          field: form.nickname,
+          decorationBuilder: (context, control) => InputDecoration(
+            labelText: 'Nickname',
+            border: const OutlineInputBorder(),
+            suffixIcon: (control.value ?? '').isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Clear',
+                    icon: const Icon(Icons.clear),
+                    onPressed: control.clear,
+                  ),
+          ),
         ),
         const _Heading('Plan'),
         FormidableMaterialRadioGroup(

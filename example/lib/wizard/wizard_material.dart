@@ -151,7 +151,7 @@ class _WizardBodyState extends State<_WizardBody> {
 
   List<Widget> _confirmStep(BookingForm form) => [
     BookingFormBuilder(builder: (context, _) => Text(describeBooking(form))),
-    FormidableMaterialCheckbox(
+    FormidableMaterialCheckboxListTile(
       field: form.confirmation.acceptedTerms,
       title: const Text('I accept the terms'),
     ),
