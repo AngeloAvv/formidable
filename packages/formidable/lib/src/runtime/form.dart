@@ -68,15 +68,10 @@ abstract class FormidableForm<S>
   FormidableFormState get state => _state ??= _computeState();
 
   /// The Schema instance while the Form is valid and not pending, null
-  /// otherwise (and while an optional Nested Form is Unset). It is computed on
-  /// every read.
-  S? get value {
-    final state = this.state;
-    if (!isSet || state.status != FormidableStatus.valid || state.pending) {
-      return null;
-    }
-    return buildOutput();
-  }
+  /// otherwise (and while an optional Nested Form is Unset). It is the
+  /// [FormidableFormMeta.value] of the current [state], so the Schema
+  /// constructor runs on the first read after a change, not on every change.
+  S? get value => (state.form as FormidableFormMeta<S>).value;
 
   /// Whether the Form holds a value, as opposed to being an Unset optional
   /// Nested Form. It is always true for a Form that is not an optional Nested
@@ -721,40 +716,41 @@ abstract class FormidableForm<S>
     notifyListeners();
   }
 
-  FormidableFormState _computeState() {
-    final valid = isValid;
-    final pending = isPending;
-    return buildState(
-      status: valid ? FormidableStatus.valid : FormidableStatus.invalid,
-      dirty: isDirty,
-      pending: pending,
-      isSet: isSet,
-      errors: _formErrors,
-      value: isSet && valid && !pending ? buildOutput() : null,
-    );
-  }
+  FormidableFormState _computeState() => buildState(
+    status: isValid ? FormidableStatus.valid : FormidableStatus.invalid,
+    dirty: isDirty,
+    pending: isPending,
+    isSet: isSet,
+    errors: _formErrors,
+  );
 
   /// Builds the snapshot of the Form from the flags the runtime computed.
   ///
   /// A generated Form overrides it to return its own subclass of
   /// [FormidableFormState], adding the state of every child, which it reads
-  /// from its Field handles. [value] is the Schema instance, or null while the
-  /// Form is invalid, pending or an Unset optional Nested Form. The snapshot
-  /// must be equal to the previous one when nothing below the Form changed.
+  /// from its Field handles, and a [FormidableFormMeta] whose value is built
+  /// from those child states, so the snapshot never reads a Form that has
+  /// moved on. The snapshot must be equal to the previous one when nothing
+  /// below the Form changed, and must not run the Schema constructor: the
+  /// value is lazy.
+  ///
+  /// The default builds a plain [FormidableFormState] whose value reads the
+  /// Form when it is first asked for.
   FormidableFormState buildState({
     required FormidableStatus status,
     required bool dirty,
     required bool pending,
     required bool isSet,
     required List<FormidableValidationError> errors,
-    required S? value,
   }) => FormidableFormState(
-    status: status,
-    dirty: dirty,
-    pending: pending,
-    isSet: isSet,
-    errors: errors,
-    value: value,
+    form: FormidableFormMeta<S>(
+      status: status,
+      dirty: dirty,
+      pending: pending,
+      isSet: isSet,
+      errors: errors,
+      buildValue: buildOutput,
+    ),
   );
 }
 

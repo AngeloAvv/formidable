@@ -28,10 +28,10 @@ void main() {
         form.postalCode.setValue('70121');
         async.elapse(const Duration(seconds: 5));
         expect(validator.calls, isEmpty);
-        expect(form.state.pending, isFalse);
+        expect(form.state.form.pending, isFalse);
 
         form.city.setValue('Bari');
-        expect(form.state.pending, isTrue);
+        expect(form.state.form.pending, isTrue);
         async.elapse(_debounce);
         expect(validator.calls, ['70121/Bari']);
       });
@@ -47,8 +47,8 @@ void main() {
 
         expect(form.city.state.errors, [const CityMismatchError()]);
         expect(form.postalCode.state.errors, isEmpty);
-        expect(form.state.pending, isFalse);
-        expect(form.state.status, FormidableStatus.invalid);
+        expect(form.state.form.pending, isFalse);
+        expect(form.state.form.status, FormidableStatus.invalid);
       });
     });
 
@@ -122,7 +122,7 @@ void main() {
         async.flushMicrotasks();
 
         expect(form.city.state.errors, [isA<FormidableRequiredError>()]);
-        expect(form.state.pending, isFalse);
+        expect(form.state.form.pending, isFalse);
       });
     });
 
@@ -133,7 +133,7 @@ void main() {
         async.elapse(const Duration(seconds: 5));
 
         expect(validator.calls, isEmpty);
-        expect(form.state.pending, isFalse);
+        expect(form.state.form.pending, isFalse);
       });
     });
 
@@ -167,7 +167,7 @@ void main() {
         expect(form.postalCode.state.errors, [
           FormidableAsyncCheckFailedError(cause),
         ]);
-        expect(form.state.pending, isFalse);
+        expect(form.state.form.pending, isFalse);
       });
     });
 
@@ -198,7 +198,7 @@ void main() {
         );
         FormidableSubmitResult<Order>? result;
 
-        expect(form.state.pending, isTrue);
+        expect(form.state.form.pending, isTrue);
         form.submit().then((value) => result = value);
         async.elapse(_debounce);
         expect(validator.calls, ['70121/Roma']);

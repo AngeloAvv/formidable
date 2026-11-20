@@ -10,7 +10,7 @@ void main() {
 
       expect(form.confirmation.state.errors, [isA<FormidableMustMatchError>()]);
       expect(form.password.state.errors, isEmpty);
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
     });
 
     test('passes when the values are equal', () {

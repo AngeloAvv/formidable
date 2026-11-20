@@ -45,6 +45,10 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
   ///   valid.
   /// - [itemState] returns the current state of an item, which the state of
   ///   the array holds.
+  /// - [readState] returns the value of an item from its state, like [read]
+  ///   does from the item. The state of the array uses it to build the output
+  ///   from the item states it holds, so a snapshot never reads an array that
+  ///   has moved on.
   /// - [validators] judge the array as a whole while it has items. They receive
   ///   one entry per item: its value, or null while the item has none (an Unset
   ///   Field or a Nested Form that is not valid yet).
@@ -58,6 +62,7 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
     required N Function(T? initial) create,
     required T Function(N node) read,
     required S Function(N node) itemState,
+    required T Function(S state) readState,
     List<FormidableValidator<Object?>> validators = const [],
     bool required = false,
     bool nullable = false,
@@ -66,6 +71,7 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
   }) : _create = create,
        _read = read,
        _itemState = itemState,
+       _readState = readState,
        _validators = validators,
        _required = required,
        _nullable = nullable,
@@ -84,6 +90,7 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
   final N Function(T? initial) _create;
   final T Function(N node) _read;
   final S Function(N node) _itemState;
+  final T Function(S state) _readState;
   final List<FormidableValidator<Object?>> _validators;
   final bool _required;
   final bool _nullable;
@@ -366,14 +373,23 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
     if (changed) notifyListeners();
   }
 
-  FormidableFieldArrayState<S> _stateFor() => FormidableFieldArrayState<S>(
-    ids: [for (final item in _items) item.id],
-    items: [for (final item in _items) _itemState(item.node)],
-    errors: _errors(),
-    touched: _touched,
-    submitted: _submitted,
-    dirty: isDirty,
-  );
+  FormidableFieldArrayState<S> _stateFor() {
+    final states = [for (final item in _items) _itemState(item.node)];
+    final fallback = _defaultValue;
+    return FormidableFieldArrayState<S>(
+      ids: [for (final item in _items) item.id],
+      items: states,
+      errors: _errors(),
+      touched: _touched,
+      submitted: _submitted,
+      dirty: isDirty,
+      outputOrNull: () => states.isNotEmpty
+          ? <T>[for (final state in states) _readState(state)]
+          : fallback == null
+          ? null
+          : List<T>.of(fallback),
+    );
+  }
 
   List<FormidableValidationError> _errors() {
     if (_items.isEmpty) {

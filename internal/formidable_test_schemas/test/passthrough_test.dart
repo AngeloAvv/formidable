@@ -44,9 +44,9 @@ void main() {
       final form = EditUserForm(id: 7);
 
       expect(form.id.isValid, isTrue);
-      expect(form.state.status, FormidableStatus.invalid); // name is Unset
+      expect(form.state.form.status, FormidableStatus.invalid); // name is Unset
       form.name.setValue('x');
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.status, FormidableStatus.valid);
     });
 
     test('a nullable Passthrough can be set to null', () async {

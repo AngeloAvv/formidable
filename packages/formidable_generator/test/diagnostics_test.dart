@@ -917,11 +917,9 @@ class SignUp {
       'buildState',
       'hashCode',
       'toString',
-      // Members of the generated state, which holds a getter for every Field.
-      'status',
-      'dirty',
-      'pending',
-      'errors',
+      // The metadata of the generated state lives under `form`, so `form` is
+      // the only name the state takes from the Schema's Fields.
+      'form',
     ]) {
       test('fails for a Field named $name', () async {
         final result = await build(name);
@@ -939,6 +937,15 @@ class SignUp {
 
       expect(result.succeeded, isTrue);
     });
+
+    // The metadata of the Form is under `state.form`, so these names are free.
+    for (final name in ['status', 'dirty', 'pending', 'errors']) {
+      test('accepts a Field named $name', () async {
+        final result = await build(name);
+
+        expect(result.succeeded, isTrue);
+      });
+    }
   });
 
   group('Nested Form with an Async Validator', () {

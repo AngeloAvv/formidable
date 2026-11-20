@@ -26,20 +26,20 @@ void main() {
 
       expect(state.username, form.username.state);
       expect(state.username.value, 'ab');
-      expect(state.status, FormidableStatus.invalid);
-      expect(state.dirty, isFalse);
-      expect(state.pending, isFalse);
-      expect(state.errors, isEmpty);
+      expect(state.form.status, FormidableStatus.invalid);
+      expect(state.form.dirty, isFalse);
+      expect(state.form.pending, isFalse);
+      expect(state.form.errors, isEmpty);
     });
 
     test('holds the Schema value, null while the Form is invalid', () {
       final form = SignUpForm(username: 'ab');
-      expect(form.state.value, isNull);
+      expect(form.state.form.value, isNull);
 
       form.username.setValue('angelo');
 
-      expect(form.state.value?.username, 'angelo');
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.value?.username, 'angelo');
+      expect(form.state.form.status, FormidableStatus.valid);
     });
 
     test('differs after a change that keeps the Form valid', () {
@@ -49,7 +49,7 @@ void main() {
       form.username.setValue('angelo2');
 
       expect(form.state, isNot(before));
-      expect(form.state.status, before.status);
+      expect(form.state.form.status, before.form.status);
     });
 
     test('differs when only touched changes', () {
@@ -75,7 +75,10 @@ void main() {
       final state = SignUpForm(username: 'angelo').state;
 
       expect(
-        state == FormidableFormState(status: FormidableStatus.valid),
+        state ==
+            FormidableFormState(
+              form: FormidableFormMeta<Object?>(status: FormidableStatus.valid),
+            ),
         isFalse,
       );
     });
@@ -92,7 +95,7 @@ void main() {
       form.username.markAsTouched();
 
       expect(notifications, 1);
-      expect(form.state.value, isNot(same(before.value)));
+      expect(form.state.form.value, isNot(same(before.form.value)));
     });
 
     test('toString names the state and its Fields', () {
@@ -175,13 +178,13 @@ void main() {
         name: 'Angelo',
         home: const Address(street: 'Via Roma'),
       );
-      expect(form.state.work.isSet, isFalse);
-      expect(form.state.home.isSet, isTrue);
+      expect(form.state.work.form.isSet, isFalse);
+      expect(form.state.home.form.isSet, isTrue);
 
       form.work.street.setValue('Via Torino');
 
-      expect(form.state.work.isSet, isTrue);
-      expect(form.state.work.dirty, isTrue);
+      expect(form.state.work.form.isSet, isTrue);
+      expect(form.state.work.form.dirty, isTrue);
     });
 
     test('the Schema value holds the Nested Form value', () {
@@ -191,8 +194,8 @@ void main() {
         billing: const Address(street: 'Via Po'),
       );
 
-      expect(form.state.value?.home.street, 'Via Roma');
-      expect(form.state.home.value?.street, 'Via Roma');
+      expect(form.state.form.value?.home.street, 'Via Roma');
+      expect(form.state.home.form.value?.street, 'Via Roma');
     });
   });
 

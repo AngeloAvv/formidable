@@ -143,11 +143,11 @@ void main() {
     test('makes the Form valid again when the invalid Field goes away', () {
       final form = SurveyForm()..title.setValue('Pets');
       form.answers.register<int>('age');
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
 
       form.answers.remove('age');
 
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.status, FormidableStatus.valid);
     });
 
     test('fails when nothing is registered under the key', () {
@@ -181,9 +181,9 @@ void main() {
       )..setValue('Re');
 
       expect(nickname.state.errors, [isA<FormidableMinLengthError>()]);
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
       nickname.setValue('Rex');
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.status, FormidableStatus.valid);
     });
 
     test('accepts a Validator typed for a supertype of the Field', () {
@@ -242,7 +242,7 @@ void main() {
       );
 
       expect(age.state.errors, [isA<PasswordMismatch>()]);
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
     });
   });
 
@@ -360,7 +360,7 @@ void main() {
       age.setValue(7);
 
       expect(formCalls, 1);
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.status, FormidableStatus.valid);
     });
   });
 
@@ -370,7 +370,7 @@ void main() {
 
       form.answers.register<String?>('nickname');
 
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
     });
 
     test('writing a dynamic Field makes the Form dirty and back again', () {
@@ -378,11 +378,11 @@ void main() {
       final nickname = form.answers.register<String?>('nickname');
 
       nickname.setValue('Rex');
-      expect(form.state.dirty, isTrue);
+      expect(form.state.form.dirty, isTrue);
       expect(form.answers.isDirty, isTrue);
 
       nickname.clear();
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
     });
 
     test('reset restores the values and keeps the Fields registered', () {
@@ -394,7 +394,7 @@ void main() {
 
       expect(nickname.isSet, isFalse);
       expect(form.answers.contains('nickname'), isTrue);
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
     });
 
     test('commit makes the current values the initial state', () {
@@ -403,7 +403,7 @@ void main() {
       nickname.setValue('Rex');
 
       form.commit();
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
 
       nickname.setValue('Max');
       form.reset();
@@ -422,7 +422,7 @@ void main() {
         final age = form.answers.register<int>('age');
 
         expect(age.value, 7);
-        expect(form.state.dirty, isFalse);
+        expect(form.state.form.dirty, isFalse);
         expect(form.value!.answers, {'age': 7});
       },
     );
