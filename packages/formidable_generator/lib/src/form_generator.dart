@@ -15,5 +15,11 @@ class FormGenerator extends GeneratorForAnnotation<Formidable> {
     Element element,
     ConstantReader annotation,
     BuildStep buildStep,
-  ) => emitForm(readSchema(element));
+  ) {
+    final schema = readSchema(element);
+    // Only this builder reports warnings, so the Form Scope builder, which
+    // reads the same Schema, does not repeat them.
+    schema.warnings.forEach(log.warning);
+    return emitForm(schema);
+  }
 }
