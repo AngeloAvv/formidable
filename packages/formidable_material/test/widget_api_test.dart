@@ -438,6 +438,29 @@ void main() {
       expect(plan.value, 'pro');
     });
 
+    testWidgets('every option is disabled while the Field is', (tester) async {
+      await tester.pumpWidget(
+        app(
+          FormidableMaterialRadioGroup<String>(field: plan, options: options()),
+        ),
+      );
+      RadioListTile<(String,)> tile(int index) => tester
+          .widgetList<RadioListTile<(String,)>>(
+            find.byType(RadioListTile<(String,)>),
+          )
+          .elementAt(index);
+      expect(tile(0).enabled, isNull);
+
+      plan.disable();
+      await tester.pump();
+
+      expect(tile(0).enabled, isFalse);
+      expect(tile(1).enabled, isFalse);
+      await tester.tap(find.text('Pro'));
+      await tester.pump();
+      expect(plan.isSet, isFalse);
+    });
+
     testWidgets('a toggleable group puts the Field back to Unset', (
       tester,
     ) async {

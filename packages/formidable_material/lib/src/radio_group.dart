@@ -133,7 +133,7 @@ class FormidableMaterialRadioGroup<T> extends FormidableFieldWidget<T, T> {
                        subtitle: option.subtitle,
                        secondary: option.secondary,
                        isThreeLine: option.isThreeLine,
-                       enabled: option.enabled,
+                       enabled: control.enabled ? option.enabled : false,
                        autofocus: option.autofocus,
                        focusNode: option.focusNode,
                        statesController: option.statesController,
