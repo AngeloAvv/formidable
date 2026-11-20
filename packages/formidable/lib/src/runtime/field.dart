@@ -110,8 +110,7 @@ final class FormidableField<T>
   ///
   /// Widgets call it when a Codec fails to parse their input. The next
   /// [setValue] or [clear] lifts the rejection.
-  void reject(FormidableValidationError error) =>
-      _write(() => _reject(error));
+  void reject(FormidableValidationError error) => _write(() => _reject(error));
 
   /// The error given to [reject], or null when the last input was accepted.
   FormidableValidationError? get inputError => _inputError;
@@ -252,7 +251,6 @@ final class FormidableField<T>
 
   List<FormidableValidationError> _validate(T? value) => [
     for (final validator in _validators)
-      if (value != null || validator.acceptsNull)
-        ...validator.validate(value),
+      if (value != null || validator.acceptsNull) ...validator.validate(value),
   ];
 }
