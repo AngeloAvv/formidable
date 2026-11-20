@@ -18,4 +18,5 @@ export 'src/validation/form_validator.dart';
 export 'src/validation/required_error.dart';
 export 'src/validation/validation_error.dart';
 export 'src/validation/validator.dart';
+export 'src/validators/any_of.dart';
 export 'src/validators/min_length.dart';

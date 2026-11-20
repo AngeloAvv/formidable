@@ -273,14 +273,35 @@ class Account {
       expect(result.errors.join('\n'), contains('IsEven'));
     });
 
-    test('checks the type arguments of a generic Validator', () async {
+    test('checks the Validators inside a combinator', () async {
+      final result = await build(
+        annotations: '@AnyOf([MinLength(3), IsEven()])',
+        type: 'String',
+        declarations: _isEven,
+      );
+
+      expect(result.succeeded, isFalse);
+      expect(result.errors.join('\n'), contains('IsEven'));
+    });
+
+    test('accepts a combinator whose Validators all fit', () async {
+      final result = await build(
+        annotations: '@AnyOf([MinLength(3), NotBlank()])',
+        type: 'String',
+        declarations: _notBlank,
+      );
+
+      expect(result.succeeded, isTrue);
+    });
+
+    test('checks a Validator nested in a combinator against an unfit Field', () async {
       final result = await build(
         annotations: '@AnyOf([MinLength(3)])',
         type: 'int',
       );
 
       expect(result.succeeded, isFalse);
-      expect(result.errors.join('\n'), contains('AnyOf'));
+      expect(result.errors.join('\n'), contains('MinLength'));
     });
   });
 

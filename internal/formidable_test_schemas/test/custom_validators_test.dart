@@ -58,9 +58,7 @@ void main() {
     test('adds an error to the Field handle it addresses', () {
       final form = _form()..confirmation.setValue('different-pass');
 
-      expect(form.confirmation.state.errors, [
-        const PasswordMismatchError(),
-      ]);
+      expect(form.confirmation.state.errors, [const PasswordMismatchError()]);
       expect(form.password.state.errors, isEmpty);
     });
 
@@ -108,7 +106,8 @@ void main() {
     test('blocks submit and reports the error on the handle', () async {
       final form = _form()..confirmation.setValue('different-pass');
 
-      final result = await form.submit() as FormidableSubmitInvalid<Registration>;
+      final result =
+          await form.submit() as FormidableSubmitInvalid<Registration>;
 
       expect(result.fieldErrors[form.confirmation], [
         const PasswordMismatchError(),

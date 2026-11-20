@@ -1,0 +1,109 @@
+---
+title: Custom Validators
+description: Write your own rules for one Field or for several Fields
+---
+
+# Custom Validators
+
+## A Validator for one Field
+
+A custom Validator is a `const` class with a single `validate` method. It returns the Validation Errors for a value, or an empty list when the value is valid.
+
+```dart
+final class OddError extends FormidableValidationError {
+  const OddError(this.value);
+
+  final int value;
+
+  @override
+  List<Object?> get props => [value];
+}
+
+class IsEven extends FormidableValidator<int> {
+  const IsEven();
+
+  @override
+  List<FormidableValidationError> validate(int value) =>
+      value.isEven ? const [] : [OddError(value)];
+}
+```
+
+Declare it as an annotation on the Field:
+
+```dart
+@Formidable()
+class Settings {
+  const Settings({required this.seats});
+
+  @IsEven()
+  final int seats;
+}
+```
+
+Register a message for `OddError` with `FormidableConfig` as described in [Messages and localization](/validation/messages).
+
+### When it runs
+
+- `validate` is called only when the Field has a value. An Unset Field never reaches it.
+- A Validator typed for a non-nullable value, such as `FormidableValidator<int>`, is skipped when the chosen value is `null`. A nullable Field can therefore carry `@IsEven()`: choosing `null` is not judged by it. To judge `null` yourself, type the Validator for a nullable value, `FormidableValidator<int?>`.
+- When a Field has several Validators, its errors follow the order of the annotations. A widget shows the first one.
+
+### Type safety
+
+The build fails when a Validator does not fit the Field:
+
+```dart
+@MinLength(3) // MinLength validates String
+final int seats; // build error: @MinLength cannot be used on "seats"
+```
+
+A Validator fits when the non-null type of the Field is assignable to the type it validates. `FormidableValidator<String>` fits `String` and `String?`. A Validator typed for a supertype, such as `FormidableValidator<Iterable<Object?>>`, fits a `List<String>` Field.
+
+## A rule across several Fields
+
+A Form Validator reads several Fields of the generated Form and returns errors addressed to specific Field handles. It is a `const` class typed on the generated Form, declared as an annotation on the Schema.
+
+```dart
+final class PasswordMismatchError extends FormidableValidationError {
+  const PasswordMismatchError();
+}
+
+class PasswordsMatch extends FormidableFormValidator<SignUpForm> {
+  const PasswordsMatch();
+
+  @override
+  List<FormidableFieldError> validate(SignUpForm form) =>
+      form.password.isSet &&
+          form.confirmation.isSet &&
+          form.password.value != form.confirmation.value
+      ? [FormidableFieldError(form.confirmation, const PasswordMismatchError())]
+      : const [];
+}
+
+@Formidable()
+@PasswordsMatch()
+class SignUp {
+  const SignUp({required this.password, required this.confirmation});
+
+  final String password;
+  final String confirmation;
+}
+```
+
+- It runs after the Field Validators, whenever any Field changes, and once when the Form is created.
+- Its errors are **added** to the errors of the Field, after them. They never replace them.
+- It runs whether or not the Fields have a value, so check `isSet` before reading `value`.
+- `SignUpForm` is generated, so the type has to be written before the first build. The generated code passes the Form Validator to a Form of that exact type, so the compiler rejects a Form Validator typed for another Form.
+
+For the common rules, such as matching two Fields, prefer the built-in cross-field annotations.
+
+## Any of several rules
+
+`AnyOf` passes when any of its Validators passes. It is the only built-in combinator.
+
+```dart
+@AnyOf([HasAtSign(), MinLength(10)]) // your own HasAtSign Validator
+final String contact;
+```
+
+When none passes, the Field gets one `FormidableAnyOfError` whose `failures` hold the errors of every alternative, in order. The generator checks each Validator inside `AnyOf` against the type of the Field.

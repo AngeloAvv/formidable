@@ -29,6 +29,7 @@
       "group": "Validation",
       "pages": [
         { "title": "Validators", "href": "/validation" },
+        { "title": "Custom Validators", "href": "/validation/custom" },
         { "title": "Messages and localization", "href": "/validation/messages" }
       ]
     },

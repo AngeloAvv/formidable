@@ -121,10 +121,7 @@ final class FormidableField<T>
     value: value,
     isSet: isSet,
     touched: touched,
-    errors: [
-      ...(isSet ? _validate(value) : _presenceErrors()),
-      ..._formErrors,
-    ],
+    errors: [...(isSet ? _validate(value) : _presenceErrors()), ..._formErrors],
   );
 
   static bool _sameErrors(
@@ -148,7 +145,6 @@ final class FormidableField<T>
 
   List<FormidableValidationError> _validate(T? value) => [
     for (final validator in _validators)
-      if (value != null || validator.acceptsNull)
-        ...validator.validate(value),
+      if (value != null || validator.acceptsNull) ...validator.validate(value),
   ];
 }

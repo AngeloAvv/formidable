@@ -1,3 +1,4 @@
+import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/nullability_suffix.dart';
 import 'package:analyzer/dart/element/type.dart';
@@ -212,7 +213,7 @@ FieldModel _readField(FieldElement field, String? defaultSource) {
   for (final annotation in field.metadata.annotations) {
     final type = annotation.computeConstantValue()?.type;
     if (type != null && _validatorChecker.isAssignableFromType(type)) {
-      _checkValidatorFits(field, type);
+      _checkValidatorFits(field, annotation.computeConstantValue()!);
       // The part file shares the Schema library's scope, so the annotation
       // source can be reused as a const expression as it is written.
       validators.add('const ${annotation.toSource().substring(1)}');
@@ -229,13 +230,17 @@ FieldModel _readField(FieldElement field, String? defaultSource) {
   );
 }
 
-/// Fails the build when the value a Validator of [validatorType] accepts
-/// cannot be the value of [field].
+/// Fails the build when the value a Validator [object] accepts cannot be the
+/// value of [field].
 ///
 /// A Validator is called only with a chosen non-null value, or with null when
 /// it accepts null, so the check is on the non-null type of the Field: a
 /// `MinLength` (a `String` Validator) fits both `String` and `String?`.
-void _checkValidatorFits(FieldElement field, DartType validatorType) {
+///
+/// A combinator such as `AnyOf` holds other Validators in its fields. They are
+/// called with the same value, so each of them has to fit too.
+void _checkValidatorFits(FieldElement field, DartObject object) {
+  final validatorType = object.type;
   if (validatorType is! InterfaceType) return;
   final accepted = validatorType.allSupertypes
       .where(
@@ -248,16 +253,28 @@ void _checkValidatorFits(FieldElement field, DartType validatorType) {
   if (accepted == null) return;
   final typeSystem = field.library.typeSystem;
   final fieldType = typeSystem.promoteToNonNull(field.type);
-  if (typeSystem.isAssignableTo(fieldType, accepted)) return;
-  final validator = validatorType.element.name;
-  throw InvalidGenerationSourceError(
-    '@$validator cannot be used on "${field.name}" of '
-    '${field.enclosingElement?.name}: it validates '
-    '${accepted.getDisplayString()}, but the Field is '
-    '${field.type.getDisplayString()}. Use a Validator that accepts '
-    '${field.type.getDisplayString()}, or change the Field type.',
-    element: field,
-  );
+  if (!typeSystem.isAssignableTo(fieldType, accepted)) {
+    final validator = validatorType.element.name;
+    throw InvalidGenerationSourceError(
+      '@$validator cannot be used on "${field.name}" of '
+      '${field.enclosingElement.name}: it validates '
+      '${accepted.getDisplayString()}, but the Field is '
+      '${field.type.getDisplayString()}. Use a Validator that accepts '
+      '${field.type.getDisplayString()}, or change the Field type.',
+      element: field,
+    );
+  }
+  for (final member in validatorType.element.fields) {
+    if (member.isStatic) continue;
+    for (final nested
+        in object.getField(member.name!)?.toListValue() ?? <DartObject>[]) {
+      final nestedType = nested.type;
+      if (nestedType != null &&
+          _validatorChecker.isAssignableFromType(nestedType)) {
+        _checkValidatorFits(field, nested);
+      }
+    }
+  }
 }
 
 bool _isFormValidator(ElementAnnotation annotation) {
