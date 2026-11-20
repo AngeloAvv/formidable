@@ -1,0 +1,42 @@
+{
+  "$schema": "https://docs.page/schema.json",
+  "name": "Formidable",
+  "description": "Reactive forms for Flutter, built on annotations and code generation",
+  "theme": {
+    "primary": "#3F51B5"
+  },
+  "header": {
+    "showName": true,
+    "showThemeToggle": true,
+    "showGitHubCard": true
+  },
+  "sidebar": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        { "title": "Introduction", "href": "/" },
+        { "title": "Getting Started", "href": "/getting-started" }
+      ]
+    },
+    {
+      "group": "Schema",
+      "pages": [{ "title": "Declaring a Schema", "href": "/schema" }]
+    },
+    {
+      "group": "Validation",
+      "pages": [{ "title": "Validators", "href": "/validation" }]
+    },
+    {
+      "group": "Form",
+      "pages": [{ "title": "The generated Form", "href": "/form" }]
+    },
+    {
+      "group": "Widgets",
+      "pages": [{ "title": "Binding Fields to widgets", "href": "/widgets" }]
+    },
+    {
+      "group": "Guides",
+      "pages": [{ "title": "Guides", "href": "/guides" }]
+    }
+  ]
+}

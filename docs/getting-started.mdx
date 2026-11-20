@@ -1,0 +1,137 @@
+---
+title: Getting Started
+description: One text Field from Schema to widget
+---
+
+# Getting Started
+
+This page builds one complete path: a Schema with a single text Field, the generated Form, and a Material text field that shows the error once the user has left it.
+
+## Install
+
+```yaml
+dependencies:
+  formidable: ^0.1.0
+  formidable_flutter: ^0.1.0
+  formidable_material: ^0.1.0
+
+dev_dependencies:
+  build_runner: ^2.4.0
+  formidable_generator: ^0.1.0
+```
+
+An app that uses Material through the `material_ui` package also depends on `material_ui`.
+
+## Declare a Schema
+
+A Schema is a plain Dart class marked with `@Formidable()`. It declares a part file for the generated code.
+
+```dart
+import 'package:formidable/formidable.dart';
+
+part 'sign_up.formidable.dart';
+
+@Formidable()
+class SignUp {
+  const SignUp({required this.username});
+
+  @MinLength(4)
+  final String username;
+}
+```
+
+`username` is a `String` with no default, so it is a **Required Field**. If the user leaves it Unset, the Form is invalid. `@MinLength(4)` is a Validator: it runs only while the Field has a value.
+
+## Generate the Form
+
+```sh
+dart run build_runner build
+```
+
+For `SignUp` the generator writes:
+
+- `SignUp` Form in `sign_up.formidable.dart`: `SignUpForm`, a pure Dart class with a typed getter per Field (`form.username`).
+- `sign_up.formidable_scope.dart`: `SignUpFormScope` and a `context.signUpForm` extension. It is written only when your package depends on `formidable_flutter`, so a Schema can live in a package that has no Flutter dependency.
+
+Import the scope file where you build widgets, next to the Schema:
+
+```dart
+import 'sign_up.dart';
+import 'sign_up.formidable_scope.dart';
+```
+
+The generated files are not meant to be committed. Add `*.formidable.dart` and `*.formidable_scope.dart` to `.gitignore` and generate them in CI.
+
+## Use the Form without Flutter
+
+A Form has two constructors: one from an existing Schema instance, and a partial one that leaves omitted Fields Unset.
+
+```dart
+final form = SignUpForm(); // username is Unset
+final edit = SignUpForm.from(const SignUp(username: 'angelo')); // every Field is set
+```
+
+Set a value with the Field handle. The setter is typed exactly as the Field's type.
+
+```dart
+form.username.setValue('ab');
+```
+
+`submit()` returns a sealed result. Handle both cases with an exhaustive `switch`.
+
+```dart
+switch (await form.submit()) {
+  case FormidableSubmitValid(:final value):
+    print('Welcome, ${value.username}'); // value is a SignUp
+  case FormidableSubmitInvalid(:final fieldErrors):
+    print(fieldErrors[form.username]); // [FormidableMinLengthError(minLength: 4, actualLength: 2)]
+}
+```
+
+An Unset Required Field produces a `FormidableRequiredError`. `@MinLength` produces a `FormidableMinLengthError` that carries the required and the actual length.
+
+## Use the Form in Flutter
+
+`SignUpFormScope` creates the Form and disposes it. Widgets below it get the Form from the context.
+
+```dart
+class SignUpPage extends StatelessWidget {
+  const SignUpPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => SignUpFormScope(
+        child: Builder(
+          builder: (context) => Column(
+            children: [
+              FormidableTextField(
+                field: context.signUpForm.username,
+                decoration: const InputDecoration(labelText: 'Username'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  switch (await context.signUpForm.submit()) {
+                    case FormidableSubmitValid(:final value):
+                      // Send value to your domain layer.
+                    case FormidableSubmitInvalid():
+                      // The errors are already on the Fields.
+                  }
+                },
+                child: const Text('Sign up'),
+              ),
+            ],
+          ),
+        ),
+      );
+}
+```
+
+`FormidableTextField` is a Material text field bound to a `String` Field:
+
+- it shows the Field's value, and keeps showing it when code changes the Field;
+- it updates the Field as the user types, and a completely empty text leaves the Field Unset;
+- the Field becomes **touched** when the text field loses focus;
+- the error text is shown once the Field is touched. When there are several errors, the first one in the order of the annotations is shown.
+
+Under the hood the widget is a thin layer over the headless `FormidableBinding`, which works with any widget. See [Binding Fields to widgets](/widgets).
+
+The `example` folder of the repository contains this flow as a runnable app.

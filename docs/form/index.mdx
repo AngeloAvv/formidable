@@ -1,0 +1,15 @@
+---
+title: The generated Form
+description: The live, typed form generated from a Schema
+---
+
+# The generated Form
+
+A Form holds the current state of every Field and, when it is valid, produces an instance of the Schema.
+
+- Every Field is a typed handle: `form.username`.
+- `SignUpForm()` leaves the Fields Unset, and `SignUpForm.from(signUp)` sets them all from an existing Schema instance.
+- `submit()` returns a sealed result: `FormidableSubmitValid` with the Schema instance, or `FormidableSubmitInvalid` with the errors of every invalid Field.
+- Fields and Forms notify listeners synchronously, and expose immutable state snapshots.
+
+See [Getting Started](/getting-started) for a complete example. Later pages cover patch, replace, reset, commit, dirty, applied server errors, Nested Forms, Field Arrays and Dynamic Forms.
