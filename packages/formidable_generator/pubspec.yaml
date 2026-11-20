@@ -1,0 +1,28 @@
+name: formidable_generator
+description: Code generator for Formidable. Turns annotated Schemas into typed Forms through build_runner.
+version: 0.1.0
+homepage: https://docs.page/AngeloAvv/formidable
+repository: https://github.com/AngeloAvv/formidable
+issue_tracker: https://github.com/AngeloAvv/formidable/issues
+topics:
+  - forms
+  - code-generation
+  - build-runner
+  - source-gen
+
+resolution: workspace
+
+environment:
+  sdk: ^3.8.0
+
+dependencies:
+  analyzer: ">=14.0.0 <15.0.0"
+  build: ">=4.0.0 <6.0.0"
+  formidable: ^0.1.0
+  source_gen: ^4.1.0
+  yaml: ^3.1.0
+
+dev_dependencies:
+  build_test: ^3.0.0
+  lints: ^6.0.0
+  test: ^1.25.0

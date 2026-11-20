@@ -1,0 +1,28 @@
+name: formidable_cupertino
+description: Cupertino convenience widgets for Formidable, built on cupertino_ui and the headless Binding.
+version: 0.1.0
+homepage: https://docs.page/AngeloAvv/formidable
+repository: https://github.com/AngeloAvv/formidable
+issue_tracker: https://github.com/AngeloAvv/formidable/issues
+topics:
+  - forms
+  - validation
+  - cupertino
+
+resolution: workspace
+
+environment:
+  sdk: ^3.14.0
+  flutter: ">=3.50.0"
+
+dependencies:
+  cupertino_ui: ^1.1.0
+  flutter:
+    sdk: flutter
+  formidable: ^0.1.0
+  formidable_flutter: ^0.1.0
+
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
