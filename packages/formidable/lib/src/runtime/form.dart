@@ -161,27 +161,59 @@ abstract class FormidableForm<S>
     }
   }
 
-  /// Runs the Form Validators and gives every Field the errors addressed to
-  /// it. Each Field then commits them together with its own errors in
-  /// `revalidate`, so listeners see the final errors in one notification.
+  /// Runs the Form Validators of this Form and of its Nested Forms and gives
+  /// every Field below this Form the errors addressed to it. Each Field then
+  /// commits them together with its own errors in `revalidate`, so listeners
+  /// see the final errors in one notification.
+  ///
+  /// A Form Validator can address any Field below its Form, Nested Forms
+  /// included. An Unset optional Nested Form runs none: it is not validated.
   void _runFormValidators() {
-    if (_formValidators.isEmpty) return;
+    if (!_hasFormValidators) return;
     final addressed =
         <FormidableField<Object?>, List<FormidableValidationError>>{};
-    for (final validator in _formValidators) {
-      // Safe at runtime: attach() only accepts validators typed on this Form.
-      for (final item in validator.validate(this)) {
-        assert(
-          _nodes.contains(item.field),
-          'A Form Validator addressed an error to a Field that is not in '
-          'this Form.',
-        );
-        (addressed[item.field] ??= []).add(item.error);
+    _collectFormErrors(addressed);
+    for (final field in _fieldsBelow()) {
+      field.replaceFormErrors(addressed[field] ?? const []);
+    }
+  }
+
+  bool get _hasFormValidators =>
+      _formValidators.isNotEmpty ||
+      _nodes.any(
+        (node) => node is FormidableForm<Object?> && node._hasFormValidators,
+      );
+
+  void _collectFormErrors(
+    Map<FormidableField<Object?>, List<FormidableValidationError>> into,
+  ) {
+    if (!isSet) return;
+    if (_formValidators.isNotEmpty) {
+      final fields = _fieldsBelow().toSet();
+      for (final validator in _formValidators) {
+        // Safe at runtime: attach() only accepts validators typed on this Form.
+        for (final item in validator.validate(this)) {
+          assert(
+            fields.contains(item.field),
+            'A Form Validator addressed an error to a Field that is not in '
+            'this Form.',
+          );
+          (into[item.field] ??= []).add(item.error);
+        }
       }
     }
     for (final node in _nodes) {
+      if (node is FormidableForm<Object?>) node._collectFormErrors(into);
+    }
+  }
+
+  /// Every Field of this Form and of its Nested Forms, in declaration order.
+  Iterable<FormidableField<Object?>> _fieldsBelow() sync* {
+    for (final node in _nodes) {
       if (node is FormidableField<Object?>) {
-        node.replaceFormErrors(addressed[node] ?? const []);
+        yield node;
+      } else if (node is FormidableForm<Object?>) {
+        yield* node._fieldsBelow();
       }
     }
   }

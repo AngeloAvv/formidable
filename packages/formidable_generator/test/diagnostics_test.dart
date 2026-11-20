@@ -294,15 +294,18 @@ class Account {
       expect(result.succeeded, isTrue);
     });
 
-    test('checks a Validator nested in a combinator against an unfit Field', () async {
-      final result = await build(
-        annotations: '@AnyOf([MinLength(3)])',
-        type: 'int',
-      );
+    test(
+      'checks a Validator nested in a combinator against an unfit Field',
+      () async {
+        final result = await build(
+          annotations: '@AnyOf([MinLength(3)])',
+          type: 'int',
+        );
 
-      expect(result.succeeded, isFalse);
-      expect(result.errors.join('\n'), contains('MinLength'));
-    });
+        expect(result.succeeded, isFalse);
+        expect(result.errors.join('\n'), contains('MinLength'));
+      },
+    );
   });
 
   group('Required warning', () {

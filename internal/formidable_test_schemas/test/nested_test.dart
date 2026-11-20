@@ -332,4 +332,41 @@ void main() {
       expect(street.isDisposed, isTrue);
     });
   });
+
+  group('Nested Form Validators', () {
+    test('a Form Validator of the Nested Form addresses its own Fields', () {
+      final form = DeliveryForm(place: const Place());
+
+      form.credentials.password.setValue('a');
+      form.credentials.confirmation.setValue('b');
+      expect(form.credentials.confirmation.state.errors, [
+        const PasswordMismatch(),
+      ]);
+      expect(form.credentials.state.status, FormidableStatus.invalid);
+
+      form.credentials.confirmation.setValue('a');
+      expect(form.credentials.confirmation.state.errors, isEmpty);
+    });
+
+    test('a Form Validator of the parent can address a nested Field', () {
+      final form = DeliveryForm(place: const Place());
+
+      form.place.street.setValue('Via Roma');
+      expect(form.place.zip.state.errors, [const PasswordMismatch()]);
+      expect(form.state.status, FormidableStatus.invalid);
+
+      form.place.zip.setValue('00100');
+      expect(form.place.zip.state.errors, isEmpty);
+    });
+
+    test('an Unset optional Nested Form is not validated', () async {
+      final form = DeliveryForm(place: const Place());
+      form.place.street.setValue('Via Roma');
+      form.place.zip.setValue('00100');
+
+      expect(form.credentials.isSet, isFalse);
+      expect(form.credentials.confirmation.state.errors, isEmpty);
+      expect(await form.submit(), isA<FormidableSubmitValid<Delivery>>());
+    });
+  });
 }

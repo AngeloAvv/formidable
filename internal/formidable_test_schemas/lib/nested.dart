@@ -103,3 +103,49 @@ class Editor {
 
   final Record record;
 }
+
+class PasswordMismatch extends FormidableValidationError {
+  const PasswordMismatch();
+}
+
+/// A Form Validator of a nested Schema: it addresses its own Fields.
+class PasswordsMatchInCredentials
+    extends FormidableFormValidator<CredentialsForm> {
+  const PasswordsMatchInCredentials();
+
+  @override
+  List<FormidableFieldError> validate(CredentialsForm form) =>
+      form.password.value != form.confirmation.value
+      ? [FormidableFieldError(form.confirmation, const PasswordMismatch())]
+      : const [];
+}
+
+@Formidable()
+@PasswordsMatchInCredentials()
+class Credentials {
+  const Credentials({this.password, this.confirmation});
+
+  final String? password;
+  final String? confirmation;
+}
+
+/// A Form Validator of the parent that addresses a Field of a Nested Form.
+class StreetNeedsZip extends FormidableFormValidator<DeliveryForm> {
+  const StreetNeedsZip();
+
+  @override
+  List<FormidableFieldError> validate(DeliveryForm form) =>
+      form.place.street.isSet && !form.place.zip.isSet
+      ? [FormidableFieldError(form.place.zip, const PasswordMismatch())]
+      : const [];
+}
+
+@Formidable()
+@StreetNeedsZip()
+class Delivery {
+  const Delivery({required this.place, this.backup, this.credentials});
+
+  final Place place;
+  final Credentials? credentials;
+  final Place? backup;
+}

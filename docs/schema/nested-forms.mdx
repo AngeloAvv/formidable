@@ -45,6 +45,7 @@ final result = await form.submit();
 - **Dirty.** A nested Field that differs from its initial state makes its Nested Form and every ancestor dirty. Going back makes them clean.
 - **Notifications.** A parent notifies its listeners of a state change below it. A `FormidableFormSelector` or `addChangeListener` also fires when a nested value changes and the state stays equal.
 - **Form Effects.** A Schema's Effects run for changes in its own Fields, and the Effects of a parent also see changes in nested Fields (`context.changed(form.home.street)`). They all settle together before validation.
+- **Form Validators.** A Form Validator declared on a nested Schema addresses its own Fields. One declared on the parent can address Fields of a Nested Form (`FormidableFieldError(form.home.street, ...)`). An Unset optional Nested Form is not validated.
 - **Disposal.** Disposing the parent disposes every Nested Form.
 
 ## Creating a Form with initial values
