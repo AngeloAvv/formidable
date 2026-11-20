@@ -1,0 +1,110 @@
+---
+title: String Validators
+description: Length, content, character classes and passwords
+---
+
+# String Validators
+
+Every Validator on this page judges a `String`, so it applies to `String` and `String?` Fields. The generator rejects it on any other Field type. They run only while the Field has a value, and they never change it: use a [Normalizer](/validation/normalizers) to trim or change case.
+
+```dart
+@Formidable()
+class SignUp {
+  const SignUp({required this.username, required this.password, this.bio});
+
+  @Length.between(3, 20)
+  @AlphaDash()
+  final String username;
+
+  @StrongPassword()
+  final String password;
+
+  @MaxWords(100)
+  @MaxLength(500)
+  final String? bio;
+}
+```
+
+Every Validator returns a typed Validation Error, with a message in English, Italian, Spanish, French and German. See [Messages and localization](/validation/messages) to change the wording.
+
+## Length
+
+| Annotation | Error | Rule |
+|---|---|---|
+| `MinLength(n)` | `FormidableMinLengthError(minLength, actualLength)` | at least `n` characters |
+| `MaxLength(n)` | `FormidableMaxLengthError(maxLength, actualLength)` | at most `n` characters |
+| `Length.exactly(n)` | `FormidableExactLengthError(length, actualLength)` | exactly `n` characters |
+| `Length.between(min, max)` | `FormidableMinLengthError` or `FormidableMaxLengthError` | `min` to `max` characters, both included |
+
+Length counts UTF-16 code units, like `String.length`.
+
+## Pattern and text
+
+| Annotation | Error | Rule |
+|---|---|---|
+| `Pattern(source, negate: false)` | `FormidablePatternError(pattern, negated)` | matches (or with `negate`, does not match) the regular expression |
+| `StartsWith(text)` | `FormidableStartsWithError(prefix)` | starts with `text` |
+| `EndsWith(text)` | `FormidableEndsWithError(suffix)` | ends with `text` |
+| `DoesntStartWith(text)` | `FormidableDoesntStartWithError(prefix)` | does not start with `text` |
+| `DoesntEndWith(text)` | `FormidableDoesntEndWithError(suffix)` | does not end with `text` |
+| `Contains(text)` | `FormidableContainsError(text)` | contains `text` |
+| `NotContains(text)` | `FormidableNotContainsError(text)` | does not contain `text` |
+
+Comparisons are case sensitive. An annotation cannot hold a `RegExp`, so `Pattern` takes the source as a string. Use a raw string, and anchor it with `^` and `$` to match the whole value, because a match anywhere is enough:
+
+```dart
+@Pattern(r'^\d{5}$')
+final String zip;
+```
+
+`Pattern` shadows `Pattern` of `dart:core` in the files that import Formidable. Add `hide Pattern` to the import if such a file also needs the core type.
+
+## Character classes
+
+Letters and digits are Unicode aware: `é`, `ß` and `日` are letters.
+
+| Annotation | Error | Accepts |
+|---|---|---|
+| `Alpha()` | `FormidableAlphaError` | letters only |
+| `AlphaNumeric()` | `FormidableAlphaNumericError` | letters and digits |
+| `AlphaDash()` | `FormidableAlphaDashError` | letters, digits, `-` and `_` |
+| `AlphaSpaces()` | `FormidableAlphaSpacesError` | letters and spaces, with at least one letter |
+| `Ascii()` | `FormidableAsciiError` | code points 0 to 127 |
+
+## Case
+
+| Annotation | Error | Rule |
+|---|---|---|
+| `Lowercase()` | `FormidableLowercaseError` | no uppercase letters |
+| `Uppercase()` | `FormidableUppercaseError` | no lowercase letters |
+
+## Counting characters
+
+| Annotation | Error | Rule |
+|---|---|---|
+| `HasLowercase([min = 1])` | `FormidableHasLowercaseError(min, actual)` | at least `min` lowercase letters |
+| `HasUppercase([min = 1])` | `FormidableHasUppercaseError(min, actual)` | at least `min` uppercase letters |
+| `HasDigit([min = 1])` | `FormidableHasDigitError(min, actual)` | at least `min` digits |
+| `HasSpecialChar([min = 1])` | `FormidableHasSpecialCharError(min, actual)` | at least `min` characters that are not letters, digits or whitespace |
+
+## Strong password
+
+`StrongPassword` combines the rules above:
+
+```dart
+@StrongPassword(minLength: 10, minSymbols: 0)
+final String password;
+```
+
+The defaults are 8 characters, and at least one lowercase letter, uppercase letter, digit and symbol. Set a count to 0 to drop that requirement. It reports one error per missing requirement, using the errors of `MinLength`, `HasLowercase`, `HasUppercase`, `HasDigit` and `HasSpecialChar`, in that order, so a form can show exactly what is missing.
+
+## Lines and words
+
+| Annotation | Error | Rule |
+|---|---|---|
+| `SingleLine()` | `FormidableSingleLineError` | no `\n` or `\r` |
+| `MinWords(n)` | `FormidableMinWordsError(minWords, actualWords)` | at least `n` words |
+| `MaxWords(n)` | `FormidableMaxWordsError(maxWords, actualWords)` | at most `n` words |
+| `Slug()` | `FormidableSlugError` | lowercase ASCII letters and digits, separated by single dashes (`my-first-post`) |
+
+Words are runs of characters separated by whitespace.
