@@ -32,4 +32,7 @@ export 'src/validation/validator.dart';
 export 'src/validators/any_of.dart';
 export 'src/validators/collections.dart';
 export 'src/validators/files.dart';
+export 'src/validators/finance.dart';
+export 'src/validators/locale.dart';
+export 'src/validators/network.dart';
 export 'src/validators/min_length.dart';
