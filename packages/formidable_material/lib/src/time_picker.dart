@@ -14,7 +14,9 @@ import 'picker_field.dart';
 /// While the Field is Unset the dialog opens on [initialTime], else on the
 /// current time. [format] turns the value into the text shown, and defaults to
 /// the time format of the Material localizations. With [clearable], a button
-/// puts a Field that has a value back to Unset.
+/// takes the value back. Like deselecting, that is the user's choice: a
+/// `TimeOfDay?` Field is set to null and stays dirty, a `TimeOfDay` Field goes
+/// back to Unset. Either way the Field is touched.
 ///
 /// The [decoration] is merged with what Formidable adds: it sets only
 /// [InputDecoration.errorText], and only when yours has none. To build the
@@ -75,7 +77,9 @@ class FormidableMaterialTimePicker<T extends TimeOfDay?>
              text: value == null ? null : formatter(value),
              decoration:
                  decorationBuilder?.call(context, control) ?? decoration,
-             onClear: clearable ? () => control.clear(touch: true) : null,
+             onClear: clearable
+                 ? () => control.didChange(null, touch: true)
+                 : null,
              autofocus: autofocus,
              onTap: () async {
                final picked = await showTimePicker(

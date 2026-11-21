@@ -98,6 +98,29 @@ void main() {
       expect(form.reminder.state.touched, isTrue);
     });
 
+    testWidgets('clearing a nullable Field sets it to null', (tester) async {
+      await tester.pumpWidget(
+        app(
+          (form) => FormidableMaterialTimePicker<TimeOfDay?>(
+            field: form.alarm,
+            format: (time) => '${time.hour}h${time.minute}',
+            clearable: true,
+          ),
+        ),
+      );
+
+      form.alarm.setValue(const TimeOfDay(hour: 18, minute: 5));
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.clear));
+      await tester.pump();
+
+      expect(form.alarm.isSet, isTrue);
+      expect(form.alarm.value, isNull);
+      expect(form.alarm.state.dirty, isTrue);
+      expect(form.alarm.state.touched, isTrue);
+      expect(find.text('18h5'), findsNothing);
+    });
+
     testWidgets('shows the Validation Message of a touched, Unset Field', (
       tester,
     ) async {
@@ -110,7 +133,7 @@ void main() {
       expect(find.text('This field is required.'), findsOneWidget);
     });
 
-    testWidgets('a clearable picker can put the Field back to Unset', (
+    testWidgets('clearing a non-nullable Field puts it back to Unset', (
       tester,
     ) async {
       await tester.pumpWidget(app((form) => picker(form, clearable: true)));

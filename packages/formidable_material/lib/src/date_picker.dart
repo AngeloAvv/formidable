@@ -14,8 +14,10 @@ import 'picker_field.dart';
 /// While the Field is Unset the dialog opens on [initialDate], else on today,
 /// kept within [firstDate] and [lastDate] (1900 to 2100 by default). [format]
 /// turns the value into the text shown, and defaults to the medium date format
-/// of the Material localizations. With [clearable], a button puts a Field that
-/// has a value back to Unset.
+/// of the Material localizations. With [clearable], a button takes the value
+/// back. Like deselecting, that is the user's choice: a `DateTime?` Field is
+/// set to null and stays dirty, a `DateTime` Field goes back to Unset. Either
+/// way the Field is touched.
 ///
 /// The [decoration] is merged with what Formidable adds: it sets only
 /// [InputDecoration.errorText], and only when yours has none. To build the
@@ -93,7 +95,9 @@ class FormidableMaterialDatePicker<T extends DateTime?>
              text: value == null ? null : formatter(value),
              decoration:
                  decorationBuilder?.call(context, control) ?? decoration,
-             onClear: clearable ? () => control.clear(touch: true) : null,
+             onClear: clearable
+                 ? () => control.didChange(null, touch: true)
+                 : null,
              autofocus: autofocus,
              onTap: () async {
                final picked = await showDatePicker(

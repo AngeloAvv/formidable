@@ -117,7 +117,7 @@ void main() {
       expect(find.text('This field is required.'), findsOneWidget);
     });
 
-    testWidgets('a clearable picker can put the Field back to Unset', (
+    testWidgets('clearing a non-nullable Field puts it back to Unset', (
       tester,
     ) async {
       await tester.pumpWidget(app((form) => picker(form, clearable: true)));
@@ -131,6 +131,30 @@ void main() {
       expect(form.birthday.isSet, isFalse);
       expect(form.birthday.state.touched, isTrue);
       expect(find.text('2024-07-04'), findsNothing);
+    });
+
+    testWidgets('clearing a nullable Field sets it to null', (tester) async {
+      await tester.pumpWidget(
+        app(
+          (form) => FormidableMaterialDatePicker<DateTime?>(
+            field: form.graduation,
+            format: iso,
+            clearable: true,
+          ),
+        ),
+      );
+
+      form.graduation.setValue(DateTime(2024, 7, 4));
+      await tester.pump();
+      await tester.tap(find.byIcon(Icons.clear));
+      await tester.pump();
+
+      expect(form.graduation.isSet, isTrue);
+      expect(form.graduation.value, isNull);
+      expect(form.graduation.state.dirty, isTrue);
+      expect(form.graduation.state.touched, isTrue);
+      expect(find.text('2024-07-04'), findsNothing);
+      expect(find.byIcon(Icons.clear), findsNothing);
     });
   });
 }

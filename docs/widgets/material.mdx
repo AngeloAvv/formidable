@@ -141,18 +141,18 @@ While the Field is Unset no option is selected, not even the null one, and the r
 
 ## Deselecting is a choice
 
-Some widgets let the user take their choice back: a radio group with `toggleable`, a segmented button with `allowDeselect`, and a checkbox or checkbox row with `tristate`. Deselecting is something the user did, not a reset, so it counts as a value whenever the Field can hold one:
+Some widgets let the user take their choice back: a radio group with `toggleable`, a segmented button with `allowDeselect`, a checkbox or checkbox row with `tristate`, and the clear button of a date or time picker with `clearable`. Deselecting is something the user did, not a reset, so it counts as a value whenever the Field can hold one:
 
 | Type of the Field | After the user deselects |
 | --- | --- |
 | Admits null (`String?`, `bool?`) | The Field is set to null. It is no longer Unset, so a required error goes away, and it is dirty. |
 | Does not admit null (`String`, `bool`) | null cannot be written, so the Field goes back to Unset. It is touched. |
 
-The widgets get this from `control.didChange(null)`, which also works in your own [Field Widgets](/widgets/custom). To go back to Unset on purpose, call `control.clear()`. A date or time picker with `clearable: true` clears: its button is a reset, and the Field goes back to Unset whatever its type.
+The widgets get this from `control.didChange(null)`, which also works in your own [Field Widgets](/widgets/custom). To go back to Unset on purpose, call `control.clear()`.
 
 ## Pickers
 
-The date and time pickers show a read-only field and open the Material dialog on tap. Cancelling the dialog changes nothing, but still marks the Field touched. While the Field is Unset the dialog opens on `initialDate` or `initialTime`, else on today or the current time. The text comes from the Material localizations unless you pass `format`. With `clearable: true` a button puts a Field that has a value back to Unset. Every other parameter of `showDatePicker` and `showTimePicker` is a parameter of the widget too, such as `helpText`, `cancelText`, `initialEntryMode` or `selectableDayPredicate`. The one parameter that would clash with the base class, the `builder` of the dialog, is called `dialogBuilder`.
+The date and time pickers show a read-only field and open the Material dialog on tap. Cancelling the dialog changes nothing, but still marks the Field touched. While the Field is Unset the dialog opens on `initialDate` or `initialTime`, else on today or the current time. The text comes from the Material localizations unless you pass `format`. With `clearable: true` a button takes the value back, as described in [Deselecting is a choice](#deselecting-is-a-choice): a nullable Field is set to null, any other goes back to Unset. Every other parameter of `showDatePicker` and `showTimePicker` is a parameter of the widget too, such as `helpText`, `cancelText`, `initialEntryMode` or `selectableDayPredicate`. The one parameter that would clash with the base class, the `builder` of the dialog, is called `dialogBuilder`.
 
 ## The example app
 

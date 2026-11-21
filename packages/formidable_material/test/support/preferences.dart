@@ -21,6 +21,8 @@ class Preferences {
     required this.birthday,
     required this.reminder,
     required this.layout,
+    required this.graduation,
+    required this.alarm,
   });
 
   /// A checkbox.
@@ -57,4 +59,10 @@ class Preferences {
 
   /// A segmented control.
   final Plan layout;
+
+  /// An optional date picker: null is a value.
+  final DateTime? graduation;
+
+  /// An optional time picker: null is a value.
+  final TimeOfDay? alarm;
 }
