@@ -1,30 +1,46 @@
 ---
 title: Getting Started
-description: One text Field from Schema to widget
+description: Build a sign-up form from a plain Dart class to a working submit button
 ---
 
 # Getting Started
 
-This page builds one complete path: a Schema with a single text Field, the generated Form, and a Material text field that shows the error once the user has left it.
+This page builds a complete sign-up screen, step by step:
 
-## Install
+- an **email**,
+- a **password** that must be strong,
+- a **confirmation** that must match the password,
+- a checkbox to **accept the terms and conditions**,
+- a **Sign up** button that is enabled only while the form is valid and posts the result to an API.
+
+You write one plain Dart class and the widgets. Formidable generates the rest.
+
+## 1. Install
+
+Add the packages to `pubspec.yaml`. `http` is only there for the final request.
 
 ```yaml
 dependencies:
+  flutter:
+    sdk: flutter
   formidable: ^0.1.0
   formidable_flutter: ^0.1.0
   formidable_material: ^0.1.0
+  http: ^1.2.0
+  material_ui: ^1.11.0
 
 dev_dependencies:
   build_runner: ^2.4.0
   formidable_generator: ^0.1.0
 ```
 
-An app that uses Material through the `material_ui` package also depends on `material_ui`.
+`formidable` is the pure Dart core with the annotations. `formidable_flutter` binds a Form to the widget tree, and `formidable_material` gives you Material widgets that are already wired to a Form. Prefer Cupertino? Use `formidable_cupertino` instead, see [Cupertino widgets](/widgets/cupertino).
 
-## Declare a Schema
+## 2. Declare the Schema
 
-A Schema is a plain Dart class marked with `@Formidable()`. It declares a part file for the generated code.
+A **Schema** is a plain Dart class marked with `@Formidable()`. Every `final` field becomes a **Field** of the form, and a valid form hands you back an instance of this very class.
+
+Create `lib/sign_up.dart`:
 
 ```dart
 import 'package:formidable/formidable.dart';
@@ -33,106 +49,221 @@ part 'sign_up.formidable.dart';
 
 @Formidable()
 class SignUp {
-  const SignUp({required this.username});
+  const SignUp({
+    required this.email,
+    required this.password,
+    required this.confirmation,
+    this.acceptedTerms = false,
+  });
 
-  @MinLength(4)
-  final String username;
+  @Trim()
+  @Email()
+  final String email;
+
+  @MinLength(8)
+  @HasUppercase()
+  @HasDigit()
+  final String password;
+
+  @MustMatch(#password)
+  final String confirmation;
+
+  @IsTrue()
+  final bool acceptedTerms;
 }
 ```
 
-`username` is a `String` with no default, so it is a **Required Field**. If the user leaves it Unset, the Form is invalid. `@MinLength(4)` is a Validator: it runs only while the Field has a value.
+`part 'sign_up.formidable.dart'` is where the generator writes its code. Then, field by field:
 
-## Generate the Form
+- `@Trim()` is a **Normalizer**: it removes the whitespace around the email before the Field is validated.
+- `@Email()`, `@MinLength(8)`, `@HasUppercase()` and `@HasDigit()` are **Validators**. Each one is an annotation, and each one reports its own typed error, so a weak password can tell the user exactly what is missing. They run only while the Field has a value. The [Validator catalog](/validation) lists the rest.
+- `@MustMatch(#password)` is a **cross-field rule**. It lives on the Field that shows the error and names the other Field by symbol, so a typo in `#password` is a build error, not a runtime surprise.
+- `@IsTrue()` requires the checkbox to be `true`.
+
+Required-ness comes from the type. `email`, `password` and `confirmation` are non-nullable `String`s with no default, so they are **Required Fields**: until the user types something they are **Unset**, which is different from empty and from null, and the form cannot be submitted. `acceptedTerms` has a default of `false`, so it always has a value and `@IsTrue()` judges it. Without the default, an untouched checkbox would be an Unset Required Field and would report "required" instead of "must be accepted". See [Required and optional Fields](/schema/presence).
+
+## 3. Generate the code
 
 ```sh
 dart run build_runner build
 ```
 
-For `SignUp` the generator writes:
+For `sign_up.dart` the generator writes two files next to it:
 
-- `sign_up.formidable.dart`, a part file that declares `SignUpForm`: a pure Dart class with a typed getter per Field (`form.username`).
-- `sign_up.formidable_scope.dart`: `SignUpFormScope` and a `context.signUpForm` extension. It is written only when your package depends on `formidable_flutter`, so a Schema can live in a package that has no Flutter dependency.
+- `sign_up.formidable.dart` declares `SignUpForm`, the live form. It is a pure Dart class with a typed getter per Field (`form.email`, `form.password`, `form.confirmation`, `form.acceptedTerms`), and it is what produces a `SignUp` when the form is valid.
+- `sign_up.formidable_scope.dart` declares `SignUpFormScope`, which creates a `SignUpForm` and makes it available to the widgets below it, and `SignUpFormSelector`, `SignUpFormBuilder` and `SignUpFormListener`, which rebuild or react when its state changes. It is written only when your package depends on `formidable_flutter`.
 
-Import the scope file where you build widgets, next to the Schema:
+Generated files are not meant to be committed. Add them to `.gitignore` and run `build_runner` in CI:
+
+```gitignore
+*.formidable.dart
+*.formidable_scope.dart
+```
+
+While you work, `dart run build_runner watch` regenerates them on every save.
+
+## 4. Show localized messages
+
+A Validator never produces text: it produces a typed error, and the widget turns it into the **Validation Message** the user reads. Install the localizations delegate once, next to the delegates of your app, to get the built-in messages in English, Italian, Spanish, French and German. Create `lib/main.dart`:
 
 ```dart
+import 'package:formidable_flutter/formidable_flutter.dart';
+import 'package:material_ui/material_ui.dart';
+
+import 'sign_up_page.dart';
+
+void main() => runApp(
+  MaterialApp(
+    localizationsDelegates: [
+      FormidableLocalizations.delegate,
+      ...GlobalMaterialLocalizations.delegates,
+    ],
+    supportedLocales: FormidableLocalizations.supportedLocales,
+    home: const SignUpPage(),
+  ),
+);
+```
+
+Without the delegate nothing breaks, but errors fall back to their plain English string form. See [Messages and localization](/validation/messages) to change the wording or add messages for your own errors.
+
+## 5. Build the page
+
+Create `lib/sign_up_page.dart` with the scope and the four fields. The submit button comes in the next step.
+
+```dart
+import 'package:formidable/formidable.dart';
+import 'package:formidable_material/formidable_material.dart';
+import 'package:material_ui/material_ui.dart';
+
 import 'sign_up.dart';
 import 'sign_up.formidable_scope.dart';
-```
 
-The generated files are not meant to be committed. Add `*.formidable.dart` and `*.formidable_scope.dart` to `.gitignore` and generate them in CI.
-
-## Use the Form without Flutter
-
-A Form has two constructors: one from an existing Schema instance, and a partial one that leaves omitted Fields Unset.
-
-```dart
-final form = SignUpForm(); // username is Unset
-final edit = SignUpForm.from(const SignUp(username: 'angelo')); // every Field is set
-```
-
-Set a value with the Field handle. The setter is typed exactly as the Field's type.
-
-```dart
-form.username.setValue('ab');
-```
-
-`submit()` returns a sealed result. Handle both cases with an exhaustive `switch`.
-
-```dart
-switch (await form.submit()) {
-  case FormidableSubmitValid(:final value):
-    print('Welcome, ${value.username}'); // value is a SignUp
-  case FormidableSubmitInvalid(:final errors):
-    print(errors[form.username]); // [FormidableMinLengthError(minLength: 4, actualLength: 2)]
-}
-```
-
-An Unset Required Field produces a `FormidableRequiredError`. `@MinLength` produces a `FormidableMinLengthError` that carries the required and the actual length.
-
-## Use the Form in Flutter
-
-`SignUpFormScope` creates the Form and disposes it. Widgets below it get the Form from the context, or from the `builder` of the scope, which gives you the Form and a context below the scope.
-
-```dart
-class SignUpPage extends StatelessWidget {
+class SignUpPage extends StatefulWidget {
   const SignUpPage({super.key});
 
   @override
+  State<SignUpPage> createState() => _SignUpPageState();
+}
+
+class _SignUpPageState extends State<SignUpPage> {
+  @override
   Widget build(BuildContext context) => SignUpFormScope(
-        builder: (context, form) => Column(
-          children: [
-            FormidableMaterialTextField(
-              field: form.username,
-              decoration: const InputDecoration(labelText: 'Username'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                switch (await form.submit()) {
-                  case FormidableSubmitValid(:final value):
-                    // Send value to your domain layer.
-                  case FormidableSubmitInvalid():
-                    // The errors are already on the Fields.
-                }
-              },
-              child: const Text('Sign up'),
-            ),
-          ],
-        ),
-      );
+    create: SignUpForm.new,
+    builder: (context, form) => Scaffold(
+      appBar: AppBar(title: const Text('Sign up')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          FormidableMaterialTextField(
+            field: form.email,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(labelText: 'Email'),
+          ),
+          FormidableMaterialTextField(
+            field: form.password,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: 'Password'),
+          ),
+          FormidableMaterialTextField(
+            field: form.confirmation,
+            obscureText: true,
+            decoration: const InputDecoration(labelText: 'Confirm password'),
+          ),
+          FormidableMaterialCheckboxListTile(
+            field: form.acceptedTerms,
+            title: const Text('I accept the terms and conditions'),
+          ),
+          // The Sign up button goes here.
+        ],
+      ),
+    ),
+  );
 }
 ```
 
-To rebuild when anything in the Form changes, use the generated `SignUpFormBuilder`, which gives you the typed state of the Form (`state.username.value`, `state.form.status`). See [State and reactive widgets](/form/state).
+`SignUpFormScope` creates the Form with `create`, disposes it with the page, and gives it to `builder` together with a context below the scope. `SignUpForm.new` builds an empty form: every Required Field starts Unset.
 
+Each widget takes a Field and nothing else. `field: form.email` is a `FormidableField<String>`, so a text field bound to `form.acceptedTerms` (a `bool`) does not compile.
 
-`FormidableMaterialTextField` is a Material text field bound to a `String` Field:
+`FormidableMaterialTextField` is a Material `TextField` kept in sync with its Field:
 
-- it shows the Field's value, and keeps showing it when code changes the Field;
-- it updates the Field as the user types, and a completely empty text leaves the Field Unset;
-- the Field becomes **touched** when the text field loses focus;
-- the Validation Message is shown once the Field is touched. When there are several errors, the first one in the order of the annotations is shown.
+- it shows the Field's value and updates the Field as the user types;
+- when the user leaves it, the Field becomes **touched**, and from then on its Validation Message appears under the text field. Nothing is red while the user is still typing the first time;
+- when a Field has several errors, the first one in the order of the annotations is shown;
+- it takes every parameter of `TextField` (`obscureText`, `keyboardType`, `decoration`, ...). Your `decoration` is merged with the message instead of being replaced by it.
 
-It takes every parameter of `TextField`, and merges your `decoration` (or the one your `decorationBuilder` returns for the state of the widget) with the Validation Message instead of replacing it. Under the hood it is a `FormidableFieldWidget`, the base of every Formidable widget, which works with any widget. See [Field Widgets](/widgets).
+The checkbox works the same way: the first tap touches the Field, so an unticked box shows its message only once the user has interacted with it. Every widget decides when to show an error with the same policy, which you can change, see [Submit, errors and disabled Fields](/form/submit#when-errors-are-shown).
 
-The `example` folder of the repository contains this flow, and every other feature, as a runnable app that shows Material and Cupertino side by side. Continue with the [guides](/guides): a sign-up form, an edit form, dynamic lists and a multi-step wizard.
+## 6. Enable the button while the form is valid
+
+The button should follow the state of the Form. Instead of checking validity inside `onPressed`, read the status from the Form state and let Flutter rebuild the button when it changes. `SignUpFormSelector` does exactly that:
+
+```dart
+SignUpFormSelector<FormidableStatus>(
+  selector: (state) => state.form.status,
+  builder: (context, status) => FilledButton(
+    onPressed: status == FormidableStatus.valid
+        ? () => _onSubmit(form)
+        : null,
+    child: const Text('Sign up'),
+  ),
+),
+```
+
+Put it where the comment is in step 5.
+
+- `selector` picks one value from the typed `SignUpFormState`. `state.form.status` is `FormidableStatus.valid` when no Field has an error, and `invalid` otherwise.
+- The Selector rebuilds its `builder` only when the picked value changes. Typing a character that keeps the form invalid does not rebuild the button, and the one keystroke that makes the form valid enables it.
+- A button with `onPressed: null` is disabled, so the callback never has to ask whether the form is valid.
+
+The state has more to select from, such as `state.form.dirty` and `state.form.pending`. See [State and reactive widgets](/form/state).
+
+## 7. Submit
+
+`_onSubmit` goes in `_SignUpPageState`. `submit()` waits for any pending asynchronous check and returns a sealed result: `FormidableSubmitValid` carries a `SignUp`, and `FormidableSubmitInvalid` carries the errors. An exhaustive `switch` handles both.
+
+```dart
+Future<void> _onSubmit(SignUpForm form) async {
+  switch (await form.submit()) {
+    case FormidableSubmitValid(:final value):
+      final response = await http.post(
+        Uri.parse('https://api.example.com/sign-up'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': value.email, 'password': value.password}),
+      );
+      if (!mounted) return;
+      final message = response.statusCode == 201
+          ? 'Welcome aboard!'
+          : 'Sign up failed (${response.statusCode}).';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    case FormidableSubmitInvalid():
+      break; // The errors are already shown on the Fields.
+  }
+}
+```
+
+Add the two imports it needs at the top of the file:
+
+```dart
+import 'dart:convert';
+
+import 'package:http/http.dart' as http;
+```
+
+`value` is a `SignUp`, so `value.email` is a `String`, already trimmed and validated. Nothing is cast and nothing is read from a map.
+
+The button only runs while the form is valid, so the `FormidableSubmitInvalid` case is rare in this flow. It can still happen, for example when an asynchronous Validator rejects the value while `submit()` waits. In that case `submit()` has already marked every Field as touched, so every error is visible, and it has moved the focus to the first invalid Field. See [Submit, errors and disabled Fields](/form/submit) to apply errors returned by your server back onto the Fields.
+
+Run the app: the button is disabled, and it turns on once the email is valid, the password has eight characters, an uppercase letter and a digit, the confirmation matches and the terms are accepted.
+
+## Next steps
+
+- [The generated Form](/form) and [State and reactive widgets](/form/state): the typed state, Builders, Listeners, Selectors and streams.
+- [Validators](/validation): the whole catalog, plus [cross-field rules](/validation/cross-field), [asynchronous validation](/validation/async) and [Normalizers](/validation/normalizers).
+- [Submit, errors and disabled Fields](/form/submit): when errors are shown, server errors and disabling Fields.
+- [Material widgets](/widgets/material) and [Cupertino widgets](/widgets/cupertino): every widget that is ready to use. The sign-up Schema works unchanged with `FormidableCupertinoTextField` and the other Cupertino widgets.
+- [Your own Field Widgets](/widgets/custom): turn any widget into a form widget.
+- [Nested Forms](/schema/nested-forms), [Field Arrays](/schema/field-arrays) and [Dynamic Forms](/schema/dynamic-forms) for bigger forms.
+- [Guides](/guides): a sign-up with an asynchronous username check, an edit form, dynamic lists, a wizard and a questionnaire, all backed by the [example app](https://github.com/AngeloAvv/formidable/tree/main/example).
