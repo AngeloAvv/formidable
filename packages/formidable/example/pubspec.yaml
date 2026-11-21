@@ -1,0 +1,17 @@
+name: formidable_core_example
+description: Pure Dart example for Formidable, with no Flutter.
+publish_to: none
+version: 0.1.0
+
+resolution: workspace
+
+environment:
+  sdk: ^3.14.0
+
+dependencies:
+  formidable: ^0.1.0
+
+dev_dependencies:
+  build_runner: ^2.4.0
+  formidable_generator: ^0.1.0
+  lints: ^6.0.0

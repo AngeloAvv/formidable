@@ -137,18 +137,18 @@ The fields show their Validation Message once the user leaves them, and the butt
 ## Learn more
 
 - [Documentation](https://docs.page/AngeloAvv/formidable): the Schema, the Validator catalog, the Form state, the widgets and guides.
-- [Example app](example): every feature as a runnable app, with each guide shown in Material and in Cupertino side by side.
-- [`GLOSSARY.md`](GLOSSARY.md) for the vocabulary and [`docs/adr`](docs/adr) for the decisions behind the design.
+- [Example app](https://github.com/AngeloAvv/formidable/tree/main/example): every feature as a runnable app, with each guide shown in Material and in Cupertino side by side.
+- [`GLOSSARY.md`](https://github.com/AngeloAvv/formidable/blob/main/GLOSSARY.md) for the vocabulary and [`docs/adr`](https://github.com/AngeloAvv/formidable/tree/main/docs/adr) for the decisions behind the design.
 
 ## Packages
 
 | Package | Platform | |
 |---|---|---|
-| [`formidable`](packages/formidable) | Dart | Core: annotations, runtime, Validators, Validation Errors |
-| [`formidable_generator`](packages/formidable_generator) | Dart | Code generator for `build_runner` |
-| [`formidable_flutter`](packages/formidable_flutter) | Flutter | Form Scope, reactive widgets and the Field Widget base, built only on the widgets library |
-| [`formidable_material`](packages/formidable_material) | Flutter | Material widgets, built on `material_ui` |
-| [`formidable_cupertino`](packages/formidable_cupertino) | Flutter | Cupertino widgets, built on `cupertino_ui` |
+| [`formidable`](https://github.com/AngeloAvv/formidable/tree/main/packages/formidable) | Dart | Core: annotations, runtime, Validators, Validation Errors |
+| [`formidable_generator`](https://github.com/AngeloAvv/formidable/tree/main/packages/formidable_generator) | Dart | Code generator for `build_runner` |
+| [`formidable_flutter`](https://github.com/AngeloAvv/formidable/tree/main/packages/formidable_flutter) | Flutter | Form Scope, reactive widgets and the Field Widget base, built only on the widgets library |
+| [`formidable_material`](https://github.com/AngeloAvv/formidable/tree/main/packages/formidable_material) | Flutter | Material widgets, built on `material_ui` |
+| [`formidable_cupertino`](https://github.com/AngeloAvv/formidable/tree/main/packages/formidable_cupertino) | Flutter | Cupertino widgets, built on `cupertino_ui` |
 
 A pure Dart project needs only `formidable` and `formidable_generator`; a Flutter app adds `formidable_flutter` and the widget package it uses. All packages share one version. Until the API is declared stable, expect breaking changes across 0.x releases.
 
@@ -171,4 +171,4 @@ Set the same version in every `packages/*/pubspec.yaml`, add a matching entry to
 
 ## License
 
-MIT, see [`LICENSE`](LICENSE).
+MIT, see [`LICENSE`](https://github.com/AngeloAvv/formidable/blob/main/LICENSE).
