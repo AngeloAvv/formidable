@@ -10,7 +10,6 @@ Formidable is a reactive form library for Flutter built on annotations and code 
 ## Conventions
 
 - **Language.** Everything versioned is written in English, including code, comments, docs, ADRs, the glossary, file names, commit messages, pull requests and issues.
-- **No AI attribution.** Don't sign or attribute anything to an AI assistant. That means no `Co-Authored-By` trailers, no "Generated with" footers and no AI signatures in commits, pull requests, issues or docs.
 - **Versioning.** Every package shares one version, starting at 0.1.0. Until the API is declared stable, stay on 0.x: breaking changes to signatures and behavior are expected.
 - **Vocabulary.** Use the terms defined in `GLOSSARY.md`, and respect the decisions recorded in `docs/adr/`.
 
