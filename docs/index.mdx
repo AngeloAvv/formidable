@@ -1,29 +1,30 @@
 ---
 title: Formidable
-description: Reactive forms for Flutter, built on annotations and code generation
+description: Reactive forms for Dart and Flutter, built on annotations and code generation
 ---
 
 # Formidable
 
-Formidable is a reactive form library for Flutter. You declare a form by annotating a plain Dart class, and code generation turns that declaration into a live, typed form you can bind to widgets.
+Formidable is a reactive form library for Dart and Flutter. You declare a form by annotating a plain Dart class, and code generation turns that declaration into a live, typed form you can bind to widgets.
 
 - **A Schema declares the form.** A plain class marked with `@Formidable()`. Each final field becomes a Field.
 - **The generator produces a typed Form.** `SignUp` becomes `SignUpForm`. Every Field is reached through a typed handle, with no string paths and no casts.
 - **Required-ness comes from the type.** A non-nullable Field without a default is required. A nullable Field is optional. Unset is a state of its own, separate from null.
 - **Typed output.** `submit()` returns a sealed result: valid with the Schema instance, or invalid with the errors.
+- **Dart first, Flutter ready.** The core and the generator are pure Dart, so Forms, their state and streams run in a CLI, on a server or in a shared domain package, and test without Flutter. Flutter apps add the packages below.
 - **Two layers of UI.** A headless Field Widget base works with any widget, and Material and Cupertino widgets with the full API of the Flutter widgets they wrap are built on top of it.
 
 The first release is 0.1.0. Signatures and behavior are expected to change across 0.x releases.
 
 ## Packages
 
-| Package | What it is |
-|---|---|
-| `formidable` | Pure Dart core: annotations, runtime, Validators and Validation Errors |
-| `formidable_generator` | The code generator, run by `build_runner` |
-| `formidable_flutter` | Flutter bindings: Form Scope and the Field Widget base. Depends only on the widgets library |
-| `formidable_material` | Material widgets, built on `material_ui` |
-| `formidable_cupertino` | Cupertino widgets, built on `cupertino_ui` |
+| Package | Platform | What it is |
+|---|---|---|
+| `formidable` | Dart | Core: annotations, runtime, Validators and Validation Errors |
+| `formidable_generator` | Dart | The code generator, run by `build_runner` |
+| `formidable_flutter` | Flutter | Flutter bindings: Form Scope and the Field Widget base. Depends only on the widgets library |
+| `formidable_material` | Flutter | Material widgets, built on `material_ui` |
+| `formidable_cupertino` | Flutter | Cupertino widgets, built on `cupertino_ui` |
 
 All packages share one version. The core requires Dart 3.8 and the generator requires Dart 3.11. The Flutter packages require Flutter 3.50.
 

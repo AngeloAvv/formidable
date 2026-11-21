@@ -1,6 +1,6 @@
 # Formidable
 
-Forms in Flutter usually mean one controller per input, string keys, casts, and validation logic scattered across widgets. Formidable removes all of it. You write one plain Dart class, annotate its fields with the rules you want, and code generation gives you a typed, reactive form that you drop into any widget tree and that hands your class back, fully validated, when the user submits.
+Formidable is a reactive form library for Dart and Flutter. Forms usually mean one controller per input, string keys, casts, and validation logic scattered across widgets. Formidable removes all of it. You write one plain Dart class, annotate its fields with the rules you want, and code generation gives you a typed, reactive form that works in any Dart program, drops into any Flutter widget tree, and hands your class back, fully validated, when the user submits.
 
 - **The Schema is your class, and so is the output.** Annotate a plain Dart class with `@Formidable()`. A valid form gives you an instance of that same class, with no maps and no casts.
 - **A generated, type-safe Form.** One getter per Field (`form.email`), each typed as the Field, so a widget bound to the wrong type does not compile.
@@ -12,7 +12,7 @@ Forms in Flutter usually mean one controller per input, string keys, casts, and 
 - **A typed, immutable Form state** with Builders, Listeners and Selectors for widgets, and streams (`valueChanges`, `statusChanges`, `select`) for code.
 - **Ready-to-use Material and Cupertino widgets** that expose the full API of the Flutter widgets they wrap, plus a base class that turns any widget into a form widget.
 - **Localized Validation Messages** in English, Italian, Spanish, French and German.
-- **A pure Dart core.** Schemas, Validators and Forms run and test without Flutter.
+- **Dart first, Flutter ready.** The core and the generator are pure Dart: Schemas, Validators, Forms, their state and streams run in a CLI, on a server or in a shared domain package, and test without Flutter. Flutter apps add Form Scopes, reactive widgets and Material and Cupertino widgets on top.
 
 ## A sign-up form in one file
 
@@ -142,15 +142,15 @@ The fields show their Validation Message once the user leaves them, and the butt
 
 ## Packages
 
-| Package | |
-|---|---|
-| [`formidable`](packages/formidable) | Pure Dart core: annotations, runtime, Validators, Validation Errors |
-| [`formidable_generator`](packages/formidable_generator) | Code generator for `build_runner` |
-| [`formidable_flutter`](packages/formidable_flutter) | Flutter bindings, built only on the widgets library |
-| [`formidable_material`](packages/formidable_material) | Material widgets, built on `material_ui` |
-| [`formidable_cupertino`](packages/formidable_cupertino) | Cupertino widgets, built on `cupertino_ui` |
+| Package | Platform | |
+|---|---|---|
+| [`formidable`](packages/formidable) | Dart | Core: annotations, runtime, Validators, Validation Errors |
+| [`formidable_generator`](packages/formidable_generator) | Dart | Code generator for `build_runner` |
+| [`formidable_flutter`](packages/formidable_flutter) | Flutter | Form Scope, reactive widgets and the Field Widget base, built only on the widgets library |
+| [`formidable_material`](packages/formidable_material) | Flutter | Material widgets, built on `material_ui` |
+| [`formidable_cupertino`](packages/formidable_cupertino) | Flutter | Cupertino widgets, built on `cupertino_ui` |
 
-All packages share one version. Until the API is declared stable, expect breaking changes across 0.x releases.
+A pure Dart project needs only `formidable` and `formidable_generator`; a Flutter app adds `formidable_flutter` and the widget package it uses. All packages share one version. Until the API is declared stable, expect breaking changes across 0.x releases.
 
 ## Contributing
 

@@ -1,7 +1,7 @@
 {
   "$schema": "https://docs.page/schema.json",
   "name": "Formidable",
-  "description": "Reactive forms for Flutter, built on annotations and code generation",
+  "description": "Reactive forms for Dart and Flutter, built on annotations and code generation",
   "theme": {
     "primary": "#3F51B5"
   },
