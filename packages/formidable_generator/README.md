@@ -46,7 +46,9 @@ Then run the generator:
 dart run build_runner build
 ```
 
-The generated files are source files next to the Schema. Most projects do not commit them: add `*.formidable.dart` and `*.formidable_scope.dart` to `.gitignore` and generate them in CI.
+The generated files are source files next to the Schema. An app usually does not commit them: add `*.formidable.dart` and `*.formidable_scope.dart` to `.gitignore` and generate them in CI.
+
+A package published to pub.dev is different: its users never run the generator on it, so the generated files must be in the archive, or the `part` directives of its Schemas do not resolve. `dart pub publish` leaves out every file matched by `.gitignore`, so either commit the generated files, or add a `.pubignore` that does not list them (when a directory has a `.pubignore`, pub uses it instead of `.gitignore`) and run `build_runner` before publishing.
 
 ## Learn more
 

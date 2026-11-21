@@ -85,17 +85,19 @@ class _SignUpPageState extends State<SignUpPage> {
               placeholder: 'Confirm password',
             ),
             const SizedBox(height: 12),
-            Row(
-              children: [
-                FormidableCupertinoSwitch(
-                  key: const Key('acceptedTerms'),
-                  field: form.acceptedTerms,
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text('I accept the terms and conditions'),
-                ),
-              ],
+            MergeSemantics(
+              child: Row(
+                children: [
+                  FormidableCupertinoSwitch(
+                    key: const Key('acceptedTerms'),
+                    field: form.acceptedTerms,
+                  ),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text('I accept the terms and conditions'),
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 12),
             SignUpFormSelector<FormidableStatus>(

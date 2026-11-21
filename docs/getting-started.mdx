@@ -95,12 +95,14 @@ For `sign_up.dart` the generator writes two files next to it:
 - `sign_up.formidable.dart` declares `SignUpForm`, the live form. It is a pure Dart class with a typed getter per Field (`form.email`, `form.password`, `form.confirmation`, `form.acceptedTerms`), and it is what produces a `SignUp` when the form is valid.
 - `sign_up.formidable_scope.dart` declares `SignUpFormScope`, which creates a `SignUpForm` and makes it available to the widgets below it, and `SignUpFormSelector`, `SignUpFormBuilder` and `SignUpFormListener`, which rebuild or react when its state changes. It is written only when your package depends on `formidable_flutter`.
 
-Generated files are not meant to be committed. Add them to `.gitignore` and run `build_runner` in CI:
+In an app, generated files are usually not committed. Add them to `.gitignore` and run `build_runner` in CI:
 
 ```gitignore
 *.formidable.dart
 *.formidable_scope.dart
 ```
+
+If you publish a package to pub.dev instead of building an app, keep the generated files in the archive: pub leaves out what `.gitignore` matches, so commit them or add a `.pubignore` that does not list them, and run `build_runner` before `dart pub publish`.
 
 While you work, `dart run build_runner watch` regenerates them on every save.
 
