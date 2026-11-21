@@ -14,6 +14,7 @@ import 'node.dart';
 import 'notifier.dart';
 import 'pipeline.dart';
 import 'status.dart';
+import 'streams.dart';
 import 'submit_result.dart';
 
 /// The live instance generated from a Schema [S].
@@ -23,9 +24,12 @@ import 'submit_result.dart';
 /// `submit()`, lives here.
 ///
 /// A Form is also a [FormidableNode], so it can be the child of another Form:
-/// that is a Nested Form. A parent follows a Nested Form through
-/// [addChangeListener], not [addListener], because it must hear about every
-/// change below it, even one that leaves the state of the Nested Form equal.
+/// that is a Nested Form. Its [state] holds the state of every child, so a
+/// listener of a Form hears about every change below it, and a parent follows a
+/// Nested Form with [addListener] like it follows a Field.
+///
+/// A generated Form publishes a typed subclass of [FormidableFormState] (see
+/// [buildState]) and narrows [state] to it.
 abstract class FormidableForm<S>
     with FormidableNotifierMixin
     implements
@@ -48,11 +52,7 @@ abstract class FormidableForm<S>
   int _batchDepth = 0;
   bool _needsSettle = false;
   int _held = 0;
-  bool _heldChange = false;
-  FormidableFormState _state = FormidableFormState(
-    status: FormidableStatus.valid,
-  );
-  final List<void Function()> _changeListeners = [];
+  FormidableFormState? _state;
   FormidablePipeline? _parent;
   bool _optional = false;
   bool _initiallySet = true;
@@ -61,19 +61,72 @@ abstract class FormidableForm<S>
   /// The children of the Form, in Schema declaration order.
   List<FormidableNode> get nodes => _nodes;
 
+  /// The snapshot of the Form: its status, dirty and pending flags, its
+  /// Form-level errors, its Schema value and the state of every child. It
+  /// changes, and listeners are called, whenever anything below the Form
+  /// changes.
   @override
-  FormidableFormState get state => _state;
+  FormidableFormState get state => _state ??= _computeState();
+
+  FormidableStreamHub? _streamHub;
+
+  FormidableStreamHub get _hub =>
+      _streamHub ??= FormidableStreamHub(this, () => isDisposed);
+
+  /// Every state of the Form, as it changes: any Field below it, but also
+  /// touched, errors, pending and the rest.
+  ///
+  /// It is a broadcast stream that delivers synchronously, right after the
+  /// change, like [addListener]. It never emits the state the Form is in when
+  /// you listen, it listens to the Form only while it has subscribers, and it
+  /// closes when the Form is disposed. The same holds for [valueChanges],
+  /// [statusChanges] and [select]. A generated Form types it after its state
+  /// (`Stream<SignUpFormState>`).
+  Stream<FormidableFormState> get changes =>
+      _hub.derive(() => state, (state) => state, same: (_, _) => false);
+
+  /// The state of the Form, each time the value or presence of a Field below
+  /// it changes, including the Fields of Nested Forms, Field Arrays and Dynamic
+  /// Forms: an item added, removed, moved or edited, a Field registered or
+  /// removed, an optional Nested Form that becomes set or Unset.
+  ///
+  /// Touching a Field, submitting, focus, errors and pending are not value
+  /// changes, and neither is the Form becoming valid on its own: it is not tied
+  /// to [value], which is null until the Form is valid. The event is the state,
+  /// so the listener reads the Fields it cares about (`state.email.value`), or
+  /// `state.form.value` for the Schema instance when the Form is valid. A
+  /// generated Form types it after its state.
+  ///
+  /// ```dart
+  /// form.valueChanges.listen((state) => print(state.from.value));
+  /// ```
+  Stream<FormidableFormState> get valueChanges =>
+      _hub.derive<List<Object?>, FormidableFormState>(
+        () => valueKeyOf(this),
+        (_) => state,
+        same: sameValueKey,
+      );
+
+  /// The status of the Form, each time it changes between valid and invalid.
+  Stream<FormidableStatus> get statusChanges =>
+      _hub.derive(() => state.form.status, (status) => status);
+
+  /// What [selector] returns for the state of the Form, each time it differs
+  /// (by `==`) from what it returned before. The first selection is computed
+  /// when you listen, so the first event is a real change. A generated Form
+  /// hands the selector its typed state.
+  ///
+  /// ```dart
+  /// form.select((state) => (state.from.value, state.to.value));
+  /// ```
+  Stream<R> select<R>(R Function(FormidableFormState state) selector) =>
+      _hub.derive(() => selector(state), (selection) => selection);
 
   /// The Schema instance while the Form is valid and not pending, null
-  /// otherwise (and while an optional Nested Form is Unset). It is computed on
-  /// every read.
-  S? get value {
-    final state = _state;
-    if (!isSet || state.status != FormidableStatus.valid || state.pending) {
-      return null;
-    }
-    return buildOutput();
-  }
+  /// otherwise (and while an optional Nested Form is Unset). It is the
+  /// [FormidableFormMeta.value] of the current [state], so the Schema
+  /// constructor runs on the first read after a change, not on every change.
+  S? get value => (state.form as FormidableFormMeta<S>).value;
 
   /// Whether the Form holds a value, as opposed to being an Unset optional
   /// Nested Form. It is always true for a Form that is not an optional Nested
@@ -103,17 +156,6 @@ abstract class FormidableForm<S>
     _initiallySet = initiallySet;
     _state = _computeState();
   }
-
-  /// Calls [listener] after every change of any child, even one that leaves
-  /// [state] equal. A listener of [state] is called only when it differs, so
-  /// use this to follow [value], which can change while [state] does not.
-  void addChangeListener(void Function() listener) {
-    assert(!isDisposed, 'Cannot add a listener to a disposed object.');
-    _changeListeners.add(listener);
-  }
-
-  void removeChangeListener(void Function() listener) =>
-      _changeListeners.remove(listener);
 
   /// Restores every Field to its initial value and presence, and forgets that
   /// it was touched. It notifies once and does not run the Form Effects: the
@@ -146,7 +188,8 @@ abstract class FormidableForm<S>
         node.clear();
       } else if (node is FormidableForm<Object?>) {
         node.clear();
-      } else if (node is FormidableFieldArray<FormidableNode, Object?>) {
+      } else if (node
+          is FormidableFieldArray<FormidableNode, Object?, Object?>) {
         node.clear();
       }
     }
@@ -210,29 +253,10 @@ abstract class FormidableForm<S>
     // The initial state is what exists once the creation-time Effects ran.
     commit();
     for (final node in _nodes) {
-      _follow(node);
+      node.addListener(_onNodeChanged);
     }
     _state = _computeState();
   }
-
-  // A Form, a Dynamic Form and a Field Array hold other nodes: the parent
-  // follows every change below them, not only the changes of their own state.
-  void _follow(FormidableNode node) => switch (node) {
-    FormidableForm<Object?>() => node.addChangeListener(_onNodeChanged),
-    FormidableDynamicForm() => node.addChangeListener(_onNodeChanged),
-    FormidableFieldArray<FormidableNode, Object?>() => node.addChangeListener(
-      _onNodeChanged,
-    ),
-    _ => node.addListener(_onNodeChanged),
-  };
-
-  void _unfollow(FormidableNode node) => switch (node) {
-    FormidableForm<Object?>() => node.removeChangeListener(_onNodeChanged),
-    FormidableDynamicForm() => node.removeChangeListener(_onNodeChanged),
-    FormidableFieldArray<FormidableNode, Object?>() =>
-      node.removeChangeListener(_onNodeChanged),
-    _ => node.removeListener(_onNodeChanged),
-  };
 
   /// The children of the Form with every Dynamic Form replaced by what is
   /// registered in it, so the walks below see Fields and Nested Forms
@@ -256,7 +280,7 @@ abstract class FormidableForm<S>
       switch (node) {
         case FormidableForm<Object?>():
           yield node;
-        case FormidableFieldArray<FormidableNode, Object?>():
+        case FormidableFieldArray<FormidableNode, Object?, Object?>():
           for (final item in node.items) {
             if (item.node case final FormidableForm<Object?> form) yield form;
           }
@@ -443,7 +467,7 @@ abstract class FormidableForm<S>
         yield node;
       case FormidableForm<Object?>():
         yield* node._fieldsBelow();
-      case FormidableFieldArray<FormidableNode, Object?>():
+      case FormidableFieldArray<FormidableNode, Object?, Object?>():
         for (final item in node.items) {
           yield* _fieldsOf(item.node);
         }
@@ -728,40 +752,61 @@ abstract class FormidableForm<S>
       if (!waiter.isCompleted) waiter.complete();
     }
     for (final node in _nodes) {
-      _unfollow(node);
+      node.removeListener(_onNodeChanged);
       node.dispose();
     }
-    _changeListeners.clear();
+    _streamHub?.close();
     super.dispose();
   }
 
   void _onNodeChanged() {
-    _heldChange = true;
     if (_held == 0) _flush();
   }
 
-  /// Publishes the Form state and calls the change listeners, if anything
-  /// changed since the last time.
+  /// Publishes the Form state, and notifies, if it changed since the last
+  /// time.
   void _flush() {
     final next = _computeState();
-    final stateChanged = next != _state;
-    if (!stateChanged && !_heldChange) return;
-    _heldChange = false;
-    if (stateChanged) {
-      _state = next;
-      notifyListeners();
-    }
-    if (isDisposed) return;
-    for (final listener in List.of(_changeListeners)) {
-      if (_changeListeners.contains(listener)) listener();
-    }
+    if (next == _state) return;
+    _state = next;
+    notifyListeners();
   }
 
-  FormidableFormState _computeState() => FormidableFormState(
+  FormidableFormState _computeState() => buildState(
     status: isValid ? FormidableStatus.valid : FormidableStatus.invalid,
     dirty: isDirty,
     pending: isPending,
+    isSet: isSet,
     errors: _formErrors,
+  );
+
+  /// Builds the snapshot of the Form from the flags the runtime computed.
+  ///
+  /// A generated Form overrides it to return its own subclass of
+  /// [FormidableFormState], adding the state of every child, which it reads
+  /// from its Field handles, and a [FormidableFormMeta] whose value is built
+  /// from those child states, so the snapshot never reads a Form that has
+  /// moved on. The snapshot must be equal to the previous one when nothing
+  /// below the Form changed, and must not run the Schema constructor: the
+  /// value is lazy.
+  ///
+  /// The default builds a plain [FormidableFormState] whose value reads the
+  /// Form when it is first asked for.
+  FormidableFormState buildState({
+    required FormidableStatus status,
+    required bool dirty,
+    required bool pending,
+    required bool isSet,
+    required List<FormidableValidationError> errors,
+  }) => FormidableFormState(
+    form: FormidableFormMeta<S>(
+      status: status,
+      dirty: dirty,
+      pending: pending,
+      isSet: isSet,
+      errors: errors,
+      buildValue: buildOutput,
+    ),
   );
 }
 

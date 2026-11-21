@@ -1,5 +1,4 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
-import 'package:formidable/formidable.dart';
 import 'package:formidable_flutter/formidable_flutter.dart';
 
 import 'error_caption.dart';
@@ -11,38 +10,78 @@ import 'error_caption.dart';
 /// The control can't take focus, so the Field becomes touched on the first
 /// interaction.
 ///
+/// It takes every parameter of [CupertinoSlidingSegmentedControl] except the
+/// ones Formidable owns: the group value and `onValueChanged`. A null
+/// [thumbColor], [padding] or [backgroundColor] gives the default of Flutter.
+///
 /// For everything else, build a `CupertinoSlidingSegmentedControl` from a
-/// [FormidableBindingBuilder].
+/// [FormidableFieldWidget].
 class FormidableCupertinoSlidingSegmentedControl<T extends Object>
-    extends StatelessWidget {
-  const FormidableCupertinoSlidingSegmentedControl({
+    extends FormidableFieldWidget<T?, T?> {
+  FormidableCupertinoSlidingSegmentedControl({
     super.key,
-    required this.field,
+    required super.field,
     required this.children,
-    this.messages,
-  });
+    super.messages,
+    super.errorDisplay,
+    super.focusNode,
+    this.disabledChildren = const {},
+    this.thumbColor,
+    this.padding,
+    this.backgroundColor,
+    this.proportionalWidth = false,
+    this.isMomentary = false,
+  }) : super(
+         builder: (context, control) {
+           // The defaults of Flutter are private: read them from an instance.
+           final defaults = CupertinoSlidingSegmentedControl<T>(
+             children: children,
+             onValueChanged: (_) {},
+           );
+           return FormidableCupertinoErrorCaption(
+             errorText: control.errorText,
+             child: CupertinoSlidingSegmentedControl<T>(
+               children: children,
+               groupValue: children.containsKey(control.value)
+                   ? control.value
+                   : null,
+               onValueChanged: (value) {
+                 if (!control.enabled || value == null) return;
+                 control.didChange(value, touch: true);
+               },
+               disabledChildren: disabledChildren,
+               thumbColor: thumbColor ?? defaults.thumbColor,
+               padding: padding ?? defaults.padding,
+               backgroundColor: backgroundColor ?? defaults.backgroundColor,
+               proportionalWidth: proportionalWidth,
+               isMomentary: isMomentary,
+             ),
+           );
+         },
+       );
 
-  final FormidableField<T?> field;
+  /// The value of each segment and the widget that shows it. See
+  /// [CupertinoSlidingSegmentedControl.children].
   final Map<T, Widget> children;
 
-  /// Messages for this widget only, ahead of the config and the localizations.
-  final FormidableMessages? messages;
+  /// The segments that can't be picked. See
+  /// [CupertinoSlidingSegmentedControl.disabledChildren].
+  final Set<T> disabledChildren;
 
-  @override
-  Widget build(BuildContext context) => FormidableBindingBuilder<T?>(
-    field: field,
-    messages: messages,
-    builder: (context, binding) => FormidableCupertinoErrorCaption(
-      binding: binding,
-      child: CupertinoSlidingSegmentedControl<T>(
-        children: children,
-        groupValue: children.containsKey(binding.value) ? binding.value : null,
-        onValueChanged: (value) {
-          if (!binding.enabled || value == null) return;
-          binding.onTouched();
-          binding.onChanged(value);
-        },
-      ),
-    ),
-  );
+  /// See [CupertinoSlidingSegmentedControl.thumbColor]. Null gives its
+  /// default.
+  final Color? thumbColor;
+
+  /// See [CupertinoSlidingSegmentedControl.padding]. Null gives its default.
+  final EdgeInsetsGeometry? padding;
+
+  /// See [CupertinoSlidingSegmentedControl.backgroundColor]. Null gives its
+  /// default.
+  final Color? backgroundColor;
+
+  /// See [CupertinoSlidingSegmentedControl.proportionalWidth].
+  final bool proportionalWidth;
+
+  /// See [CupertinoSlidingSegmentedControl.isMomentary].
+  final bool isMomentary;
 }

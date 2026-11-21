@@ -5,7 +5,7 @@ description: Convenience widgets for iOS-style apps, built on cupertino_ui
 
 # Cupertino widgets
 
-`formidable_cupertino` gives every common Cupertino input a Field to bind to, with no glue code. The widgets are thin layers over the [headless Binding](/widgets) and use `cupertino_ui`.
+`formidable_cupertino` gives every common Cupertino input a Field to bind to, with no glue code. The widgets are [Field Widgets](/widgets) built on `cupertino_ui`.
 
 ```dart
 FormidableCupertinoTextField(field: form.age, placeholder: 'Age')
@@ -14,9 +14,9 @@ FormidableCupertinoSwitch(field: form.notifications)
 
 | Widget | Field type | Notes |
 | --- | --- | --- |
-| `FormidableCupertinoTextField<T>` | any type with a [Codec](/widgets/codecs) | `codec:` works like the Material text field. Touched when it loses focus. |
-| `FormidableCupertinoSwitch` | `bool` | An Unset Field shows the switch off. |
-| `FormidableCupertinoCheckbox` | `bool` | An Unset Field shows the box unchecked. |
+| `FormidableCupertinoTextField<T>` | any type with a [Codec](/widgets/codecs) | The whole API of `CupertinoTextField`. `codec:` works like the Material text field. Touched when it loses focus. |
+| `FormidableCupertinoSwitch` | `bool` | An Unset Field shows the switch off. Takes focus. |
+| `FormidableCupertinoCheckbox<T>` | `bool`, `bool?` | An Unset Field shows the box unchecked, or mixed with `tristate`. A nullable Field that chose null shows mixed too (see [Deselecting](#deselecting-is-a-choice)). Takes focus. |
 | `FormidableCupertinoSegmentedControl<T>` | `T` | `children` maps each value to the widget of its segment. |
 | `FormidableCupertinoSlidingSegmentedControl<T>` | `T` | Same as above. |
 | `FormidableCupertinoRadioGroup<T>` | `T` | Put `CupertinoRadio<T>` widgets anywhere under `child`. |
@@ -24,11 +24,19 @@ FormidableCupertinoSwitch(field: form.notifications)
 | `FormidableCupertinoDatePicker` | `DateTime` | `mode` picks a date, a time of the day, both, or a month and year. |
 | `FormidableCupertinoTimerPicker` | `Duration` | `mode` picks hours, minutes and seconds, or fewer. |
 
+Every widget takes the whole API of the Cupertino widget it wraps, except what Formidable owns (the value, `onChanged`, the controller, and whether the widget is enabled) and what Flutter deprecated. Every parameter is also a public `final` field of the widget, so `widget.activeColor` reads back what you passed. A parameter whose default is private to Flutter (the thumb colour of the sliding segmented control, the item extent of the pickers) is nullable: null gives Flutter's default.
+
 A Field of a nullable type (`bool?`, `DateTime?`) works with every widget.
 
-## Touched
+## Deselecting is a choice
 
-A text field is touched when it loses focus. The other widgets can't take focus, so the Field becomes touched on the first interaction: the first tap, the first drag of the slider, the first change of a wheel. The Validation Message shows under the widget from then on.
+With `tristate`, cycling the checkbox to the mixed state is the user deselecting. That is something the user did, not a reset, so it counts as a value whenever the Field can hold one. On a `bool?` Field, mixed means null: the Field is set to null, no longer Unset, and dirty. On a `bool` Field null cannot be written, so the Field goes back to Unset (and is touched). Either way the box is shown as mixed, so only the Field tells the two apart. The widget gets this from `control.didChange(null)`, which also works in your own [Field Widgets](/widgets/custom); call `control.clear()` to go back to Unset on purpose.
+
+## Touched and focus
+
+A text field is touched when it loses focus. The switch and the checkbox take the focus node of the Field Widget, so keyboard navigation reaches them (the action key of the field before moves the focus to them) and the Field is touched when they lose focus. A tap does not move focus, so they also touch the Field on the first interaction.
+
+The segmented controls, the radio group, the slider and the wheels have no focus node to attach, so the Field becomes touched on the first interaction: the first tap, the first drag of the slider, the first change of a wheel. The Validation Message shows under the widget from then on.
 
 ## Text fields and Codecs
 
@@ -41,25 +49,65 @@ FormidableCupertinoTextField<Money>(
 )
 ```
 
+The widget takes every parameter of `CupertinoTextField` (`style`, `padding`, `prefix`, `clearButtonMode`, `inputFormatters`, `onSubmitted`...), except what Formidable owns: the `controller`, `enabled` and `onChanged`. Cupertino has no error decoration, so the Validation Message is drawn under the field by `FormidableCupertinoErrorCaption`, the same way for every widget of the package. A null `decoration` gives the default rounded border; pass `const BoxDecoration()` to remove the box.
+
+### Parts that depend on the Field
+
+Some parts of a text field depend on the state of the Field: a clear button that shows only once there is text, a border that turns red on an error. `decorationBuilder`, `prefixBuilder`, `suffixBuilder` and `styleBuilder` build the `decoration`, the `prefix`, the `suffix` and the `style` from the control of the Field Widget. They run again whenever the Field changes. Pass either the static parameter or its builder, not both.
+
+```dart
+FormidableCupertinoTextField(
+  field: form.name,
+  placeholder: 'Name',
+  suffixBuilder: (context, control) => (control.value ?? '').isEmpty
+      ? null
+      : CupertinoButton(
+          onPressed: control.clear,
+          child: const Icon(CupertinoIcons.clear_circled_solid),
+        ),
+  decorationBuilder: (context, control) => BoxDecoration(
+    border: Border.all(
+      color: control.errorText == null
+          ? CupertinoColors.systemGrey
+          : CupertinoColors.destructiveRed,
+    ),
+    borderRadius: BorderRadius.circular(5),
+  ),
+)
+```
+
+A builder returns null for "nothing" (no prefix, no suffix) or, for the decoration, the default of `CupertinoTextField`. `control.errorText` follows the error display policy, so the border turns red at the same time as the message shows.
+
+The text style has a builder too. `styleBuilder` sits next to `style`, works like the others (pass one or the other, it runs again whenever the Field changes, and null gives the default style) and is the way to, for example, turn the text red while the Field shows an error:
+
+```dart
+FormidableCupertinoTextField(
+  field: form.name,
+  placeholder: 'Name',
+  styleBuilder: (context, control) => control.errorText == null
+      ? null
+      : const TextStyle(color: CupertinoColors.destructiveRed),
+)
+```
+
 ## Pickers and Unset Fields
 
 A picker always has to show something. An Unset Field shows the current time (date picker) or a duration of zero (timer picker) on the wheels, and stays Unset until the user moves them. A value set in code starts the wheels again on the new value; a value picked by the user never does.
 
-## Dropping down to the Binding
+## Dropping down to the base
 
-The widgets expose the most common parameters. For everything else, build the widget from `FormidableBindingBuilder`, as with any third-party widget:
+When a widget does not fit at all (a custom switch, a third-party picker), build it from `FormidableFieldWidget`, as with any third-party widget:
 
 ```dart
-FormidableBindingBuilder<bool?>(
+FormidableFieldWidget<bool?, bool?>(
   field: form.notifications,
-  builder: (context, binding) => CupertinoSwitch(
-    value: binding.value ?? false,
-    onChanged: (value) {
-      binding.onTouched();
-      binding.onChanged(value);
-    },
+  builder: (context, control) => CupertinoSwitch(
+    value: control.value ?? false,
+    onChanged: (value) => control.didChange(value, touch: true),
   ),
 )
 ```
+
+See [Your own Field Widgets](/widgets/custom).
 
 The example app has a page that shows every widget.

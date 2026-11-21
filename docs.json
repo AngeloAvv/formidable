@@ -61,7 +61,8 @@
     },
     {
       "group": "Widgets",
-      "pages": [{ "title": "Binding Fields to widgets", "href": "/widgets" },
+      "pages": [{ "title": "Field Widgets", "href": "/widgets" },
+        { "title": "Your own Field Widgets", "href": "/widgets/custom" },
         { "title": "Material widgets", "href": "/widgets/material" },
         { "title": "Cupertino widgets", "href": "/widgets/cupertino" },
         { "title": "Codecs", "href": "/widgets/codecs" },

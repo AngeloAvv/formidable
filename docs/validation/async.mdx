@@ -68,7 +68,7 @@ While a check waits for its debounce or for the service, the Field is pending:
 
 ```dart
 form.username.state.pending; // true while it runs
-form.state.pending;          // true while any Field is pending
+form.state.form.pending;     // true while any Field is pending
 form.value;                  // null while the Form is pending
 ```
 

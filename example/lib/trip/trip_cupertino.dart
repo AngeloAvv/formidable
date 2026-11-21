@@ -13,15 +13,18 @@ class TripCupertinoPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => TripFormScope(
-    child: const CupertinoPageScaffold(
-      navigationBar: CupertinoNavigationBar(middle: Text('Trip')),
-      child: SafeArea(child: _TripBody()),
+    // The builder gets the Form and a context below the scope.
+    builder: (context, form) => CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(middle: Text('Trip')),
+      child: SafeArea(child: _TripBody(form: form)),
     ),
   );
 }
 
 class _TripBody extends StatefulWidget {
-  const _TripBody();
+  const _TripBody({required this.form});
+
+  final TripForm form;
 
   @override
   State<_TripBody> createState() => _TripBodyState();
@@ -46,7 +49,7 @@ class _TripBodyState extends State<_TripBody> {
 
   @override
   Widget build(BuildContext context) {
-    final form = context.tripForm;
+    final form = widget.form;
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -57,7 +60,7 @@ class _TripBodyState extends State<_TripBody> {
         ),
         const SizedBox(height: 16),
         const Text('Stops', style: TextStyle(fontWeight: FontWeight.w600)),
-        FormidableFieldArrayBuilder<StopForm, Stop>(
+        FormidableFieldArrayBuilder(
           array: form.stops,
           itemBuilder: (context, index, item) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),
@@ -114,7 +117,7 @@ class _TripBodyState extends State<_TripBody> {
         ),
         const SizedBox(height: 16),
         const Text('Tags', style: TextStyle(fontWeight: FontWeight.w600)),
-        FormidableFieldArrayBuilder<FormidableField<String>, String>(
+        FormidableFieldArrayBuilder(
           array: form.tags,
           itemBuilder: (context, index, item) => Padding(
             padding: const EdgeInsets.symmetric(vertical: 6),

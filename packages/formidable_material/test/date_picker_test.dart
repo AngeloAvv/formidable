@@ -17,7 +17,7 @@ void main() {
       '${date.day.toString().padLeft(2, '0')}';
 
   Widget picker(PreferencesForm form, {bool clearable = false}) =>
-      FormidableDatePicker<DateTime>(
+      FormidableMaterialDatePicker<DateTime>(
         field: form.birthday,
         decoration: const InputDecoration(labelText: 'Birthday'),
         initialDate: DateTime(2024, 5, 10),
@@ -27,7 +27,7 @@ void main() {
         clearable: clearable,
       );
 
-  group('FormidableDatePicker', () {
+  group('FormidableMaterialDatePicker', () {
     testWidgets('shows nothing while the Field is Unset', (tester) async {
       await tester.pumpWidget(app(picker));
 
@@ -49,7 +49,10 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        app((form) => FormidableDatePicker<DateTime>(field: form.birthday)),
+        app(
+          (form) =>
+              FormidableMaterialDatePicker<DateTime>(field: form.birthday),
+        ),
       );
 
       form.birthday.setValue(DateTime(2024, 7, 4));

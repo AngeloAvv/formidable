@@ -14,13 +14,13 @@ void main() {
   Widget stopRow(StopForm stop, int index) => Row(
     children: [
       Expanded(
-        child: FormidableTextField<String>(
+        child: FormidableMaterialTextField<String>(
           field: stop.place,
           decoration: InputDecoration(labelText: 'Place ${index + 1}'),
         ),
       ),
       Expanded(
-        child: FormidableTextField<String?>(
+        child: FormidableMaterialTextField<String?>(
           field: stop.note,
           decoration: InputDecoration(labelText: 'Note ${index + 1}'),
         ),
@@ -38,19 +38,19 @@ void main() {
             return SingleChildScrollView(
               child: Column(
                 children: [
-                  FormidableTextField<String>(
+                  FormidableMaterialTextField<String>(
                     field: trip.title,
                     decoration: const InputDecoration(labelText: 'Title'),
                   ),
-                  FormidableTextField<String>(
+                  FormidableMaterialTextField<String>(
                     field: trip.origin.street,
                     decoration: const InputDecoration(labelText: 'Street'),
                   ),
-                  FormidableTextField<String>(
+                  FormidableMaterialTextField<String>(
                     field: trip.origin.city,
                     decoration: const InputDecoration(labelText: 'City'),
                   ),
-                  FormidableFieldArrayBuilder<StopForm, Stop>(
+                  FormidableFieldArrayBuilder(
                     array: trip.stops,
                     itemBuilder: (context, index, item) =>
                         stopRow(item.node, index),
@@ -63,7 +63,7 @@ void main() {
                       ],
                     ),
                   ),
-                  FormidableTextField<String?>(
+                  FormidableMaterialTextField<String?>(
                     field: trip.memo,
                     decoration: const InputDecoration(labelText: 'Memo'),
                   ),

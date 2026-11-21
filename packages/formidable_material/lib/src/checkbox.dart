@@ -1,4 +1,3 @@
-import 'package:formidable/formidable.dart';
 import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -8,76 +7,126 @@ import 'error_text.dart';
 ///
 /// An Unset Field is shown unchecked. The first interaction marks the Field
 /// touched, and the Validation Message shows below the checkbox from then on.
-///
 /// With [tristate], a `bool?` Field can also choose null, which is shown as a
-/// dash. With a [title], the whole row is tappable (a `CheckboxListTile`).
+/// dash. Reaching the dash is a choice: the Field stays set and is dirty. A
+/// `bool` Field cannot hold null, so there the dash makes it Unset (touched),
+/// and it is shown unchecked again.
 ///
-/// It exposes the most common parameters. For everything else, build a
-/// `Checkbox` from a [FormidableBindingBuilder].
-class FormidableCheckbox<T extends bool?> extends StatelessWidget {
-  const FormidableCheckbox({
+/// It takes every parameter of [Checkbox] except the ones Formidable owns:
+/// `value` and `onChanged` (the Field is the source of truth). Each one is
+/// readable as a field of the widget. The Checkbox is disabled while the Field
+/// is. For a tappable row with a title, use [FormidableMaterialCheckboxListTile].
+class FormidableMaterialCheckbox<T extends bool?>
+    extends FormidableFieldWidget<T, T> {
+  FormidableMaterialCheckbox({
     super.key,
-    required this.field,
-    this.title,
+    required super.field,
+    super.focusNode,
+    super.messages,
+    super.errorDisplay,
     this.tristate = false,
+    this.mouseCursor,
+    this.activeColor,
+    this.fillColor,
+    this.checkColor,
+    this.focusColor,
+    this.hoverColor,
+    this.overlayColor,
+    this.splashRadius,
+    this.materialTapTargetSize,
+    this.visualDensity,
     this.autofocus = false,
-    this.focusNode,
-    this.messages,
-  });
+    this.shape,
+    this.side,
+    this.isError = false,
+    this.semanticLabel,
+    this.markInsets,
+  }) : super(
+         builder: (context, control) {
+           // Unset is shown as unchecked: the box has no state for "not chosen".
+           final value = control.isSet ? control.value : false;
+           return Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             mainAxisSize: MainAxisSize.min,
+             children: [
+               Checkbox(
+                 value: value,
+                 onChanged: control.enabled
+                     ? (next) => control.didChange(next as T?, touch: true)
+                     : null,
+                 focusNode: control.focusNode,
+                 tristate: tristate,
+                 mouseCursor: mouseCursor,
+                 activeColor: activeColor,
+                 fillColor: fillColor,
+                 checkColor: checkColor,
+                 focusColor: focusColor,
+                 hoverColor: hoverColor,
+                 overlayColor: overlayColor,
+                 splashRadius: splashRadius,
+                 materialTapTargetSize: materialTapTargetSize,
+                 visualDensity: visualDensity,
+                 autofocus: autofocus,
+                 shape: shape,
+                 side: side,
+                 isError: isError,
+                 semanticLabel: semanticLabel,
+                 markInsets: markInsets,
+               ),
+               FormidableMaterialErrorLine(text: control.errorText),
+             ],
+           );
+         },
+       );
 
-  final FormidableField<T> field;
-
-  /// The label. Without it, only the box is drawn.
-  final Widget? title;
-
-  /// Whether the box has a third state for null. Needs a `bool?` Field to be
-  /// useful; on a `bool` Field null can never be chosen.
+  /// See [Checkbox.tristate].
   final bool tristate;
+
+  /// See [Checkbox.mouseCursor].
+  final MouseCursor? mouseCursor;
+
+  /// See [Checkbox.activeColor].
+  final Color? activeColor;
+
+  /// See [Checkbox.fillColor].
+  final WidgetStateProperty<Color?>? fillColor;
+
+  /// See [Checkbox.checkColor].
+  final Color? checkColor;
+
+  /// See [Checkbox.focusColor].
+  final Color? focusColor;
+
+  /// See [Checkbox.hoverColor].
+  final Color? hoverColor;
+
+  /// See [Checkbox.overlayColor].
+  final WidgetStateProperty<Color?>? overlayColor;
+
+  /// See [Checkbox.splashRadius].
+  final double? splashRadius;
+
+  /// See [Checkbox.materialTapTargetSize].
+  final MaterialTapTargetSize? materialTapTargetSize;
+
+  /// See [Checkbox.visualDensity].
+  final VisualDensity? visualDensity;
+
+  /// See [Checkbox.autofocus].
   final bool autofocus;
 
-  /// Used instead of the focus node owned by the Binding. Never disposed here.
-  final FocusNode? focusNode;
+  /// See [Checkbox.shape].
+  final OutlinedBorder? shape;
 
-  /// Messages for this widget only, ahead of the config and the localizations.
-  final FormidableMessages? messages;
+  /// See [Checkbox.side].
+  final BorderSide? side;
 
-  @override
-  Widget build(BuildContext context) => FormidableBindingBuilder<T>(
-    field: field,
-    focusNode: focusNode,
-    messages: messages,
-    builder: (context, binding) {
-      // Unset is shown as unchecked: the box has no state for "not chosen".
-      final value = binding.isSet ? binding.value : false;
-      void onChanged(bool? next) {
-        if (binding.enabled) binding.onPicked(next as T);
-      }
+  /// See [Checkbox.isError].
+  final bool isError;
 
-      final control = title == null
-          ? Checkbox(
-              value: value,
-              tristate: tristate,
-              onChanged: onChanged,
-              focusNode: binding.focusNode,
-              autofocus: autofocus,
-            )
-          : CheckboxListTile(
-              value: value,
-              tristate: tristate,
-              onChanged: onChanged,
-              focusNode: binding.focusNode,
-              autofocus: autofocus,
-              title: title,
-              controlAffinity: ListTileControlAffinity.leading,
-            );
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          control,
-          FormidableErrorLine(text: binding.errorText),
-        ],
-      );
-    },
-  );
+  /// See [Checkbox.semanticLabel].
+  final String? semanticLabel;
+
+  /// See [Checkbox.markInsets].
+  final EdgeInsets? markInsets;
 }

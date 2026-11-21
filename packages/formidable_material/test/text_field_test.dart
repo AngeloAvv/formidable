@@ -17,7 +17,7 @@ void main() {
           child: Builder(
             builder: (context) => Column(
               children: [
-                FormidableTextField(
+                FormidableMaterialTextField(
                   field: context.signUpForm.username,
                   decoration: const InputDecoration(labelText: 'Username'),
                 ),

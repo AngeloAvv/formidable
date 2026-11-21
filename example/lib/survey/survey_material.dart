@@ -53,18 +53,19 @@ class _SurveyBodyState extends State<_SurveyBody> {
   }
 
   Widget _answer(SurveyForm form, Question question) => switch (question) {
-    NumberQuestion(:final key, :final label) => FormidableTextField<int>(
-      key: Key('answer-$key'),
-      field: form.answers.field<int>(key),
-      keyboardType: TextInputType.number,
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(),
+    NumberQuestion(:final key, :final label) =>
+      FormidableMaterialTextField<int>(
+        key: Key('answer-$key'),
+        field: form.answers.field<int>(key),
+        keyboardType: TextInputType.number,
+        decoration: InputDecoration(
+          labelText: label,
+          border: const OutlineInputBorder(),
+        ),
       ),
-    ),
     TextQuestion(:final key, :final label, :final required) =>
       required
-          ? FormidableTextField<String>(
+          ? FormidableMaterialTextField<String>(
               key: Key('answer-$key'),
               field: form.answers.field<String>(key),
               decoration: InputDecoration(
@@ -72,7 +73,7 @@ class _SurveyBodyState extends State<_SurveyBody> {
                 border: const OutlineInputBorder(),
               ),
             )
-          : FormidableTextField<String?>(
+          : FormidableMaterialTextField<String?>(
               key: Key('answer-$key'),
               field: form.answers.field<String?>(key),
               decoration: InputDecoration(
@@ -80,7 +81,7 @@ class _SurveyBodyState extends State<_SurveyBody> {
                 border: const OutlineInputBorder(),
               ),
             ),
-    YesNoQuestion(:final key, :final label) => FormidableSwitch(
+    YesNoQuestion(:final key, :final label) => FormidableMaterialSwitchListTile(
       key: Key('answer-$key'),
       field: form.answers.field<bool>(key),
       title: Text(label),
@@ -94,7 +95,7 @@ class _SurveyBodyState extends State<_SurveyBody> {
       crossAxisAlignment: CrossAxisAlignment.start,
       spacing: 16,
       children: [
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('title'),
           field: form.title,
           decoration: const InputDecoration(
@@ -102,7 +103,7 @@ class _SurveyBodyState extends State<_SurveyBody> {
             border: OutlineInputBorder(),
           ),
         ),
-        // Rebuilds when a Field is registered or removed.
+        // Rebuilds when a Field is registered, removed or edited.
         ValueListenableBuilder<FormidableDynamicFormState>(
           valueListenable: form.answers.asValueListenable(),
           builder: (context, state, _) => Column(

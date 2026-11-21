@@ -141,14 +141,14 @@ void main() {
       form.phones.items.first.node.number.setValue('5');
 
       expect(states, hasLength(1));
-      expect(states.single.status, FormidableStatus.invalid);
+      expect(states.single.form.status, FormidableStatus.invalid);
     });
 
-    test('a Form change listener hears every item edit', () {
+    test('a Form listener hears every item edit', () {
       final form = PersonForm();
       form.phones.add(const Telephone(number: '555'));
       var calls = 0;
-      form.addChangeListener(() => calls++);
+      form.addListener(() => calls++);
 
       form.phones.items.first.node.label.setValue('home');
       form.phones.items.first.node.label.setValue('work');
@@ -161,14 +161,14 @@ void main() {
     test('an invalid item makes the Form invalid, a fixed one valid again', () {
       final form = PersonForm()..name.setValue('A');
       form.phones.add(const Telephone(number: '555'));
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.status, FormidableStatus.valid);
 
       form.phones.add();
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
       expect(form.value, isNull);
 
       form.phones.removeAt(1);
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.status, FormidableStatus.valid);
       expect(form.value!.phones.single.number, '555');
     });
 
@@ -195,7 +195,7 @@ void main() {
 
       expect(form.members.isSet, isFalse);
       expect(form.members.state.errors, [const FormidableRequiredError()]);
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
     });
 
     test('MinItems and MaxItems judge the number of items', () {
@@ -295,7 +295,7 @@ void main() {
 
       expect(form.phones.length, 2);
       expect(form.phones.items[1].node.label.value, 'x');
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
     });
 
     test('the partial constructor takes a list', () {
@@ -314,12 +314,12 @@ void main() {
       final original = form.phones.items.first.node;
 
       form.phones.add();
-      expect(form.state.dirty, isTrue);
+      expect(form.state.form.dirty, isTrue);
 
       form.phones.removeAt(0);
       form.reset();
 
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
       expect(form.phones.length, 1);
       expect(form.phones.items.first.node, same(original));
       expect(original.number.value, '555');
@@ -337,10 +337,10 @@ void main() {
       );
 
       form.phones.move(0, 1);
-      expect(form.state.dirty, isTrue);
+      expect(form.state.form.dirty, isTrue);
 
       form.reset();
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
       expect(form.phones.items.map((i) => i.node.number.value), ['aaa', 'bbb']);
     });
 
@@ -353,10 +353,10 @@ void main() {
       );
 
       form.phones.items.first.node.number.setValue('777');
-      expect(form.state.dirty, isTrue);
+      expect(form.state.form.dirty, isTrue);
 
       form.commit();
-      expect(form.state.dirty, isFalse);
+      expect(form.state.form.dirty, isFalse);
 
       form.reset();
       expect(form.phones.items.first.node.number.value, '777');
@@ -439,7 +439,13 @@ void main() {
 
       expect(
         form.tags,
-        isA<FormidableFieldArray<FormidableField<String>, String>>(),
+        isA<
+          FormidableFieldArray<
+            FormidableField<String>,
+            String,
+            FormidableFieldState<String>
+          >
+        >(),
       );
       form.tags
         ..add('flutter')
@@ -572,11 +578,11 @@ void main() {
     test('a removed item no longer takes part in validation', () {
       final form = DirectoryForm();
       form.logins.add(const Credentials(password: 'a', confirmation: 'b'));
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
 
       form.logins.removeAt(0);
 
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.status, FormidableStatus.valid);
     });
   });
 }

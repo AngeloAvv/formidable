@@ -33,15 +33,15 @@ void main() {
   Widget threeFields() => app(
     (context) => Column(
       children: [
-        FormidableTextField<String>(
+        FormidableMaterialTextField<String>(
           field: context.shippingForm.name,
           decoration: const InputDecoration(labelText: 'Name'),
         ),
-        FormidableTextField<String>(
+        FormidableMaterialTextField<String>(
           field: context.shippingForm.street,
           decoration: const InputDecoration(labelText: 'Street'),
         ),
-        FormidableTextField<String>(
+        FormidableMaterialTextField<String>(
           field: context.shippingForm.city,
           decoration: const InputDecoration(labelText: 'City'),
         ),
@@ -72,7 +72,7 @@ void main() {
     return Column(
       children: [
         for (final name in names)
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             key: Key(name),
             field: byName[name]!,
             focusNode: focusNodes?.call(name),
@@ -169,12 +169,12 @@ void main() {
         app(
           (context) => Column(
             children: [
-              FormidableTextField<String>(
+              FormidableMaterialTextField<String>(
                 field: context.shippingForm.name,
                 textInputAction: TextInputAction.search,
                 decoration: const InputDecoration(labelText: 'Name'),
               ),
-              FormidableTextField<String>(
+              FormidableMaterialTextField<String>(
                 field: context.shippingForm.street,
                 decoration: const InputDecoration(labelText: 'Street'),
               ),
@@ -194,12 +194,12 @@ void main() {
         app(
           (context) => Column(
             children: [
-              FormidableTextField<String>(
+              FormidableMaterialTextField<String>(
                 field: context.shippingForm.name,
                 onEditingComplete: () => completed++,
                 decoration: const InputDecoration(labelText: 'Name'),
               ),
-              FormidableTextField<String>(
+              FormidableMaterialTextField<String>(
                 field: context.shippingForm.street,
                 decoration: const InputDecoration(labelText: 'Street'),
               ),
@@ -220,15 +220,15 @@ void main() {
     Widget twoOnName() => app(
       (context) => Column(
         children: [
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: context.shippingForm.name,
             decoration: const InputDecoration(labelText: 'First'),
           ),
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: context.shippingForm.name,
             decoration: const InputDecoration(labelText: 'Second'),
           ),
-          FormidableTextField<String>(
+          FormidableMaterialTextField<String>(
             field: context.shippingForm.street,
             decoration: const InputDecoration(labelText: 'Street'),
           ),
@@ -283,13 +283,13 @@ void main() {
       await pumpAll(
         tester,
         app(
-          (context) => FormidableBindingBuilder<String>(
+          (context) => FormidableTextFieldWidget<String>(
             field: context.shippingForm.name,
             focusNode: focusNode,
             textController: controller,
-            builder: (context, binding) => TextField(
-              focusNode: binding.focusNode,
-              controller: binding.textController,
+            builder: (context, control) => TextField(
+              focusNode: control.focusNode,
+              controller: control.textController,
             ),
           ),
         ),
@@ -301,25 +301,25 @@ void main() {
       controller.addListener(() {});
     });
 
-    testWidgets('the Binding disposes the ones it created', (tester) async {
-      late FormidableBinding<String> binding;
+    testWidgets('the widget disposes the ones it created', (tester) async {
+      late FormidableTextFieldWidgetState<String> control;
       await pumpAll(
         tester,
         app(
-          (context) => FormidableBindingBuilder<String>(
+          (context) => FormidableTextFieldWidget<String>(
             field: context.shippingForm.name,
-            builder: (context, b) {
-              binding = b;
+            builder: (context, c) {
+              control = c;
               return TextField(
-                focusNode: b.focusNode,
-                controller: b.textController,
+                focusNode: c.focusNode,
+                controller: c.textController,
               );
             },
           ),
         ),
       );
-      final focusNode = binding.focusNode;
-      final controller = binding.textController;
+      final focusNode = control.focusNode;
+      final controller = control.textController;
       await tester.pumpWidget(const SizedBox());
 
       expect(() => focusNode.addListener(() {}), throwsFlutterError);
@@ -333,12 +333,12 @@ void main() {
       app(
         (context) => Column(
           children: [
-            FormidableTextField<String>(
+            FormidableMaterialTextField<String>(
               field: context.shippingForm.name,
               maxLines: 3,
               decoration: const InputDecoration(labelText: 'Name'),
             ),
-            FormidableTextField<String>(
+            FormidableMaterialTextField<String>(
               field: context.shippingForm.street,
               decoration: const InputDecoration(labelText: 'Street'),
             ),

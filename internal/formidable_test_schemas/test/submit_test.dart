@@ -24,7 +24,7 @@ void main() {
     test('marks every Field and notifies the Form once', () async {
       final form = AccountForm(username: 'angelo');
       var changes = 0;
-      form.addChangeListener(() => changes++);
+      form.addListener(() => changes++);
 
       await form.submit();
 

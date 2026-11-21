@@ -34,11 +34,11 @@ The default registry covers these pairs, all to and from text. A Field of a null
 | `num` | whole numbers parse to `int`, anything else to `double` |
 | `DateTime` | ISO 8601: `2024-01-31` at midnight, a full ISO string otherwise |
 
-`FormidableTextField` and `FormidableBindingBuilder` pick the Codec for you:
+`FormidableMaterialTextField` and `FormidableTextFieldWidget` pick the Codec for you:
 
 ```dart
-FormidableTextField(field: form.age)        // FormidableField<int>
-FormidableTextField(field: form.birthDate)  // FormidableField<DateTime?>
+FormidableMaterialTextField(field: form.age)        // FormidableField<int>
+FormidableMaterialTextField(field: form.birthDate)  // FormidableField<DateTime?>
 ```
 
 ## Input that can't be parsed
@@ -71,7 +71,7 @@ class MoneyTextCodec extends FormidableCodec<Money, String> {
   }
 }
 
-FormidableTextField(field: form.price, codec: const MoneyTextCodec())
+FormidableMaterialTextField(field: form.price, codec: const MoneyTextCodec())
 ```
 
 Return your own `FormidableParseError` subclass for a failure that needs its own message, and register the message with `FormidableMessages.on<E>`.

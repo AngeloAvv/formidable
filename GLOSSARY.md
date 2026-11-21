@@ -48,8 +48,16 @@ _Avoid_: Form array, repeater
 A part of a Form whose Fields are registered at runtime under string keys rather than declared in the Schema. Each registered Field still has an explicit type. Use it only for edge cases.
 _Avoid_: Untyped form, free form
 
+**State**:
+The immutable snapshot that a Field, a Field Array or a Form publishes, and that listeners, streams and widgets follow. The state of a Form holds the state of every child (Fields, Nested Forms, Field Arrays, Dynamic Forms), one member per Schema field, and its own metadata (status, dirty, pending, errors and the Schema value) under `state.form`. It differs from the previous one whenever anything below the Form changes. The Schema value is built lazily, from the states, on the first read. The generator types the state after the Schema, for example `SignUpFormState`.
+_Avoid_: Model, view model, store
+
+**Value change**:
+A change of the value or the presence of a Field, as opposed to any other change of its state (touched, errors, pending, enabled). For a Form, a Nested Form, a Field Array or a Dynamic Form it is a value change of any Field below it, an item added, removed or moved, or a Field registered or removed. It is not the same as the Form becoming valid. Imperative code follows value changes, and changes of status, through streams (`valueChanges`, `statusChanges`, `select`) instead of the listener that fires on every state change.
+_Avoid_: Edit, mutation
+
 **Form Scope**:
-The part of the widget tree where a Form is available. A scope can own the Form, creating and disposing it, or it can expose a Form that something else owns.
+The part of the widget tree where a Form is available. A scope can own the Form, creating and disposing it, or it can expose a Form that something else owns. It gives the Form to a child or to a builder.
 _Avoid_: Provider, form builder
 
 **Dirty**:
@@ -96,9 +104,9 @@ _Avoid_: Error text, error string
 
 ### UI
 
-**Binding**:
-The link between one Field and one widget. It keeps the value the widget displays, its focus and its errors in sync with the Field.
-_Avoid_: Reactive field, field widget
+**Field Widget**:
+A widget that shows and edits one Field. It keeps the value the widget displays, its focus and its errors in sync with the Field, and writes what the user does back through the Field's pipeline. `FormidableFieldWidget` is the base that turns any widget into one, and its control is the state object that the widget reads and calls.
+_Avoid_: Binding, reactive field, form field
 
 **Codec**:
 A pure two-way conversion between a Field's value and the value a widget displays or edits. Parsing an edited value can fail, and when it does the failure becomes a Validation Error.

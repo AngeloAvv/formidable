@@ -107,6 +107,7 @@ final class SchemaModel {
   );
 
   String get formName => '${name}Form';
+  String get stateName => '${name}FormState';
   String get scopeName => '${name}FormScope';
 }
 
@@ -211,6 +212,9 @@ final class NestedModel {
   /// The generated Form of the nested Schema, for example `AddressForm`.
   final String formName;
 
+  /// The generated state of that Form, for example `AddressFormState`.
+  String get stateName => '${formName}State';
+
   /// Whether the nested Form cannot be created empty because it has a
   /// Passthrough Field that must be supplied.
   final bool requiresInitial;
@@ -244,6 +248,11 @@ final class ArrayModel {
   /// The generated Form of the items, or `FormidableField<T>` for primitives.
   String get nodeType =>
       nested?.formName ?? 'FormidableField<$elementTypeSource>';
+
+  /// The state of an item: the generated state of the Nested Form, or the
+  /// `FormidableFieldState<T>` of a primitive.
+  String get itemStateType =>
+      nested?.stateName ?? 'FormidableFieldState<$elementTypeSource>';
 }
 
 /// One argument of the Schema constructor call.
@@ -312,7 +321,8 @@ SchemaModel readSchema(Element element, [List<ClassElement> path = const []]) {
     if (reserved.contains(field.name)) {
       throw InvalidGenerationSourceError(
         'Field "${field.name}" of $name has the name of a member of the '
-        'generated ${name}Form, which would hide it. Rename the field.',
+        'generated ${name}Form or ${name}FormState, which would hide it. '
+        'Rename the field.',
         element: field,
       );
     }
@@ -368,42 +378,52 @@ SchemaModel readSchema(Element element, [List<ClassElement> path = const []]) {
   );
 }
 
-/// The public instance members that every generated Form has, which a Schema
-/// field must not reuse: the members of `FormidableForm` (and of `Object`),
-/// found through the libraries [element] sees, and the ones the emitter writes.
+/// The public instance members that every generated Form and its generated
+/// state have, which a Schema field must not reuse: the members of
+/// `FormidableForm` and `FormidableFormState` (and of `Object`), found through
+/// the libraries [element] sees, and the ones the emitter writes.
 Set<String> _reservedFieldNames(ClassElement element) {
   final names = <String>{'patch', 'replace'};
-  final seen = <LibraryElement>{};
-  final queue = [...element.library.firstFragment.importedLibraries];
-  ClassElement? form;
-  while (queue.isNotEmpty && form == null) {
-    final library = queue.removeLast();
-    if (!seen.add(library)) continue;
-    if (!library.uri.toString().startsWith('package:formidable/')) continue;
-    form = library.getClass('FormidableForm');
-    queue.addAll(library.exportedLibraries);
-  }
-  if (form == null) return names;
-  for (final type in [form.thisType, ...form.allSupertypes]) {
-    final interface = type.element;
-    for (final member in [
-      ...interface.getters,
-      ...interface.setters,
-      ...interface.methods,
-    ]) {
-      final name = member.name;
-      if (name != null &&
-          !member.isStatic &&
-          !member.isPrivate &&
-          name != 'noSuchMethod' &&
-          name != '==') {
-        names.add(
-          name.endsWith('=') ? name.substring(0, name.length - 1) : name,
-        );
+  for (final className in ['FormidableForm', 'FormidableFormState']) {
+    final type = _findFormidableClass(element, className);
+    if (type == null) continue;
+    for (final supertype in [type.thisType, ...type.allSupertypes]) {
+      final interface = supertype.element;
+      for (final member in [
+        ...interface.getters,
+        ...interface.setters,
+        ...interface.methods,
+      ]) {
+        final name = member.name;
+        if (name != null &&
+            !member.isStatic &&
+            !member.isPrivate &&
+            name != 'noSuchMethod' &&
+            name != '==') {
+          names.add(
+            name.endsWith('=') ? name.substring(0, name.length - 1) : name,
+          );
+        }
       }
     }
   }
   return names;
+}
+
+/// The class named [name] of `package:formidable`, found through the
+/// libraries [element] sees, or null.
+ClassElement? _findFormidableClass(ClassElement element, String name) {
+  final seen = <LibraryElement>{};
+  final queue = [...element.library.firstFragment.importedLibraries];
+  while (queue.isNotEmpty) {
+    final library = queue.removeLast();
+    if (!seen.add(library)) continue;
+    if (!library.uri.toString().startsWith('package:formidable/')) continue;
+    final found = library.getClass(name);
+    if (found != null) return found;
+    queue.addAll(library.exportedLibraries);
+  }
+  return null;
 }
 
 /// The `@Effects(...)` annotations of [element], rebuilt as const expressions.

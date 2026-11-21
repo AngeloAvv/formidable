@@ -129,7 +129,7 @@ class _EditBodyState extends State<_EditBody> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('name'),
           field: form.name,
           decoration: const InputDecoration(
@@ -138,7 +138,7 @@ class _EditBodyState extends State<_EditBody> {
           ),
         ),
         const SizedBox(height: 16),
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('email'),
           field: form.email,
           keyboardType: TextInputType.emailAddress,
@@ -149,7 +149,7 @@ class _EditBodyState extends State<_EditBody> {
         ),
         const SizedBox(height: 16),
         // A Nested Form: its Fields are typed handles like any other.
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('street'),
           field: form.address.street,
           decoration: const InputDecoration(
@@ -158,7 +158,7 @@ class _EditBodyState extends State<_EditBody> {
           ),
         ),
         const SizedBox(height: 16),
-        FormidableSegmentedButton<String>(
+        FormidableMaterialSegmentedButton<String>(
           field: form.address.country,
           segments: const [
             ButtonSegment(value: 'IT', label: Text('Italy')),
@@ -166,7 +166,7 @@ class _EditBodyState extends State<_EditBody> {
           ],
         ),
         const SizedBox(height: 16),
-        FormidableTextField(
+        FormidableMaterialTextField(
           key: const Key('province'),
           field: form.address.province,
           decoration: const InputDecoration(
@@ -178,8 +178,8 @@ class _EditBodyState extends State<_EditBody> {
         Row(
           spacing: 12,
           children: [
-            FormidableFormSelector<ContactForm, bool>(
-              selector: (form) => form.value != null && form.state.dirty,
+            ContactFormSelector<bool>(
+              selector: (state) => state.form.value != null && state.form.dirty,
               builder: (context, canSave) => FilledButton(
                 onPressed: canSave ? () => _save(form) : null,
                 child: const Text('Save'),

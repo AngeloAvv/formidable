@@ -32,7 +32,7 @@ Before it decides, `submit()`:
 
 Formidable does not track your own side effects, so there is no "submitting" state.
 
-The declarative pattern drives a button from a Form Selector over `value` and uses `form.value` in the tap handler. A disabled button hides the reasons for invalidity until the user touches the Fields, so prefer an enabled button plus `submit()` when the user needs to see what to fix.
+The declarative pattern drives a button from a Form Selector over `state.form.value` and uses `form.value` in the tap handler. A disabled button hides the reasons for invalidity until the user touches the Fields, so prefer an enabled button plus `submit()` when the user needs to see what to fix.
 
 ## When errors are shown
 
@@ -58,7 +58,7 @@ SignUpFormScope(
 );
 ```
 
-The policy only decides what the widgets show. `state.errors`, `status` and `submit()` always see every error.
+The policy only decides what the widgets show. `state.form.errors`, `state.form.status` and `submit()` always see every error.
 
 ## Applying errors
 
@@ -74,7 +74,7 @@ form.applyErrors(
 ```
 
 - Field errors are added after the errors of the Field's Validators and make the Field, and the Form, invalid. They **clear on the next change to that Field's value or presence**. Writing the same value, or touching the Field, does not clear them.
-- Form errors belong to the Form as a whole. They show in `form.state.errors`, make the Form invalid, and clear on the next change to any Field and when `submit()` starts.
+- Form errors belong to the Form as a whole. They show in `form.state.form.errors`, make the Form invalid, and clear on the next change to any Field and when `submit()` starts.
 - Show them like any error: register messages for your own error classes in `FormidableConfig.messages`.
 
 ## Disabled Fields

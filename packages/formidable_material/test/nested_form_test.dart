@@ -17,22 +17,23 @@ void main() {
       child: Builder(
         builder: (context) => Column(
           children: [
-            FormidableTextField(
+            FormidableMaterialTextField(
               field: context.checkoutForm.billing.street,
               decoration: const InputDecoration(labelText: 'Billing street'),
             ),
-            FormidableTextField(
+            FormidableMaterialTextField(
               field: context.checkoutForm.shipping.street,
               decoration: const InputDecoration(labelText: 'Shipping street'),
             ),
             FormidableFormBuilder<AddressForm>(
               form: context.checkoutForm.shipping,
-              builder: (context, state) =>
-                  Text('shipping:${state.status.name}:${state.dirty}'),
+              builder: (context, state) => Text(
+                'shipping:${state.form.status.name}:${state.form.dirty}',
+              ),
             ),
             FormidableFormBuilder<CheckoutForm>(
               builder: (context, state) =>
-                  Text('checkout:${state.status.name}'),
+                  Text('checkout:${state.form.status.name}'),
             ),
           ],
         ),
@@ -51,7 +52,7 @@ void main() {
     await tester.pump();
 
     expect(form.billing.street.value, 'Via Roma');
-    expect(form.state.dirty, isTrue);
+    expect(form.state.form.dirty, isTrue);
     expect(find.text('checkout:valid'), findsOneWidget);
   });
 
@@ -102,7 +103,7 @@ void main() {
         AddressFormScope.value(
           form: form.billing,
           child: Builder(
-            builder: (context) => FormidableTextField(
+            builder: (context) => FormidableMaterialTextField(
               field: context.addressForm.street,
               decoration: const InputDecoration(labelText: 'Street'),
             ),
@@ -125,8 +126,8 @@ void main() {
       app(
         CheckoutFormScope.value(
           form: form,
-          child: FormidableFormSelector<CheckoutForm, String?>(
-            selector: (form) => form.value?.billing.street,
+          child: CheckoutFormSelector<String?>(
+            selector: (state) => state.form.value?.billing.street,
             builder: (context, street) => Text('street:$street'),
           ),
         ),
@@ -153,7 +154,7 @@ void main() {
           child: Builder(
             builder: (context) => Column(
               children: [
-                FormidableTextField(
+                FormidableMaterialTextField(
                   field: context.checkoutForm.billing.street,
                   focusNode: billing,
                 ),

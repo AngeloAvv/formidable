@@ -95,7 +95,7 @@ The Fields of a Nested Form are typed handles reached through the parent Form:
 ```dart
 // example/lib/contact/contact_material.dart
 // A Nested Form: its Fields are typed handles like any other.
-FormidableTextField(
+FormidableMaterialTextField(
   key: const Key('street'),
   field: form.address.street,
   decoration: const InputDecoration(
@@ -104,7 +104,7 @@ FormidableTextField(
   ),
 ),
 // ...
-FormidableSegmentedButton<String>(
+FormidableMaterialSegmentedButton<String>(
   field: form.address.country,
   segments: const [
     ButtonSegment(value: 'IT', label: Text('Italy')),
@@ -113,12 +113,12 @@ FormidableSegmentedButton<String>(
 ),
 ```
 
-Save is on only while the Form is valid *and* has changes, so a [Form Selector](/form/state) reads `value` and `state.dirty` (the **declarative pattern**):
+Save is on only while the Form is valid *and* has changes, so the generated [Form Selector](/form/state) reads `value` and `dirty` from the state (the **declarative pattern**):
 
 ```dart
 // example/lib/contact/contact_material.dart
-FormidableFormSelector<ContactForm, bool>(
-  selector: (form) => form.value != null && form.state.dirty,
+ContactFormSelector<bool>(
+  selector: (state) => state.form.value != null && state.form.dirty,
   builder: (context, canSave) => FilledButton(
     onPressed: canSave ? () => _save(form) : null,
     child: const Text('Save'),

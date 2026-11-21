@@ -20,6 +20,9 @@ class Profile {
     required this.birthday,
     required this.reminder,
     required this.layout,
+    required this.accent,
+    required this.rating,
+    this.nickname,
   });
 
   /// A checkbox.
@@ -50,4 +53,15 @@ class Profile {
 
   /// A segmented control.
   final Layout layout;
+
+  /// A Field Widget made by subclassing `FormidableFieldWidget`.
+  final Color accent;
+
+  /// A Field Widget made ad hoc with a builder: an `int` from 1 to 5 shown by
+  /// a slider that works with a position from 0 to 1, through a Codec.
+  final int rating;
+
+  /// An optional text field whose decoration depends on the value: a button
+  /// that clears it shows while it has text.
+  final String? nickname;
 }

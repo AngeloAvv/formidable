@@ -48,11 +48,21 @@ class _BodyState extends State<_Body> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const _Label('Text field (String)'),
+        const _Label('Text field (String, with a clear button)'),
         FormidableCupertinoTextField(
           field: form.name,
           placeholder: 'Name',
           textInputAction: TextInputAction.next,
+          // The suffix depends on the value: it shows once there is text.
+          suffixBuilder: (context, control) => (control.value ?? '').isEmpty
+              ? null
+              : CupertinoButton(
+                  key: const Key('clear-name'),
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  minimumSize: Size.zero,
+                  onPressed: control.clear,
+                  child: const Icon(CupertinoIcons.clear_circled_solid),
+                ),
         ),
         const _Label('Text field (int, through a Codec)'),
         FormidableCupertinoTextField(

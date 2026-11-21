@@ -1,4 +1,3 @@
-import 'package:formidable/formidable.dart';
 import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -14,73 +13,150 @@ import 'error_text.dart';
 /// The first interaction marks the Field touched, and the Validation Message
 /// shows below the slider from then on.
 ///
-/// It exposes the most common parameters. For everything else, build a
-/// `Slider` from a [FormidableBindingBuilder].
-class FormidableSlider<T extends num?> extends StatelessWidget {
-  const FormidableSlider({
+/// The label above the thumb shows while the Field has a value, and needs
+/// [divisions]. It is either the static [label] or, to follow the value,
+/// whatever [labelBuilder] returns for it, as the Field has it.
+///
+/// It takes every parameter of [Slider] except the ones Formidable owns:
+/// `value` and `onChanged` (the Field is the source of truth), and the
+/// deprecated `year2023`. Each one is readable as a field of the widget.
+/// [onChangeStart] and [onChangeEnd] receive the thumb value as the Slider
+/// has it, a `double`. The Slider is disabled while the Field is.
+class FormidableMaterialSlider<T extends num?>
+    extends FormidableFieldWidget<T, T> {
+  FormidableMaterialSlider({
     super.key,
-    required this.field,
-    this.min = 0,
-    this.max = 1,
+    required super.field,
+    super.focusNode,
+    super.messages,
+    super.errorDisplay,
+    this.secondaryTrackValue,
+    this.onChangeStart,
+    this.onChangeEnd,
+    this.min = 0.0,
+    this.max = 1.0,
     this.divisions,
-    this.labelBuilder,
+    this.label,
+    this.activeColor,
+    this.inactiveColor,
+    this.secondaryActiveColor,
+    this.thumbColor,
+    this.overlayColor,
+    this.mouseCursor,
+    this.semanticFormatterCallback,
     this.autofocus = false,
-    this.focusNode,
-    this.messages,
-  });
+    this.allowedInteraction,
+    this.padding,
+    this.showValueIndicator,
+    this.labelBuilder,
+  }) : assert(
+         label == null || labelBuilder == null,
+         'Pass either label or labelBuilder, not both.',
+       ),
+       super(
+         builder: (context, control) {
+           final current = control.value?.toDouble();
+           final value = (current == null ? min : current.clamp(min, max))
+               .toDouble();
+           return Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             mainAxisSize: MainAxisSize.min,
+             children: [
+               Slider(
+                 value: value,
+                 label: current == null
+                     ? null
+                     : label ??
+                           labelBuilder?.call(_toFieldType<T>(value) as num),
+                 focusNode: control.focusNode,
+                 onChanged: control.enabled
+                     ? (next) =>
+                           control.didChange(_toFieldType<T>(next), touch: true)
+                     : null,
+                 secondaryTrackValue: secondaryTrackValue,
+                 onChangeStart: onChangeStart,
+                 onChangeEnd: onChangeEnd,
+                 min: min,
+                 max: max,
+                 divisions: divisions,
+                 activeColor: activeColor,
+                 inactiveColor: inactiveColor,
+                 secondaryActiveColor: secondaryActiveColor,
+                 thumbColor: thumbColor,
+                 overlayColor: overlayColor,
+                 mouseCursor: mouseCursor,
+                 semanticFormatterCallback: semanticFormatterCallback,
+                 autofocus: autofocus,
+                 allowedInteraction: allowedInteraction,
+                 padding: padding,
+                 showValueIndicator: showValueIndicator,
+               ),
+               FormidableMaterialErrorLine(text: control.errorText),
+             ],
+           );
+         },
+       );
 
-  final FormidableField<T> field;
+  /// See [Slider.secondaryTrackValue].
+  final double? secondaryTrackValue;
+
+  /// See [Slider.onChangeStart].
+  final ValueChanged<double>? onChangeStart;
+
+  /// See [Slider.onChangeEnd].
+  final ValueChanged<double>? onChangeEnd;
+
+  /// See [Slider.min].
   final double min;
+
+  /// See [Slider.max].
   final double max;
 
-  /// The number of discrete steps. Without it the slider is continuous.
+  /// See [Slider.divisions].
   final int? divisions;
 
-  /// Builds the label above the thumb while it is dragged, or while the Field
-  /// has a value if [divisions] is set. Receives the value as the Field has it.
-  final String Function(num value)? labelBuilder;
+  /// See [Slider.label].
+  final String? label;
+
+  /// See [Slider.activeColor].
+  final Color? activeColor;
+
+  /// See [Slider.inactiveColor].
+  final Color? inactiveColor;
+
+  /// See [Slider.secondaryActiveColor].
+  final Color? secondaryActiveColor;
+
+  /// See [Slider.thumbColor].
+  final Color? thumbColor;
+
+  /// See [Slider.overlayColor].
+  final WidgetStateProperty<Color?>? overlayColor;
+
+  /// See [Slider.mouseCursor].
+  final MouseCursor? mouseCursor;
+
+  /// See [Slider.semanticFormatterCallback].
+  final SemanticFormatterCallback? semanticFormatterCallback;
+
+  /// See [Slider.autofocus].
   final bool autofocus;
 
-  /// Used instead of the focus node owned by the Binding. Never disposed here.
-  final FocusNode? focusNode;
+  /// See [Slider.allowedInteraction].
+  final SliderInteraction? allowedInteraction;
 
-  /// Messages for this widget only, ahead of the config and the localizations.
-  final FormidableMessages? messages;
+  /// See [Slider.padding].
+  final EdgeInsetsGeometry? padding;
 
-  @override
-  Widget build(BuildContext context) => FormidableBindingBuilder<T>(
-    field: field,
-    focusNode: focusNode,
-    messages: messages,
-    builder: (context, binding) {
-      final current = binding.value?.toDouble();
-      final value = (current == null ? min : current.clamp(min, max))
-          .toDouble();
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Slider(
-            value: value,
-            min: min,
-            max: max,
-            divisions: divisions,
-            label: current == null
-                ? null
-                : labelBuilder?.call(_toFieldType(value) as num),
-            focusNode: binding.focusNode,
-            autofocus: autofocus,
-            onChanged: (next) {
-              if (binding.enabled) binding.onPicked(_toFieldType(next));
-            },
-          ),
-          FormidableErrorLine(text: binding.errorText),
-        ],
-      );
-    },
-  );
+  /// See [Slider.showValueIndicator].
+  final ShowValueIndicator? showValueIndicator;
 
-  /// The thumb value as the Field's type: a double stays one, anything else
-  /// is an `int` and is rounded.
-  T _toFieldType(double next) => (next is T ? next : next.round()) as T;
+  /// Builds the label from the value of the Field, as the Field has it. Not
+  /// together with [label].
+  final String Function(num value)? labelBuilder;
 }
+
+/// The thumb value as the Field's type: a double stays one, anything else is
+/// an `int` and is rounded.
+T _toFieldType<T extends num?>(double next) =>
+    (next is T ? next : next.round()) as T;

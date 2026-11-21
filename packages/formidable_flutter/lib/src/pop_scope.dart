@@ -33,9 +33,9 @@ class FormidablePopScope<F extends FormidableForm<Object?>>
   @override
   Widget build(BuildContext context) => FormidableFormBuilder<F>(
     form: form,
-    buildWhen: (previous, current) => previous.dirty != current.dirty,
+    buildWhen: (previous, current) => previous.form.dirty != current.form.dirty,
     builder: (context, state) => PopScope<Object?>(
-      canPop: !state.dirty,
+      canPop: !state.form.dirty,
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         final leave = await confirmLeave(context);

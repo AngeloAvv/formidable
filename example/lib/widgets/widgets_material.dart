@@ -1,7 +1,9 @@
 import 'package:formidable/formidable.dart';
+import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:formidable_material/formidable_material.dart';
 import 'package:material_ui/material_ui.dart';
 
+import 'color_picker.dart';
 import 'profile.dart';
 import 'profile.formidable_scope.dart';
 
@@ -43,41 +45,65 @@ class _ProfileBodyState extends State<_ProfileBody> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        FormidableCheckbox(
+        FormidableMaterialCheckboxListTile(
           field: form.acceptedTerms,
           title: const Text('I accept the terms'),
         ),
-        FormidableSwitch(
+        FormidableMaterialSwitchListTile(
           field: form.notifications,
           title: const Text('Notifications'),
         ),
+        const SizedBox(height: 16),
+        FormidableMaterialTextField<String?>(
+          field: form.nickname,
+          decorationBuilder: (context, control) => InputDecoration(
+            labelText: 'Nickname',
+            border: const OutlineInputBorder(),
+            suffixIcon: (control.value ?? '').isEmpty
+                ? null
+                : IconButton(
+                    tooltip: 'Clear',
+                    icon: const Icon(Icons.clear),
+                    onPressed: control.clear,
+                  ),
+          ),
+        ),
         const _Heading('Plan'),
-        FormidableRadioGroup(
+        FormidableMaterialRadioGroup(
           field: form.plan,
           options: const [
-            FormidableRadioOption(value: Plan.free, title: Text('Free')),
-            FormidableRadioOption(value: Plan.plus, title: Text('Plus')),
-            FormidableRadioOption(value: Plan.pro, title: Text('Pro')),
+            FormidableMaterialRadioOption(
+              value: Plan.free,
+              title: Text('Free'),
+            ),
+            FormidableMaterialRadioOption(
+              value: Plan.plus,
+              title: Text('Plus'),
+            ),
+            FormidableMaterialRadioOption(value: Plan.pro, title: Text('Pro')),
           ],
         ),
         const _Heading('Contact by email'),
-        FormidableRadioGroup(
+        FormidableMaterialRadioGroup(
           field: form.contactByEmail,
           options: const [
-            FormidableRadioOption(value: null, title: Text('No preference')),
-            FormidableRadioOption(value: true, title: Text('Yes')),
-            FormidableRadioOption(value: false, title: Text('No')),
+            FormidableMaterialRadioOption(
+              value: null,
+              title: Text('No preference'),
+            ),
+            FormidableMaterialRadioOption(value: true, title: Text('Yes')),
+            FormidableMaterialRadioOption(value: false, title: Text('No')),
           ],
         ),
         const _Heading('Volume'),
-        FormidableSlider(
+        FormidableMaterialSlider(
           field: form.volume,
           max: 10,
           divisions: 10,
           labelBuilder: (value) => '$value',
         ),
         const SizedBox(height: 16),
-        FormidableDropdown<String>(
+        FormidableMaterialDropdown<String>(
           field: form.country,
           decoration: const InputDecoration(
             labelText: 'Country',
@@ -90,7 +116,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
           ],
         ),
         const SizedBox(height: 16),
-        FormidableDatePicker(
+        FormidableMaterialDatePicker(
           field: form.birthday,
           decoration: const InputDecoration(
             labelText: 'Birthday',
@@ -99,7 +125,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
           initialDate: DateTime(2000),
         ),
         const SizedBox(height: 16),
-        FormidableTimePicker(
+        FormidableMaterialTimePicker(
           field: form.reminder,
           decoration: const InputDecoration(
             labelText: 'Reminder',
@@ -108,12 +134,35 @@ class _ProfileBodyState extends State<_ProfileBody> {
           initialTime: const TimeOfDay(hour: 9, minute: 0),
         ),
         const _Heading('Layout'),
-        FormidableSegmentedButton(
+        FormidableMaterialSegmentedButton(
           field: form.layout,
           segments: const [
             ButtonSegment(value: Layout.grid, label: Text('Grid')),
             ButtonSegment(value: Layout.list, label: Text('List')),
           ],
+        ),
+        const _Heading('Accent color'),
+        FormidableColorPicker(
+          field: form.accent,
+          colors: const [Colors.red, Colors.green, Colors.blue],
+        ),
+        const _Heading('Rating'),
+        FormidableFieldWidget<int, double>(
+          field: form.rating,
+          codec: const _RatingCodec(),
+          builder: (context, control) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Slider(
+                value: control.value ?? 0,
+                divisions: 4,
+                focusNode: control.focusNode,
+                onChanged: (position) =>
+                    control.didChange(position, touch: true),
+              ),
+              FormidableMaterialErrorLine(text: control.errorText),
+            ],
+          ),
         ),
         const SizedBox(height: 24),
         FilledButton(onPressed: () => _save(form), child: const Text('Save')),
@@ -136,4 +185,16 @@ class _Heading extends StatelessWidget {
     padding: const EdgeInsets.only(top: 16),
     child: Text(text, style: Theme.of(context).textTheme.titleSmall),
   );
+}
+
+/// Maps a rating from 1 to 5 to a slider position from 0 to 1 and back.
+class _RatingCodec extends FormidableCodec<int, double> {
+  const _RatingCodec();
+
+  @override
+  double format(int value) => (value - 1) / 4;
+
+  @override
+  FormidableParseResult<int> parse(double input) =>
+      FormidableParsedValue((input * 4).round() + 1);
 }

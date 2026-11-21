@@ -1,4 +1,4 @@
-import 'package:formidable/formidable.dart';
+import 'package:flutter/gestures.dart' show DragStartBehavior;
 import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -7,67 +7,153 @@ import 'error_text.dart';
 /// A Material switch bound to a `bool` Field.
 ///
 /// An Unset Field is shown off. The first interaction marks the Field touched,
-/// and the Validation Message shows below the switch from then on. With a
-/// [title], the whole row is tappable (a `SwitchListTile`).
+/// and the Validation Message shows below the switch from then on.
 ///
-/// It exposes the most common parameters. For everything else, build a
-/// `Switch` from a [FormidableBindingBuilder].
-class FormidableSwitch extends StatelessWidget {
-  const FormidableSwitch({
+/// It takes every parameter of [Switch] except the ones Formidable owns:
+/// `value` and `onChanged` (the Field is the source of truth), and the
+/// deprecated `activeColor`. Each one is readable as a field of the widget.
+/// The Switch is disabled while the Field is. For a tappable row with a title,
+/// use [FormidableMaterialSwitchListTile].
+class FormidableMaterialSwitch extends FormidableFieldWidget<bool, bool> {
+  FormidableMaterialSwitch({
     super.key,
-    required this.field,
-    this.title,
+    required super.field,
+    super.focusNode,
+    super.messages,
+    super.errorDisplay,
+    this.activeThumbColor,
+    this.activeTrackColor,
+    this.inactiveThumbColor,
+    this.inactiveTrackColor,
+    this.activeThumbImage,
+    this.onActiveThumbImageError,
+    this.inactiveThumbImage,
+    this.onInactiveThumbImageError,
+    this.thumbColor,
+    this.trackColor,
+    this.trackOutlineColor,
+    this.trackOutlineWidth,
+    this.thumbIcon,
+    this.materialTapTargetSize,
+    this.dragStartBehavior = DragStartBehavior.start,
+    this.mouseCursor,
+    this.focusColor,
+    this.hoverColor,
+    this.overlayColor,
+    this.splashRadius,
+    this.onFocusChange,
     this.autofocus = false,
-    this.focusNode,
-    this.messages,
-  });
+    this.padding,
+  }) : super(
+         builder: (context, control) {
+           // Unset is shown off: a switch has no state for "not chosen".
+           final value = control.value ?? false;
+           return Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             mainAxisSize: MainAxisSize.min,
+             children: [
+               Switch(
+                 value: value,
+                 onChanged: control.enabled
+                     ? (next) => control.didChange(next, touch: true)
+                     : null,
+                 focusNode: control.focusNode,
+                 activeThumbColor: activeThumbColor,
+                 activeTrackColor: activeTrackColor,
+                 inactiveThumbColor: inactiveThumbColor,
+                 inactiveTrackColor: inactiveTrackColor,
+                 activeThumbImage: activeThumbImage,
+                 onActiveThumbImageError: onActiveThumbImageError,
+                 inactiveThumbImage: inactiveThumbImage,
+                 onInactiveThumbImageError: onInactiveThumbImageError,
+                 thumbColor: thumbColor,
+                 trackColor: trackColor,
+                 trackOutlineColor: trackOutlineColor,
+                 trackOutlineWidth: trackOutlineWidth,
+                 thumbIcon: thumbIcon,
+                 materialTapTargetSize: materialTapTargetSize,
+                 dragStartBehavior: dragStartBehavior,
+                 mouseCursor: mouseCursor,
+                 focusColor: focusColor,
+                 hoverColor: hoverColor,
+                 overlayColor: overlayColor,
+                 splashRadius: splashRadius,
+                 onFocusChange: onFocusChange,
+                 autofocus: autofocus,
+                 padding: padding,
+               ),
+               FormidableMaterialErrorLine(text: control.errorText),
+             ],
+           );
+         },
+       );
 
-  final FormidableField<bool> field;
+  /// See [Switch.activeThumbColor].
+  final Color? activeThumbColor;
 
-  /// The label. Without it, only the switch is drawn.
-  final Widget? title;
+  /// See [Switch.activeTrackColor].
+  final Color? activeTrackColor;
+
+  /// See [Switch.inactiveThumbColor].
+  final Color? inactiveThumbColor;
+
+  /// See [Switch.inactiveTrackColor].
+  final Color? inactiveTrackColor;
+
+  /// See [Switch.activeThumbImage].
+  final ImageProvider? activeThumbImage;
+
+  /// See [Switch.onActiveThumbImageError].
+  final ImageErrorListener? onActiveThumbImageError;
+
+  /// See [Switch.inactiveThumbImage].
+  final ImageProvider? inactiveThumbImage;
+
+  /// See [Switch.onInactiveThumbImageError].
+  final ImageErrorListener? onInactiveThumbImageError;
+
+  /// See [Switch.thumbColor].
+  final WidgetStateProperty<Color?>? thumbColor;
+
+  /// See [Switch.trackColor].
+  final WidgetStateProperty<Color?>? trackColor;
+
+  /// See [Switch.trackOutlineColor].
+  final WidgetStateProperty<Color?>? trackOutlineColor;
+
+  /// See [Switch.trackOutlineWidth].
+  final WidgetStateProperty<double?>? trackOutlineWidth;
+
+  /// See [Switch.thumbIcon].
+  final WidgetStateProperty<Icon?>? thumbIcon;
+
+  /// See [Switch.materialTapTargetSize].
+  final MaterialTapTargetSize? materialTapTargetSize;
+
+  /// See [Switch.dragStartBehavior].
+  final DragStartBehavior dragStartBehavior;
+
+  /// See [Switch.mouseCursor].
+  final MouseCursor? mouseCursor;
+
+  /// See [Switch.focusColor].
+  final Color? focusColor;
+
+  /// See [Switch.hoverColor].
+  final Color? hoverColor;
+
+  /// See [Switch.overlayColor].
+  final WidgetStateProperty<Color?>? overlayColor;
+
+  /// See [Switch.splashRadius].
+  final double? splashRadius;
+
+  /// See [Switch.onFocusChange].
+  final ValueChanged<bool>? onFocusChange;
+
+  /// See [Switch.autofocus].
   final bool autofocus;
 
-  /// Used instead of the focus node owned by the Binding. Never disposed here.
-  final FocusNode? focusNode;
-
-  /// Messages for this widget only, ahead of the config and the localizations.
-  final FormidableMessages? messages;
-
-  @override
-  Widget build(BuildContext context) => FormidableBindingBuilder<bool>(
-    field: field,
-    focusNode: focusNode,
-    messages: messages,
-    builder: (context, binding) {
-      // Unset is shown off: a switch has no state for "not chosen".
-      final value = binding.value ?? false;
-      void onChanged(bool next) {
-        if (binding.enabled) binding.onPicked(next);
-      }
-
-      final control = title == null
-          ? Switch(
-              value: value,
-              onChanged: onChanged,
-              focusNode: binding.focusNode,
-              autofocus: autofocus,
-            )
-          : SwitchListTile(
-              value: value,
-              onChanged: onChanged,
-              focusNode: binding.focusNode,
-              autofocus: autofocus,
-              title: title,
-            );
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          control,
-          FormidableErrorLine(text: binding.errorText),
-        ],
-      );
-    },
-  );
+  /// See [Switch.padding].
+  final EdgeInsetsGeometry? padding;
 }

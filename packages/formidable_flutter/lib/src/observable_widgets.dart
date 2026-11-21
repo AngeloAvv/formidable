@@ -55,12 +55,13 @@ class ObservableBuilder<S> extends StatefulWidget {
 }
 
 class _ObservableBuilderState<S> extends State<ObservableBuilder<S>> {
-  late S _previous = widget.observable.state;
-  late S _shown = _previous;
+  late S _previous;
+  late S _shown;
 
   @override
   void initState() {
     super.initState();
+    _previous = _shown = widget.observable.state;
     widget.observable.addListener(_onChanged);
   }
 
@@ -115,11 +116,14 @@ class ObservableListener<S> extends StatefulWidget {
 }
 
 class _ObservableListenerState<S> extends State<ObservableListener<S>> {
-  late S _previous = widget.observable.state;
+  // Read when the widget is inserted, not lazily: `listenWhen` must compare the
+  // first change with the state that was there when the listener started.
+  late S _previous;
 
   @override
   void initState() {
     super.initState();
+    _previous = widget.observable.state;
     widget.observable.addListener(_onChanged);
   }
 

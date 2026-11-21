@@ -102,7 +102,7 @@ class _WizardBodyState extends State<_WizardBody> {
   }
 
   List<Widget> _travelerStep(BookingForm form) => [
-    FormidableTextField(
+    FormidableMaterialTextField(
       key: const Key('traveler-name'),
       field: form.traveler.name,
       decoration: const InputDecoration(
@@ -110,7 +110,7 @@ class _WizardBodyState extends State<_WizardBody> {
         border: OutlineInputBorder(),
       ),
     ),
-    FormidableTextField(
+    FormidableMaterialTextField(
       key: const Key('traveler-email'),
       field: form.traveler.email,
       keyboardType: TextInputType.emailAddress,
@@ -122,7 +122,7 @@ class _WizardBodyState extends State<_WizardBody> {
   ];
 
   List<Widget> _journeyStep(BookingForm form) => [
-    FormidableTextField(
+    FormidableMaterialTextField(
       key: const Key('journey-from'),
       field: form.journey.from,
       decoration: const InputDecoration(
@@ -130,7 +130,7 @@ class _WizardBodyState extends State<_WizardBody> {
         border: OutlineInputBorder(),
       ),
     ),
-    FormidableTextField(
+    FormidableMaterialTextField(
       key: const Key('journey-to'),
       field: form.journey.to,
       decoration: const InputDecoration(
@@ -138,7 +138,7 @@ class _WizardBodyState extends State<_WizardBody> {
         border: OutlineInputBorder(),
       ),
     ),
-    FormidableTextField(
+    FormidableMaterialTextField(
       key: const Key('journey-passengers'),
       field: form.journey.passengers,
       keyboardType: TextInputType.number,
@@ -150,10 +150,8 @@ class _WizardBodyState extends State<_WizardBody> {
   ];
 
   List<Widget> _confirmStep(BookingForm form) => [
-    FormidableFormBuilder<BookingForm>(
-      builder: (context, _) => Text(describeBooking(form)),
-    ),
-    FormidableCheckbox(
+    BookingFormBuilder(builder: (context, _) => Text(describeBooking(form))),
+    FormidableMaterialCheckboxListTile(
       field: form.confirmation.acceptedTerms,
       title: const Text('I accept the terms'),
     ),

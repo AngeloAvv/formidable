@@ -1,8 +1,8 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
-import 'package:formidable/formidable.dart';
 import 'package:formidable_flutter/formidable_flutter.dart';
 
 import 'error_caption.dart';
+import 'wheels.dart';
 
 /// A Cupertino date and time picker bound to a `DateTime` Field.
 ///
@@ -15,78 +15,120 @@ import 'error_caption.dart';
 /// The picker only reads its initial value, so a value set in code makes the
 /// widget start the wheels again on it. Changes made by the user never do.
 ///
+/// It takes every parameter of [CupertinoDatePicker] except the ones
+/// Formidable owns: the initial date and `onDateTimeChanged`. [height] sizes
+/// the wheels. A null [itemExtent] gives the default of Flutter.
+///
 /// For everything else, build a `CupertinoDatePicker` from a
-/// [FormidableBindingBuilder].
-class FormidableCupertinoDatePicker extends StatefulWidget {
-  const FormidableCupertinoDatePicker({
+/// [FormidableFieldWidget].
+class FormidableCupertinoDatePicker
+    extends FormidableFieldWidget<DateTime?, DateTime?> {
+  FormidableCupertinoDatePicker({
     super.key,
-    required this.field,
+    required super.field,
+    super.messages,
+    super.errorDisplay,
+    super.focusNode,
     this.mode = CupertinoDatePickerMode.dateAndTime,
     this.minimumDate,
     this.maximumDate,
+    this.minimumYear = 1,
+    this.maximumYear,
     this.minuteInterval = 1,
     this.use24hFormat = false,
+    this.dateOrder,
+    this.backgroundColor,
+    this.showDayOfWeek = false,
+    this.showTimeSeparator = false,
+    this.itemExtent,
+    this.selectionOverlayBuilder,
+    this.selectableDayPredicate,
+    this.changeReportingBehavior = ChangeReportingBehavior.onScrollUpdate,
     this.height = 216,
-    this.messages,
-  });
+  }) : super(
+         builder: (context, control) {
+           final wheels = control as FormidableWheelsState<DateTime>;
+           // The default extent of Flutter is private: read it from an
+           // instance.
+           final defaults = CupertinoDatePicker(onDateTimeChanged: (_) {});
+           return FormidableCupertinoErrorCaption(
+             errorText: control.errorText,
+             child: SizedBox(
+               height: height,
+               child: CupertinoDatePicker(
+                 key: wheels.keyFor(control.value),
+                 mode: mode,
+                 initialDateTime: control.value,
+                 onDateTimeChanged: wheels.wheelsChanged,
+                 minimumDate: minimumDate,
+                 maximumDate: maximumDate,
+                 minimumYear: minimumYear,
+                 maximumYear: maximumYear,
+                 minuteInterval: minuteInterval,
+                 use24hFormat: use24hFormat,
+                 dateOrder: dateOrder,
+                 backgroundColor: backgroundColor,
+                 showDayOfWeek: showDayOfWeek,
+                 showTimeSeparator: showTimeSeparator,
+                 itemExtent: itemExtent ?? defaults.itemExtent,
+                 selectionOverlayBuilder: selectionOverlayBuilder,
+                 selectableDayPredicate: selectableDayPredicate,
+                 changeReportingBehavior: changeReportingBehavior,
+               ),
+             ),
+           );
+         },
+       );
 
-  final FormidableField<DateTime?> field;
+  /// See [CupertinoDatePicker.mode].
   final CupertinoDatePickerMode mode;
+
+  /// See [CupertinoDatePicker.minimumDate].
   final DateTime? minimumDate;
+
+  /// See [CupertinoDatePicker.maximumDate].
   final DateTime? maximumDate;
+
+  /// See [CupertinoDatePicker.minimumYear].
+  final int minimumYear;
+
+  /// See [CupertinoDatePicker.maximumYear].
+  final int? maximumYear;
+
+  /// See [CupertinoDatePicker.minuteInterval].
   final int minuteInterval;
+
+  /// See [CupertinoDatePicker.use24hFormat].
   final bool use24hFormat;
 
-  /// The height of the wheels. A picker has no height of its own.
+  /// See [CupertinoDatePicker.dateOrder].
+  final DatePickerDateOrder? dateOrder;
+
+  /// See [CupertinoDatePicker.backgroundColor].
+  final Color? backgroundColor;
+
+  /// See [CupertinoDatePicker.showDayOfWeek].
+  final bool showDayOfWeek;
+
+  /// See [CupertinoDatePicker.showTimeSeparator].
+  final bool showTimeSeparator;
+
+  /// See [CupertinoDatePicker.itemExtent]. Null gives its default.
+  final double? itemExtent;
+
+  /// See [CupertinoDatePicker.selectionOverlayBuilder].
+  final SelectionOverlayBuilder? selectionOverlayBuilder;
+
+  /// See [CupertinoDatePicker.selectableDayPredicate].
+  final SelectableDayPredicate? selectableDayPredicate;
+
+  /// See [CupertinoDatePicker.changeReportingBehavior].
+  final ChangeReportingBehavior changeReportingBehavior;
+
+  /// The height of the wheels.
   final double height;
 
-  /// Messages for this widget only, ahead of the config and the localizations.
-  final FormidableMessages? messages;
-
   @override
-  State<FormidableCupertinoDatePicker> createState() =>
-      _FormidableCupertinoDatePickerState();
-}
-
-class _FormidableCupertinoDatePickerState
-    extends State<FormidableCupertinoDatePicker> {
-  // What the wheels last reported. A different Field value came from code, and
-  // the wheels start again on it (a new key), because they never follow their
-  // initial value on their own.
-  DateTime? _reported;
-  int _revision = 0;
-
-  @override
-  Widget build(BuildContext context) => FormidableBindingBuilder<DateTime?>(
-    field: widget.field,
-    messages: widget.messages,
-    builder: (context, binding) {
-      final value = binding.value;
-      if (value != null && value != _reported) {
-        _reported = value;
-        _revision++;
-      }
-      return FormidableCupertinoErrorCaption(
-        binding: binding,
-        child: SizedBox(
-          height: widget.height,
-          child: CupertinoDatePicker(
-            key: ValueKey(_revision),
-            mode: widget.mode,
-            initialDateTime: value,
-            minimumDate: widget.minimumDate,
-            maximumDate: widget.maximumDate,
-            minuteInterval: widget.minuteInterval,
-            use24hFormat: widget.use24hFormat,
-            onDateTimeChanged: (date) {
-              if (!binding.enabled) return;
-              _reported = date;
-              binding.onTouched();
-              binding.onChanged(date);
-            },
-          ),
-        ),
-      );
-    },
-  );
+  State<FormidableFieldWidget<DateTime?, DateTime?>> createState() =>
+      FormidableWheelsState<DateTime>();
 }

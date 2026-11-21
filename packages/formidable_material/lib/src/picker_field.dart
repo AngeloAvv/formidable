@@ -1,4 +1,3 @@
-import 'package:formidable_flutter/formidable_flutter.dart';
 import 'package:material_ui/material_ui.dart';
 
 /// The read-only field shared by the date and time pickers: it shows [text],
@@ -7,38 +6,44 @@ import 'package:material_ui/material_ui.dart';
 ///
 /// Internal: it is not exported from the package, so it is not part of its
 /// public API.
-class FormidablePickerField extends StatelessWidget {
-  const FormidablePickerField({
+class FormidableMaterialPickerField extends StatelessWidget {
+  const FormidableMaterialPickerField({
     super.key,
-    required this.binding,
+    required this.focusNode,
+    required this.enabled,
+    required this.errorText,
     required this.text,
     required this.decoration,
     required this.onTap,
-    required this.clearable,
+    required this.onClear,
     this.autofocus = false,
   });
 
-  final FormidableBinding<Object?> binding;
+  final FocusNode focusNode;
+  final bool enabled;
+  final String? errorText;
 
   /// The formatted value, or null while the Field is Unset.
   final String? text;
   final InputDecoration decoration;
   final VoidCallback onTap;
-  final bool clearable;
+
+  /// Puts the Field back to Unset. Null hides the clear button.
+  final VoidCallback? onClear;
   final bool autofocus;
 
   @override
   Widget build(BuildContext context) => InkWell(
-    focusNode: binding.focusNode,
+    focusNode: focusNode,
     autofocus: autofocus,
-    onTap: binding.enabled ? onTap : null,
+    onTap: enabled ? onTap : null,
     child: InputDecorator(
       decoration: decoration.copyWith(
-        errorText: binding.errorText,
-        suffixIcon: clearable && text != null
+        errorText: decoration.errorText ?? errorText,
+        suffixIcon: onClear != null && text != null
             ? IconButton(
                 icon: const Icon(Icons.clear),
-                onPressed: binding.enabled ? binding.onUnpicked : null,
+                onPressed: enabled ? onClear : null,
               )
             : decoration.suffixIcon,
       ),

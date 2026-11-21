@@ -1,44 +1,73 @@
 ---
-title: Binding Fields to widgets
-description: The headless Binding and the convenience widgets
+title: Field Widgets
+description: Show and edit a Field with any widget
 ---
 
-# Binding Fields to widgets
+# Field Widgets
 
-Two layers connect a Field to a widget:
+A **Field Widget** shows one Field and writes what the user does back to it. Two layers provide them:
 
-- **The headless Binding** (`FormidableBinding`, created by `FormidableBindingBuilder`) keeps the value, the focus and the errors of one Field in sync with one widget. It draws nothing, so it works with any widget, including third-party ones. It owns its focus node and text controller unless you pass your own, and it never disposes the ones you pass.
-- **Convenience widgets** for Material (`formidable_material`) and Cupertino (`formidable_cupertino`) are thin layers over the Binding.
+- **The base**, `FormidableFieldWidget<T, V>` in `formidable_flutter`, keeps the value, the focus and the errors of one Field in sync with one widget. It draws nothing, so it works with any widget, including third-party ones and widgets that have no text controller at all (a slider, a color picker, a rating). It owns its focus node unless you pass your own, and it never disposes the one you pass. `FormidableTextFieldWidget<T>` is its specialization for text.
+- **Convenience widgets** for Material (`formidable_material`) and Cupertino (`formidable_cupertino`) are built on the base. Each one takes the whole API of the Flutter widget it wraps, and keeps every parameter readable as a field.
 
-Material widgets for every common input are described in [Material widgets](/widgets/material), and their Cupertino counterparts in [Cupertino widgets](/widgets/cupertino). Build any other widget from `FormidableBindingBuilder`:
+Material widgets for every common input are described in [Material widgets](/widgets/material), and their Cupertino counterparts in [Cupertino widgets](/widgets/cupertino). To make any other widget a Formidable widget, see [Your own Field Widgets](/widgets/custom).
+
+## The base
+
+`T` is the type of the Field. `V` is the type of the value your widget works with, its **view value**. They are the same unless a [Codec](/widgets/codecs) sits between them.
 
 ```dart
-FormidableBindingBuilder<String>(
+FormidableFieldWidget<int?, int?>(
+  field: form.rating,
+  builder: (context, control) => StarRating(
+    stars: control.value ?? 0,
+    onChanged: (stars) => control.didChange(stars, touch: true),
+    errorText: control.errorText,
+  ),
+)
+```
+
+The `builder` receives the **control**, the state object of the widget. It rebuilds whenever the Field changes. The control tells what to show:
+
+| Member | What it is |
+| --- | --- |
+| `value` | The value to show: the Field seen through the Codec, or null while the Field is Unset. |
+| `isSet` | Whether the Field holds a value. This tells Unset from a chosen null. |
+| `state` | The `FormidableFieldState<T>` snapshot: errors, touched, dirty, submitted, pending. |
+| `errorText` | The Validation Message to show, or null. It follows the [error display policy](/form/submit) and the [message lookup](/validation/messages). |
+| `enabled` | Whether the Field accepts input. A disabled Field is not part of the Form. |
+| `pending` | Whether an Async Validator is still checking the Field. |
+| `focusNode` | The focus node of the widget. Give it to the widget that takes focus. |
+| `textInputAction`, `onEditingComplete()` | The keyboard action and what it does, for [focus navigation](/widgets/focus). |
+
+and takes what the user did:
+
+| Method | What it does |
+| --- | --- |
+| `didChange(value, {touch})` | Writes the value through the Codec and the Field pipeline (Normalizers, Validators). With `touch: true` it also marks the Field touched. |
+| `clear({touch})` | Puts the Field back to Unset. |
+| `markAsTouched()` | Marks the Field touched, for an interaction that changed nothing, such as a cancelled dialog. |
+
+A Field becomes touched when its focus node loses focus. A widget that cannot take focus has no "loses focus" moment, so its first interaction is what makes the Field touched: pass `touch: true`.
+
+`didChange(null)` means "no value", with one exception: when the type of the Field admits null (`Color?`) and there is no Codec, null is a value the user can choose (a "none" option), and the Field is set to null. That is not the same as Unset (see [Unset is not null](/schema/presence)); use `clear()` to unset it.
+
+Parameters shared by every Field Widget: `field`, `codec`, `messages` (see [Messages](/validation/messages)), `errorDisplay` (see [Submit, errors and disabled Fields](/form/submit)) and `focusNode`.
+
+## Text
+
+`FormidableTextFieldWidget<T>` is the same with `V = String`. Its control also owns the `TextEditingController`:
+
+```dart
+FormidableTextFieldWidget<String>(
   field: form.username,
-  builder: (context, binding) => TextField(
-    controller: binding.textController,
-    focusNode: binding.focusNode,
-    onChanged: binding.onTextChanged,
-    decoration: InputDecoration(errorText: binding.errorText),
+  builder: (context, control) => TextField(
+    controller: control.textController,
+    focusNode: control.focusNode,
+    onChanged: control.didChange,
+    decoration: InputDecoration(errorText: control.errorText),
   ),
 )
 ```
 
-The Binding picks a [Codec](/widgets/codecs) between the Field and its text, so the same code works for an `int` or a `DateTime` Field. `binding.errorText` is null until the Field is touched. A Field becomes touched when a focusable widget loses focus.
-
-Widgets that are not text inputs use these methods of the Binding instead of a Codec, because the value they show is the value of the Field:
-
-- `binding.onPicked(value)` sets the Field and marks it touched. A widget that cannot take focus has no "loses focus" moment, so its first interaction is what makes the Field touched. `value` can be null when the Field allows it, because choosing null is a value (see [Unset is not null](/schema/presence)).
-- `binding.onUnpicked()` puts the Field back to Unset and marks it touched.
-- `binding.onTouched()` only marks the Field touched, for an interaction that changed nothing, such as a cancelled dialog.
-
-```dart
-FormidableBindingBuilder<bool>(
-  field: form.acceptedTerms,
-  builder: (context, binding) => MyToggle(
-    on: binding.value ?? false,
-    onChanged: binding.onPicked,
-    errorText: binding.errorText,
-  ),
-)
-```
+The control picks a [Codec](/widgets/codecs) between the Field and its text, so the same code works for an `int` or a `DateTime` Field. What the user types goes through `didChange`: it keeps the text on screen, even when a Normalizer such as `@Trim()` rewrote it in the Field, and text that cannot be parsed stays visible while the Field becomes invalid. You pass your own `textController:` if you need to hold it; it is then never disposed by the widget.

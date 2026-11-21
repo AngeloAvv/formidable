@@ -29,7 +29,7 @@ void main() {
       form.password.disable();
 
       expect(form.password.state.errors, isEmpty);
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.status, FormidableStatus.valid);
     });
 
     test('validates again when it is enabled', () {
@@ -39,7 +39,7 @@ void main() {
         ..password.enable();
 
       expect(form.password.state.errors, hasLength(1));
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
     });
 
     test('keeps its value in the output', () async {
@@ -139,7 +139,7 @@ void main() {
       form.confirmation.disable();
 
       expect(form.confirmation.state.errors, isEmpty);
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.status, FormidableStatus.valid);
 
       form.confirmation.enable();
 
@@ -192,30 +192,25 @@ void main() {
       form.confirmation.disable();
 
       expect(form.confirmation.state.errors, [isA<FormidableRequiredError>()]);
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
     });
   });
   group('Disabled Field and the Form', () {
     test('updates the Form status and notifies it once, both ways', () {
       final form = _valid()..password.setValue('short');
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
       var states = 0;
-      var changes = 0;
-      form
-        ..addListener(() => states++)
-        ..addChangeListener(() => changes++);
+      form.addListener(() => states++);
 
       form.password.disable();
 
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.status, FormidableStatus.valid);
       expect(states, 1);
-      expect(changes, 1);
 
       form.password.enable();
 
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
       expect(states, 2);
-      expect(changes, 2);
     });
 
     test('lets submit succeed with the value of the disabled Field', () async {
@@ -241,10 +236,10 @@ void main() {
         )..city.disable();
         async.elapse(const Duration(seconds: 5));
         expect(validator.calls, isEmpty);
-        expect(form.state.pending, isFalse);
+        expect(form.state.form.pending, isFalse);
 
         form.city.enable();
-        expect(form.state.pending, isTrue);
+        expect(form.state.form.pending, isTrue);
         async.elapse(const Duration(milliseconds: 300));
 
         expect(validator.calls, ['70121/Roma']);
@@ -260,13 +255,13 @@ void main() {
           note: 'n',
           postalCodeMatchesCity: validator,
         );
-        expect(form.state.pending, isTrue);
+        expect(form.state.form.pending, isTrue);
 
         form.city.disable();
         async.elapse(const Duration(seconds: 5));
 
         expect(validator.calls, isEmpty);
-        expect(form.state.pending, isFalse);
+        expect(form.state.form.pending, isFalse);
       });
     });
   });
@@ -278,11 +273,11 @@ void main() {
       form.addListener(() => states++);
 
       form.username.applyErrors([const FormidableRequiredError()]);
-      expect(form.state.status, FormidableStatus.invalid);
+      expect(form.state.form.status, FormidableStatus.invalid);
       expect(states, 1);
 
       form.username.applyErrors(const []);
-      expect(form.state.status, FormidableStatus.valid);
+      expect(form.state.form.status, FormidableStatus.valid);
       expect(states, 2);
     });
   });

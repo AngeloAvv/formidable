@@ -17,14 +17,14 @@ void main() {
     DropdownMenuItem(value: 'FR', child: Text('France')),
   ];
 
-  Widget dropdown(PreferencesForm form) => FormidableDropdown<String>(
+  Widget dropdown(PreferencesForm form) => FormidableMaterialDropdown<String>(
     field: form.country,
     items: items,
     decoration: const InputDecoration(labelText: 'Country'),
     hint: const Text('Pick one'),
   );
 
-  group('FormidableDropdown', () {
+  group('FormidableMaterialDropdown', () {
     testWidgets('shows the hint while the Field is Unset', (tester) async {
       await tester.pumpWidget(app(dropdown));
 

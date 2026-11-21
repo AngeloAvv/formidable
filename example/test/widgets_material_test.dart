@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:formidable_example/widgets/color_picker.dart';
 import 'package:formidable_example/widgets/profile.dart';
 import 'package:formidable_example/widgets/widgets_material.dart';
 import 'package:material_ui/material_ui.dart';
@@ -16,11 +17,29 @@ void main() {
     expect(find.byType(Switch), findsOneWidget);
     expect(find.byType(RadioListTile<(Plan,)>), findsNWidgets(3));
     expect(find.byType(RadioListTile<(bool?,)>), findsNWidgets(3));
-    expect(find.byType(Slider), findsOneWidget);
     expect(find.byType(DropdownButton<(String,)>), findsOneWidget);
     expect(find.text('Birthday'), findsOneWidget);
     expect(find.text('Reminder'), findsOneWidget);
     expect(find.byType(SegmentedButton<(Layout,)>), findsOneWidget);
+    expect(find.byType(FormidableColorPicker), findsOneWidget);
+    expect(find.byType(Slider), findsNWidgets(2));
+  });
+
+  testWidgets('the nickname has a clear button while it has text', (
+    tester,
+  ) async {
+    await pumpPage(tester);
+    expect(find.byTooltip('Clear'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'Ada');
+    await tester.pump();
+    expect(find.byTooltip('Clear'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Clear'));
+    await tester.pump();
+
+    expect(find.byTooltip('Clear'), findsNothing);
+    expect(find.text('Ada'), findsNothing);
   });
 
   testWidgets('submitting an empty form asks to fix the errors', (
@@ -41,7 +60,7 @@ void main() {
     await tester.tap(find.byType(Switch));
     await tester.tap(find.text('Pro'));
     await tester.tap(find.text('No preference'));
-    await tester.tapAt(tester.getCenter(find.byType(Slider)));
+    await tester.tapAt(tester.getCenter(find.byType(Slider).first));
     await tester.tap(find.byType(DropdownButton<(String,)>));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Italy').last);
@@ -56,6 +75,12 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Grid'));
     await tester.pump();
+    await tester.ensureVisible(find.byType(FormidableColorPicker));
+    await tester.tap(find.byKey(const ValueKey<Color>(Colors.green)));
+    await tester.ensureVisible(find.byType(Slider).last);
+    await tester.tapAt(tester.getCenter(find.byType(Slider).last));
+    await tester.pump();
+    await tester.ensureVisible(find.widgetWithText(FilledButton, 'Save'));
     await tester.tap(find.widgetWithText(FilledButton, 'Save'));
     await tester.pumpAndSettle();
 

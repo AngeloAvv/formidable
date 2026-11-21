@@ -10,14 +10,23 @@ import 'error_display.dart';
 /// [FormidableScope.value] only exposes a Form that something else owns and
 /// never disposes it. Generated scopes such as `SignUpFormScope` extend this
 /// class with the concrete Form type.
+///
+/// Give the scope exactly one of [child] and [builder]. The [builder] receives
+/// the Form and a context that is below the scope, so everything it builds can
+/// use the Form right away, for example to bind Field widgets to its Fields.
 class FormidableScope<F extends FormidableForm<Object?>>
     extends StatefulWidget {
   const FormidableScope({
     super.key,
     required this.create,
     this.errorDisplay,
-    required this.child,
-  }) : _form = null;
+    this.child,
+    this.builder,
+  }) : assert(
+         (child == null) != (builder == null),
+         'Give a FormidableScope exactly one of child and builder.',
+       ),
+       _form = null;
 
   /// Exposes [form], which is owned elsewhere. The scope never disposes it, so
   /// whoever created it must.
@@ -25,8 +34,13 @@ class FormidableScope<F extends FormidableForm<Object?>>
     super.key,
     required F this._form,
     this.errorDisplay,
-    required this.child,
-  }) : create = null;
+    this.child,
+    this.builder,
+  }) : assert(
+         (child == null) != (builder == null),
+         'Give a FormidableScope exactly one of child and builder.',
+       ),
+       create = null;
 
   /// Creates the Form. Called once, when the scope is first inserted. Null for
   /// a scope made with [FormidableScope.value].
@@ -38,7 +52,12 @@ class FormidableScope<F extends FormidableForm<Object?>>
   /// [FormidableConfig.errorDisplay].
   final FormidableErrorDisplay? errorDisplay;
 
-  final Widget child;
+  /// The widget below the scope. Null when [builder] is given.
+  final Widget? child;
+
+  /// Builds the widget below the scope from the Form. Its context is below
+  /// the scope. Null when [child] is given.
+  final Widget Function(BuildContext context, F form)? builder;
 
   /// The Form of the closest scope of type [F] above [context].
   ///
@@ -111,7 +130,9 @@ class _FormidableScopeState<F extends FormidableForm<Object?>>
     form: _form,
     child: _FormidableErrorDisplayScope(
       errorDisplay: widget.errorDisplay,
-      child: widget.child,
+      child:
+          widget.child ??
+          Builder(builder: (context) => widget.builder!(context, _form)),
     ),
   );
 }

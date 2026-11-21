@@ -10,6 +10,8 @@ import 'focus_target.dart';
 import 'node.dart';
 import 'notifier.dart';
 import 'pipeline.dart';
+import 'status.dart';
+import 'streams.dart';
 
 /// A single value inside a Form, reached through a typed handle.
 ///
@@ -96,6 +98,53 @@ final class FormidableField<T>
 
   @override
   FormidableFieldState<T> get state => _state;
+
+  FormidableStreamHub? _streamHub;
+
+  FormidableStreamHub get _hub =>
+      _streamHub ??= FormidableStreamHub(this, () => isDisposed);
+
+  /// Every state of the Field, as it changes: the value, but also touched,
+  /// errors, pending, enabled and the rest.
+  ///
+  /// It is a broadcast stream that delivers synchronously, right after the
+  /// change, like [addListener]. It never emits the state the Field is in when
+  /// you listen, it listens to the Field only while it has subscribers, and it
+  /// closes when the Field is disposed. The same holds for [valueChanges],
+  /// [statusChanges] and [select].
+  Stream<FormidableFieldState<T>> get changes =>
+      _hub.derive(() => _state, (state) => state, same: (_, _) => false);
+
+  /// The value of the Field, each time its value or presence changes, and
+  /// only then: touching the Field, focusing it or changing its errors is not
+  /// a value change.
+  ///
+  /// The event is `null` both when the Field becomes Unset and when null is
+  /// chosen on a nullable Field, so a change from one to the other emits
+  /// `null` although the value read as `null` before too. Read [isSet] in the
+  /// listener to tell them apart (ADR-0003).
+  ///
+  /// ```dart
+  /// form.query.valueChanges.listen((query) => search(query));
+  /// ```
+  Stream<T?> get valueChanges => _hub.derive<({bool isSet, T? value}), T?>(
+    () => (isSet: _state.isSet, value: _state.value),
+    (key) => key.value,
+  );
+
+  /// The status of the Field, each time it changes between valid and invalid.
+  Stream<FormidableStatus> get statusChanges =>
+      _hub.derive(() => _state.status, (status) => status);
+
+  /// What [selector] returns for the state of the Field, each time it differs
+  /// (by `==`) from what it returned before. The first selection is computed
+  /// when you listen, so the first event is a real change.
+  ///
+  /// ```dart
+  /// field.select((state) => state.touched && state.errors.isNotEmpty);
+  /// ```
+  Stream<R> select<R>(R Function(FormidableFieldState<T> state) selector) =>
+      _hub.derive(() => selector(_state), (selection) => selection);
 
   /// The current value, or null while the Field is Unset. Null is also a valid
   /// chosen value for a nullable [T], so check [isSet] to tell them apart.
@@ -332,6 +381,7 @@ final class FormidableField<T>
   @override
   void dispose() {
     _cancelAsync();
+    _streamHub?.close();
     super.dispose();
   }
 

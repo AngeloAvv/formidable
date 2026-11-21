@@ -1,5 +1,5 @@
 name: formidable_flutter
-description: Flutter bindings for Formidable. Form Scope, headless Binding, builders, listeners and selectors, built only on the widgets library.
+description: Flutter bindings for Formidable. Form Scope, Field Widget base, builders, listeners and selectors, built only on the widgets library.
 version: 0.1.0
 homepage: https://docs.page/AngeloAvv/formidable
 repository: https://github.com/AngeloAvv/formidable

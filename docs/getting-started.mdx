@@ -92,7 +92,7 @@ An Unset Required Field produces a `FormidableRequiredError`. `@MinLength` produ
 
 ## Use the Form in Flutter
 
-`SignUpFormScope` creates the Form and disposes it. Widgets below it get the Form from the context.
+`SignUpFormScope` creates the Form and disposes it. Widgets below it get the Form from the context, or from the `builder` of the scope, which gives you the Form and a context below the scope.
 
 ```dart
 class SignUpPage extends StatelessWidget {
@@ -100,38 +100,39 @@ class SignUpPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SignUpFormScope(
-        child: Builder(
-          builder: (context) => Column(
-            children: [
-              FormidableTextField(
-                field: context.signUpForm.username,
-                decoration: const InputDecoration(labelText: 'Username'),
-              ),
-              FilledButton(
-                onPressed: () async {
-                  switch (await context.signUpForm.submit()) {
-                    case FormidableSubmitValid(:final value):
-                      // Send value to your domain layer.
-                    case FormidableSubmitInvalid():
-                      // The errors are already on the Fields.
-                  }
-                },
-                child: const Text('Sign up'),
-              ),
-            ],
-          ),
+        builder: (context, form) => Column(
+          children: [
+            FormidableMaterialTextField(
+              field: form.username,
+              decoration: const InputDecoration(labelText: 'Username'),
+            ),
+            FilledButton(
+              onPressed: () async {
+                switch (await form.submit()) {
+                  case FormidableSubmitValid(:final value):
+                    // Send value to your domain layer.
+                  case FormidableSubmitInvalid():
+                    // The errors are already on the Fields.
+                }
+              },
+              child: const Text('Sign up'),
+            ),
+          ],
         ),
       );
 }
 ```
 
-`FormidableTextField` is a Material text field bound to a `String` Field:
+To rebuild when anything in the Form changes, use the generated `SignUpFormBuilder`, which gives you the typed state of the Form (`state.username.value`, `state.form.status`). See [State and reactive widgets](/form/state).
+
+
+`FormidableMaterialTextField` is a Material text field bound to a `String` Field:
 
 - it shows the Field's value, and keeps showing it when code changes the Field;
 - it updates the Field as the user types, and a completely empty text leaves the Field Unset;
 - the Field becomes **touched** when the text field loses focus;
 - the Validation Message is shown once the Field is touched. When there are several errors, the first one in the order of the annotations is shown.
 
-Under the hood the widget is a thin layer over the headless `FormidableBinding`, which works with any widget. See [Binding Fields to widgets](/widgets).
+It takes every parameter of `TextField`, and merges your `decoration` (or the one your `decorationBuilder` returns for the state of the widget) with the Validation Message instead of replacing it. Under the hood it is a `FormidableFieldWidget`, the base of every Formidable widget, which works with any widget. See [Field Widgets](/widgets).
 
 The `example` folder of the repository contains this flow, and every other feature, as a runnable app that shows Material and Cupertino side by side. Continue with the [guides](/guides): a sign-up form, an edit form, dynamic lists and a multi-step wizard.

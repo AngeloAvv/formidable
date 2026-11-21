@@ -7,6 +7,8 @@ import 'form.dart';
 import 'node.dart';
 import 'notifier.dart';
 import 'pipeline.dart';
+import 'status.dart';
+import 'streams.dart';
 
 /// One entry of a [FormidableFieldArray]: the Nested Form or the Field that
 /// holds the data, with an identifier that never changes and is never reused.
@@ -25,20 +27,30 @@ final class FormidableFieldArrayItem<N extends FormidableNode> {
 
 /// An ordered collection of Nested Forms or Fields that can grow and shrink.
 ///
-/// [N] is the type of every item (a generated Form or a [FormidableField]) and
-/// [T] is the type of the value of an item, so the output is a `List<T>`.
+/// [N] is the type of every item (a generated Form or a [FormidableField]), [T]
+/// is the type of the value of an item, so the output is a `List<T>`, and [S]
+/// is the type of the state of an item (the generated state of a Nested Form or
+/// a [FormidableFieldState]), which the array state holds.
 ///
 /// An empty array is Unset, like a Field: it is required unless it is nullable
 /// or has a default. It is a [FormidableNode] and follows the same rules as a
 /// Nested Form: its writes run through the pipeline of its Form.
-final class FormidableFieldArray<N extends FormidableNode, T>
+final class FormidableFieldArray<N extends FormidableNode, T, S>
     with FormidableNotifierMixin
-    implements FormidableNode, FormidableObservable<FormidableFieldArrayState> {
+    implements
+        FormidableNode,
+        FormidableObservable<FormidableFieldArrayState<S>> {
   /// Creates a Field Array.
   ///
   /// - [create] makes an item, from a value or, when it is null, empty.
   /// - [read] returns the value of an item. It is called only when the item is
   ///   valid.
+  /// - [itemState] returns the current state of an item, which the state of
+  ///   the array holds.
+  /// - [readState] returns the value of an item from its state, like [read]
+  ///   does from the item. The state of the array uses it to build the output
+  ///   from the item states it holds, so a snapshot never reads an array that
+  ///   has moved on.
   /// - [validators] judge the array as a whole while it has items. They receive
   ///   one entry per item: its value, or null while the item has none (an Unset
   ///   Field or a Nested Form that is not valid yet).
@@ -51,6 +63,8 @@ final class FormidableFieldArray<N extends FormidableNode, T>
   FormidableFieldArray({
     required N Function(T? initial) create,
     required T Function(N node) read,
+    required S Function(N node) itemState,
+    required T Function(S state) readState,
     List<FormidableValidator<Object?>> validators = const [],
     bool required = false,
     bool nullable = false,
@@ -58,6 +72,8 @@ final class FormidableFieldArray<N extends FormidableNode, T>
     List<T>? initial,
   }) : _create = create,
        _read = read,
+       _itemState = itemState,
+       _readState = readState,
        _validators = validators,
        _required = required,
        _nullable = nullable,
@@ -75,23 +91,65 @@ final class FormidableFieldArray<N extends FormidableNode, T>
 
   final N Function(T? initial) _create;
   final T Function(N node) _read;
+  final S Function(N node) _itemState;
+  final T Function(S state) _readState;
   final List<FormidableValidator<Object?>> _validators;
   final bool _required;
   final bool _nullable;
   final List<T>? _defaultValue;
   final List<FormidableFieldArrayItem<N>> _items = [];
   late List<FormidableFieldArrayItem<N>> _initialItems;
-  final List<void Function()> _changeListeners = [];
   FormidablePipeline? _pipeline;
   int _nextId = 0;
   bool _touched = false;
   bool _submitted = false;
   bool _stale = false;
-  late FormidableFieldArrayState _state;
-  late FormidableFieldArrayState _notified;
+  late FormidableFieldArrayState<S> _state;
+  late FormidableFieldArrayState<S> _notified;
 
   @override
-  FormidableFieldArrayState get state => _state;
+  FormidableFieldArrayState<S> get state => _state;
+
+  FormidableStreamHub? _streamHub;
+
+  FormidableStreamHub get _hub =>
+      _streamHub ??= FormidableStreamHub(this, () => isDisposed);
+
+  /// Every state of the array, as it changes: its items, but also touched,
+  /// errors and everything the states of its items hold.
+  ///
+  /// It is a broadcast stream that delivers synchronously, right after the
+  /// change, like [addListener]. It never emits the state the array is in when
+  /// you listen, it listens to the array only while it has subscribers, and it
+  /// closes when the array is disposed. The same holds for [valueChanges],
+  /// [statusChanges] and [select].
+  Stream<FormidableFieldArrayState<S>> get changes =>
+      _hub.derive(() => _state, (state) => state, same: (_, _) => false);
+
+  /// The state of the array, each time an item is added, removed, moved or
+  /// edited: the value or presence of any Field in any item changes, or the
+  /// items or their order do. Touching, submitting and errors are not value
+  /// changes.
+  Stream<FormidableFieldArrayState<S>> get valueChanges =>
+      _hub.derive<List<Object?>, FormidableFieldArrayState<S>>(
+        () => valueKeyOf(this),
+        (_) => _state,
+        same: sameValueKey,
+      );
+
+  /// The status of the array, each time it changes between valid and invalid.
+  /// The array is invalid when it has errors of its own or any item has.
+  Stream<FormidableStatus> get statusChanges => _hub.derive(
+    () => isValid ? FormidableStatus.valid : FormidableStatus.invalid,
+    (status) => status,
+  );
+
+  /// What [selector] returns for the state of the array, each time it differs
+  /// (by `==`) from what it returned before. The first selection is computed
+  /// when you listen, so the first event is a real change.
+  Stream<R> select<R>(
+    R Function(FormidableFieldArrayState<S> state) selector,
+  ) => _hub.derive(() => selector(_state), (selection) => selection);
 
   /// The items in order, each with its stable identifier. The list is a copy:
   /// it does not change when the array does.
@@ -197,17 +255,6 @@ final class FormidableFieldArray<N extends FormidableNode, T>
     _refresh();
   }
 
-  /// Calls [listener] after every change of the array or of any item, even one
-  /// that leaves [state] equal. A listener of [state] is called only when it
-  /// differs.
-  void addChangeListener(void Function() listener) {
-    assert(!isDisposed, 'Cannot add a listener to a disposed object.');
-    _changeListeners.add(listener);
-  }
-
-  void removeChangeListener(void Function() listener) =>
-      _changeListeners.remove(listener);
-
   // FormidableNode.
 
   @override
@@ -299,7 +346,7 @@ final class FormidableFieldArray<N extends FormidableNode, T>
       _unfollow(item.node);
       item.node.dispose();
     }
-    _changeListeners.clear();
+    _streamHub?.close();
     super.dispose();
   }
 
@@ -319,15 +366,13 @@ final class FormidableFieldArray<N extends FormidableNode, T>
     if (!_initialItems.contains(item)) item.node.dispose();
   }
 
-  void _follow(N node) => node is FormidableForm<Object?>
-      ? node.addChangeListener(_onItemChanged)
-      : node.addListener(_onItemChanged);
+  // The state of the array holds the state of its items, so following their
+  // state is following every change below the array.
+  void _follow(N node) => node.addListener(_onItemChanged);
 
-  void _unfollow(N node) => node is FormidableForm<Object?>
-      ? node.removeChangeListener(_onItemChanged)
-      : node.removeListener(_onItemChanged);
+  void _unfollow(N node) => node.removeListener(_onItemChanged);
 
-  void _onItemChanged() => _refresh(itemChanged: true);
+  void _onItemChanged() => _refresh();
 
   bool get _structureChanged {
     if (_items.length != _initialItems.length) return true;
@@ -364,27 +409,31 @@ final class FormidableFieldArray<N extends FormidableNode, T>
     }
   }
 
-  void _refresh({bool itemChanged = false}) {
+  void _refresh() {
     _stale = false;
     _state = _stateFor();
     final changed = _state != _notified;
     _notified = _state;
     if (changed) notifyListeners();
-    if (isDisposed) return;
-    if (changed || itemChanged) {
-      for (final listener in List.of(_changeListeners)) {
-        if (_changeListeners.contains(listener)) listener();
-      }
-    }
   }
 
-  FormidableFieldArrayState _stateFor() => FormidableFieldArrayState(
-    ids: [for (final item in _items) item.id],
-    errors: _errors(),
-    touched: _touched,
-    submitted: _submitted,
-    dirty: isDirty,
-  );
+  FormidableFieldArrayState<S> _stateFor() {
+    final states = [for (final item in _items) _itemState(item.node)];
+    final fallback = _defaultValue;
+    return FormidableFieldArrayState<S>(
+      ids: [for (final item in _items) item.id],
+      items: states,
+      errors: _errors(),
+      touched: _touched,
+      submitted: _submitted,
+      dirty: isDirty,
+      outputOrNull: () => states.isNotEmpty
+          ? <T>[for (final state in states) _readState(state)]
+          : fallback == null
+          ? null
+          : List<T>.of(fallback),
+    );
+  }
 
   List<FormidableValidationError> _errors() {
     if (_items.isEmpty) {

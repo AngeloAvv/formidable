@@ -25,12 +25,14 @@ void main() {
       .map((choice) => choice.$1)
       .toSet();
 
-  group('FormidableSegmentedButton', () {
+  group('FormidableMaterialSegmentedButton', () {
     testWidgets('selects nothing while the Field is Unset', (tester) async {
       await tester.pumpWidget(
         app(
-          (form) =>
-              FormidableSegmentedButton(field: form.layout, segments: segments),
+          (form) => FormidableMaterialSegmentedButton(
+            field: form.layout,
+            segments: segments,
+          ),
         ),
       );
 
@@ -42,8 +44,10 @@ void main() {
     ) async {
       await tester.pumpWidget(
         app(
-          (form) =>
-              FormidableSegmentedButton(field: form.layout, segments: segments),
+          (form) => FormidableMaterialSegmentedButton(
+            field: form.layout,
+            segments: segments,
+          ),
         ),
       );
 
@@ -58,7 +62,7 @@ void main() {
       (tester) async {
         await tester.pumpWidget(
           app(
-            (form) => FormidableSegmentedButton(
+            (form) => FormidableMaterialSegmentedButton(
               field: form.layout,
               segments: segments,
             ),
@@ -80,8 +84,10 @@ void main() {
     ) async {
       await tester.pumpWidget(
         app(
-          (form) =>
-              FormidableSegmentedButton(field: form.layout, segments: segments),
+          (form) => FormidableMaterialSegmentedButton(
+            field: form.layout,
+            segments: segments,
+          ),
         ),
       );
       form.layout.setValue(Plan.pro);
@@ -97,7 +103,7 @@ void main() {
     testWidgets('allowDeselect puts the Field back to Unset', (tester) async {
       await tester.pumpWidget(
         app(
-          (form) => FormidableSegmentedButton(
+          (form) => FormidableMaterialSegmentedButton(
             field: form.layout,
             segments: segments,
             allowDeselect: true,
@@ -120,8 +126,10 @@ void main() {
     ) async {
       await tester.pumpWidget(
         app(
-          (form) =>
-              FormidableSegmentedButton(field: form.layout, segments: segments),
+          (form) => FormidableMaterialSegmentedButton(
+            field: form.layout,
+            segments: segments,
+          ),
         ),
       );
       expect(find.text('This field is required.'), findsNothing);
@@ -137,7 +145,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         app(
-          (form) => FormidableSegmentedButton(
+          (form) => FormidableMaterialSegmentedButton(
             field: form.contact,
             segments: const [
               ButtonSegment(value: null, label: Text('Any')),

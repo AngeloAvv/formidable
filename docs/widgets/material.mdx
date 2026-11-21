@@ -5,10 +5,10 @@ description: Checkbox, switch, radio group, slider, dropdown, date and time pick
 
 # Material widgets
 
-`formidable_material` ships one widget for each common input. Every one is a thin layer over the headless [Binding](/widgets), built on `material_ui`, and binds to a Field with no glue code:
+`formidable_material` ships one widget for each common input. Every one is a [Field Widget](/widgets), built on `material_ui`, and binds to a Field with no glue code. Every name starts with `FormidableMaterial`, as the Cupertino ones start with `FormidableCupertino`:
 
 ```dart
-FormidableCheckbox(field: form.acceptedTerms, title: const Text('I accept the terms'))
+FormidableMaterialCheckboxListTile(field: form.acceptedTerms, title: const Text('I accept the terms'))
 ```
 
 They all behave the same way:
@@ -16,18 +16,106 @@ They all behave the same way:
 - **Touched.** A text field is touched when it loses focus. These widgets can't rely on that, so the first interaction marks the Field touched: toggling, picking, moving the thumb, or cancelling a dialog. The Validation Message shows from then on.
 - **Unset is not null.** An Unset Field is shown as "nothing chosen": an unchecked box, a switch that is off, no radio selected, the thumb at the minimum, an empty dropdown. The Field stays Unset until the user acts, and a required Field reports the missing value.
 - **Messages.** The Validation Message comes through the usual chain (see [Validation messages](/validation/messages)). Every widget takes `messages:` to override it for that widget only.
-- **Common parameters only.** Each widget exposes the parameters most code needs. For anything else, build the Material widget from a `FormidableBindingBuilder`.
+- **Disabled.** A disabled Field disables its widget: the Flutter widget gets a null `onChanged`, so it looks and behaves disabled.
+- **The whole API.** Each widget takes every parameter of the Flutter widget it wraps, and keeps each one as a public `final` field you can read (`widget.activeColor`). The exceptions are what Formidable owns: `value` (the Field is the source of truth), `onChanged`, the controller of the text field, `enabled`, and the deprecated parameters. `focusNode`, `messages`, `errorDisplay` and `codec` come from the [Field Widget base](/widgets).
 
-| Widget | Field type | Notes |
-| --- | --- | --- |
-| `FormidableCheckbox` | `bool`, `bool?` | `title` makes the whole row tappable. `tristate: true` lets a `bool?` Field choose null. |
-| `FormidableSwitch` | `bool` | `title` makes the whole row tappable. |
-| `FormidableRadioGroup<T>` | any `T` | `options` are `FormidableRadioOption(value:, title:)`. One option can have the value `null` (see below). |
-| `FormidableSlider<T>` | `double`, `int`, `num`, nullable or not | `min`, `max`, `divisions`, `labelBuilder`. An `int` Field gets rounded values. |
-| `FormidableDropdown<T>` | any `T` | `items` are the usual `DropdownMenuItem`s. `hint` shows while Unset. |
-| `FormidableDatePicker` | `DateTime`, `DateTime?` | Opens `showDatePicker`. `firstDate`, `lastDate`, `initialDate`, `format`, `clearable`. |
-| `FormidableTimePicker` | `TimeOfDay`, `TimeOfDay?` | Opens `showTimePicker`. `initialTime`, `format`, `clearable`. |
-| `FormidableSegmentedButton<T>` | any `T` | One segment at a time. `allowDeselect` lets the user go back to Unset. |
+| Widget | Wraps | Field type | Notes |
+| --- | --- | --- | --- |
+| `FormidableMaterialCheckbox` | `Checkbox` | `bool`, `bool?` | `tristate: true` lets a `bool?` Field choose null (see [Deselecting](#deselecting-is-a-choice)). |
+| `FormidableMaterialCheckboxListTile` | `CheckboxListTile` | `bool`, `bool?` | The whole row is tappable. `controlAffinity` defaults to `leading`. |
+| `FormidableMaterialSwitch` | `Switch` | `bool` | |
+| `FormidableMaterialSwitchListTile` | `SwitchListTile` | `bool` | The whole row is tappable. |
+| `FormidableMaterialRadioGroup<T>` | `RadioGroup`, `RadioListTile` | any `T` | `options` are `FormidableMaterialRadioOption`s. One option can have the value `null` (see below). `toggleable` lets the user deselect the chosen option (see [Deselecting](#deselecting-is-a-choice)). |
+| `FormidableMaterialSlider<T>` | `Slider` | `double`, `int`, `num`, nullable or not | `min`, `max`, `divisions`, `label` or `labelBuilder`. An `int` Field gets rounded values. |
+| `FormidableMaterialDropdown<T>` | `DropdownButton` | any `T` | `items` are the usual `DropdownMenuItem`s. `hint` shows while Unset. Takes a `decoration` or a `decorationBuilder`. |
+| `FormidableMaterialDatePicker` | `showDatePicker` | `DateTime`, `DateTime?` | `firstDate`, `lastDate`, `initialDate`, `format`, `clearable`, and every other parameter of `showDatePicker`. Takes a `decoration` or a `decorationBuilder`. |
+| `FormidableMaterialTimePicker` | `showTimePicker` | `TimeOfDay`, `TimeOfDay?` | `initialTime`, `format`, `clearable`, and every other parameter of `showTimePicker`. Takes a `decoration` or a `decorationBuilder`. |
+| `FormidableMaterialSegmentedButton<T>` | `SegmentedButton` | any `T` | One segment at a time. `allowDeselect` lets the user deselect the chosen segment (see [Deselecting](#deselecting-is-a-choice)). |
+| `FormidableMaterialTextField<T>` | `TextField` | any `T` with a [Codec](/widgets/codecs) | See below. |
+| `FormidableMaterialErrorLine` | | | The line that shows a Validation Message under a widget that has no `errorText` of its own. Use it in your own Field Widgets. |
+
+The `adaptive` constructors of Flutter (`Checkbox.adaptive`, `Switch.adaptive`, ...) are not mirrored: they pick the look of the platform, which is what `formidable_cupertino` is for.
+
+## The text field
+
+`FormidableMaterialTextField` takes every parameter of Flutter's `TextField`: `style`, `textAlign`, `textAlignVertical`, `inputFormatters`, `maxLength`, `autofillHints`, `onTap`, `onSubmitted`, `contextMenuBuilder` and the rest. Formidable owns four things, so they are not parameters: the `controller` (the Field is the source of truth), `enabled` (the Field says it), `onChanged` (follow the Field instead, with a `FormidableFieldListener`) and the deprecated parameters.
+
+```dart
+FormidableMaterialTextField<String>(
+  field: form.username,
+  style: const TextStyle(fontWeight: FontWeight.w600),
+  textAlignVertical: TextAlignVertical.center,
+  decoration: const InputDecoration(
+    labelText: 'Username',
+    helperText: 'Letters and numbers only',
+  ),
+)
+```
+
+### The decoration is merged
+
+Your `decoration` is used as it is, and Formidable adds one thing: the Validation Message as `errorText`, only when your decoration has none. A custom `errorText` (for example one that comes from the server) still wins. A null `decoration` draws no decoration, like `TextField`, and so no Validation Message either.
+
+### A decoration that depends on the state
+
+Every widget that takes an `InputDecoration` (the text field, the dropdown and the date and time pickers) also takes a `decorationBuilder`. It receives the context and the **control** of the widget, the same object a [Field Widget](/widgets) builder gets, so the decoration can read the value, the focus or the error. Pass `decoration` or `decorationBuilder`, not both.
+
+The usual case is a clear button that shows only while there is something to clear:
+
+```dart
+FormidableMaterialTextField<String>(
+  field: form.search,
+  decorationBuilder: (context, control) => InputDecoration(
+    labelText: 'Search',
+    suffixIcon: (control.value ?? '').isEmpty
+        ? null
+        : IconButton(
+            icon: const Icon(Icons.clear),
+            onPressed: control.clear,
+          ),
+  ),
+)
+```
+
+The builder runs again every time the Field changes. Its result is merged exactly like a plain `decoration`: Formidable adds the Validation Message as `errorText` when the result has none. `control.clear()` puts the Field back to Unset, and the text field follows.
+
+The pickers draw their own clear button when `clearable` is set, in place of the `suffixIcon`.
+
+### A text style that depends on the state
+
+The text field also takes a `styleBuilder` next to `style`, built the same way as `decorationBuilder`: it receives the context and the control, runs again every time the Field changes, and returning null gives the default style. Pass `style` or `styleBuilder`, not both. For example, red text while the Field shows an error:
+
+```dart
+FormidableMaterialTextField<String>(
+  field: form.email,
+  styleBuilder: (context, control) => control.errorText == null
+      ? null
+      : TextStyle(color: Theme.of(context).colorScheme.error),
+)
+```
+
+`control.errorText` follows the error display policy, so the text turns red at the same time as the message shows.
+
+### Keyboard action
+
+`textInputAction` defaults to "next" while another Field follows and "done" on the last one, and a multiline field keeps its newline key. Without `onEditingComplete`, the action moves focus to the next Field (see [Focus and keyboard actions](/widgets/focus)).
+
+## Rows with a title
+
+`Checkbox` and `Switch` have a tile twin in Flutter: `CheckboxListTile` and `SwitchListTile` take a `title`, a `subtitle`, a `secondary` widget and make the whole row tappable. Formidable keeps the same split, so each widget mirrors exactly one Flutter widget:
+
+```dart
+FormidableMaterialSwitchListTile(
+  field: form.notifications,
+  title: const Text('Notifications'),
+  subtitle: const Text('One email a day'),
+  secondary: const Icon(Icons.notifications),
+)
+```
+
+## The radio group
+
+The group takes every parameter of `RadioListTile` that is not about one tile alone (`activeColor`, `dense`, `contentPadding`, `shape`, `tileColor`, `visualDensity`, `toggleable`, ...) and gives it to all of them. What belongs to one choice goes on its `FormidableMaterialRadioOption`: `value`, `title`, `subtitle`, `secondary`, `isThreeLine`, `enabled`, `autofocus`, `focusNode`, `statesController` and `onFocusChange`. `selected` is not a parameter: the group shows the selection.
 
 ## A radio option that means null
 
@@ -39,21 +127,32 @@ final bool? contactByEmail;
 ```
 
 ```dart
-FormidableRadioGroup(
+FormidableMaterialRadioGroup(
   field: form.contactByEmail,
   options: const [
-    FormidableRadioOption(value: null, title: Text('No preference')),
-    FormidableRadioOption(value: true, title: Text('Yes')),
-    FormidableRadioOption(value: false, title: Text('No')),
+    FormidableMaterialRadioOption(value: null, title: Text('No preference')),
+    FormidableMaterialRadioOption(value: true, title: Text('Yes')),
+    FormidableMaterialRadioOption(value: false, title: Text('No')),
   ],
 )
 ```
 
 While the Field is Unset no option is selected, not even the null one, and the required error shows once the Field is touched. Choosing "No preference" sets the Field to null: it is no longer Unset, so the required error goes away. The dropdown and the segmented control work the same way.
 
+## Deselecting is a choice
+
+Some widgets let the user take their choice back: a radio group with `toggleable`, a segmented button with `allowDeselect`, and a checkbox or checkbox row with `tristate`. Deselecting is something the user did, not a reset, so it counts as a value whenever the Field can hold one:
+
+| Type of the Field | After the user deselects |
+| --- | --- |
+| Admits null (`String?`, `bool?`) | The Field is set to null. It is no longer Unset, so a required error goes away, and it is dirty. |
+| Does not admit null (`String`, `bool`) | null cannot be written, so the Field goes back to Unset. It is touched. |
+
+The widgets get this from `control.didChange(null)`, which also works in your own [Field Widgets](/widgets/custom). To go back to Unset on purpose, call `control.clear()`. A date or time picker with `clearable: true` clears: its button is a reset, and the Field goes back to Unset whatever its type.
+
 ## Pickers
 
-The date and time pickers show a read-only field and open the Material dialog on tap. Cancelling the dialog changes nothing, but still marks the Field touched. While the Field is Unset the dialog opens on `initialDate` or `initialTime`, else on today or the current time. The text comes from the Material localizations unless you pass `format`. With `clearable: true` a button puts a Field that has a value back to Unset.
+The date and time pickers show a read-only field and open the Material dialog on tap. Cancelling the dialog changes nothing, but still marks the Field touched. While the Field is Unset the dialog opens on `initialDate` or `initialTime`, else on today or the current time. The text comes from the Material localizations unless you pass `format`. With `clearable: true` a button puts a Field that has a value back to Unset. Every other parameter of `showDatePicker` and `showTimePicker` is a parameter of the widget too, such as `helpText`, `cancelText`, `initialEntryMode` or `selectableDayPredicate`. The one parameter that would clash with the base class, the `builder` of the dialog, is called `dialogBuilder`.
 
 ## The example app
 

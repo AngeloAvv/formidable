@@ -49,9 +49,10 @@ void main() {
     ),
   );
 
-  Widget age(MeasurementsForm form) => FormidableTextField(field: form.age);
+  Widget age(MeasurementsForm form) =>
+      FormidableMaterialTextField(field: form.age);
   Widget weight(MeasurementsForm form) =>
-      FormidableTextField(field: form.weight);
+      FormidableMaterialTextField(field: form.weight);
 
   Future<void> type(WidgetTester tester, String text) async {
     await tester.enterText(find.byType(TextField).first, text);
@@ -110,7 +111,9 @@ void main() {
 
     testWidgets('works with a nullable String Field', (tester) async {
       await tester.pumpWidget(
-        page(field: (form) => FormidableTextField(field: form.nickname)),
+        page(
+          field: (form) => FormidableMaterialTextField(field: form.nickname),
+        ),
       );
 
       await type(tester, 'angelo');
@@ -123,7 +126,7 @@ void main() {
     testWidgets('works with a DateTime Field', (tester) async {
       await tester.pumpWidget(
         page(
-          field: (form) => FormidableTextField(field: form.born),
+          field: (form) => FormidableMaterialTextField(field: form.born),
           create: () => MeasurementsForm(age: 1, born: DateTime(2000, 5, 17)),
         ),
       );
@@ -209,7 +212,7 @@ void main() {
       tester,
     ) async {
       await tester.pumpWidget(
-        page(field: (form) => FormidableTextField(field: form.born)),
+        page(field: (form) => FormidableMaterialTextField(field: form.born)),
       );
 
       await type(tester, '31/01/2024');
@@ -242,7 +245,7 @@ void main() {
                 SizedBox(height: 100, child: weight(form)),
                 SizedBox(
                   height: 100,
-                  child: FormidableTextField(field: form.born),
+                  child: FormidableMaterialTextField(field: form.born),
                 ),
               ],
             ),
@@ -267,7 +270,7 @@ void main() {
     ) async {
       await tester.pumpWidget(
         page(
-          field: (form) => FormidableTextField(
+          field: (form) => FormidableMaterialTextField(
             field: form.price,
             codec: const MoneyTextCodec(prefix: '€'),
           ),
@@ -287,7 +290,7 @@ void main() {
       await tester.pumpWidget(
         page(
           codecs: FormidableCodecs.defaults.add(const MoneyTextCodec()),
-          field: (form) => FormidableTextField(field: form.price),
+          field: (form) => FormidableMaterialTextField(field: form.price),
           create: () => MeasurementsForm(age: 1, price: const Money(1250)),
         ),
       );
@@ -314,8 +317,10 @@ void main() {
       await tester.pumpWidget(
         page(
           codecs: FormidableCodecs.defaults.add(const _ShoutingIntCodec()),
-          field: (form) =>
-              FormidableTextField(field: form.age, codec: const _PlainInt()),
+          field: (form) => FormidableMaterialTextField(
+            field: form.age,
+            codec: const _PlainInt(),
+          ),
         ),
       );
 

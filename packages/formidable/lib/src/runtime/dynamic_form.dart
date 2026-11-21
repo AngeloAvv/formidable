@@ -3,10 +3,14 @@ import '../validation/async_validator.dart';
 import '../validation/validation_error.dart';
 import '../validation/validator.dart';
 import 'field.dart';
+import 'field_state.dart';
 import 'form.dart';
+import 'form_state.dart';
 import 'node.dart';
 import 'notifier.dart';
 import 'pipeline.dart';
+import 'status.dart';
+import 'streams.dart';
 
 /// Thrown when a key of a [FormidableDynamicForm] is used wrongly: it is
 /// already registered, or nothing is registered under it.
@@ -29,28 +33,96 @@ final class FormidableDynamicTypeError extends StateError {
 }
 
 /// What observers of a [FormidableDynamicForm] see: the keys that are
-/// registered, in registration order. It changes when a Field is registered or
-/// removed, so a widget that lists the Fields rebuilds then and only then.
+/// registered, in registration order, and the state of what is registered
+/// under each of them.
+///
+/// It changes when a Field is registered or removed and when any of them
+/// changes, so a widget that follows it rebuilds then and only then. Equality
+/// is deep.
 final class FormidableDynamicFormState {
-  FormidableDynamicFormState(List<String> keys)
-    : keys = List.unmodifiable(keys);
+  FormidableDynamicFormState(
+    Map<String, Object> states, {
+    Map<String, Object? Function(Object state)> readers = const {},
+  }) : states = Map.unmodifiable(states),
+       _readers = readers;
 
-  final List<String> keys;
+  final Map<String, Object? Function(Object state)> _readers;
+
+  /// The values of the registered Fields and Nested Forms, by key, in
+  /// registration order, built from the states this one holds (so it never
+  /// reads a Dynamic Form that has moved on). A Nested Form that is Unset has
+  /// null. Read it only while the Form is valid, like any output. It does not
+  /// take part in equality.
+  Map<String, Object?> get output => {
+    for (final entry in states.entries)
+      entry.key: _readers[entry.key]!(entry.value),
+  };
+
+  /// The state of every registered node, by key, in registration order: a
+  /// [FormidableFieldState] for a Field, the generated state of a Nested Form
+  /// for a Nested Form.
+  final Map<String, Object> states;
+
+  /// The registered keys, in registration order.
+  List<String> get keys => states.keys.toList(growable: false);
+
+  /// Whether something is registered under [key].
+  bool contains(String key) => states.containsKey(key);
+
+  /// The state of the Field registered under [key], with the type it was
+  /// registered with. Throws a [FormidableDynamicKeyError] when nothing is
+  /// registered under [key] and a [FormidableDynamicTypeError] when [T] is not
+  /// the type of the Field.
+  FormidableFieldState<T> field<T>(String key) {
+    final state = states[key];
+    if (state == null) {
+      throw FormidableDynamicKeyError(key, registered: false);
+    }
+    if (state is! FormidableFieldState<T>) {
+      throw FormidableDynamicTypeError(
+        '"$key" holds ${state.runtimeType}, which is not the state of a Field '
+        'of type $T. Look it up with the type it was registered with '
+        '(nullability included).',
+      );
+    }
+    return state;
+  }
+
+  /// The state of the Nested Form registered under [key], typed as [S].
+  S form<S extends FormidableFormState>(String key) {
+    final state = states[key];
+    if (state == null) {
+      throw FormidableDynamicKeyError(key, registered: false);
+    }
+    if (state is! S) {
+      throw FormidableDynamicTypeError(
+        '"$key" holds ${state.runtimeType}, which is not a $S.',
+      );
+    }
+    return state;
+  }
 
   @override
   bool operator ==(Object other) =>
-      other is FormidableDynamicFormState && _same(other.keys, keys);
+      other is FormidableDynamicFormState && _same(other.states, states);
 
   @override
-  int get hashCode => Object.hashAll(keys);
+  int get hashCode => Object.hashAll([
+    for (final entry in states.entries) Object.hash(entry.key, entry.value),
+  ]);
 
   @override
-  String toString() => 'FormidableDynamicFormState(keys: $keys)';
+  String toString() => 'FormidableDynamicFormState($states)';
 
-  static bool _same(List<String> a, List<String> b) {
+  static bool _same(Map<String, Object> a, Map<String, Object> b) {
     if (a.length != b.length) return false;
-    for (var i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
+    final left = a.entries.iterator;
+    final right = b.entries.iterator;
+    while (left.moveNext() && right.moveNext()) {
+      if (left.current.key != right.current.key ||
+          left.current.value != right.current.value) {
+        return false;
+      }
     }
     return true;
   }
@@ -86,15 +158,54 @@ final class FormidableDynamicForm
 
   final Map<String, _Entry> _entries = {};
   final Map<String, Object?> _offers;
-  final List<void Function()> _changeListeners = [];
   FormidablePipeline? _pipeline;
-  FormidableDynamicFormState _state = FormidableDynamicFormState(const []);
+  FormidableDynamicFormState _state = FormidableDynamicFormState(const {});
+  FormidableDynamicFormState _notified = FormidableDynamicFormState(const {});
 
   @override
   FormidableDynamicFormState get state => _state;
 
+  FormidableStreamHub? _streamHub;
+
+  FormidableStreamHub get _hub =>
+      _streamHub ??= FormidableStreamHub(this, () => isDisposed);
+
+  /// Every state of the Dynamic Form, as it changes: what is registered in it
+  /// and every state below.
+  ///
+  /// It is a broadcast stream that delivers synchronously, right after the
+  /// change, like [addListener]. It never emits the state the Dynamic Form is
+  /// in when you listen, it listens to it only while it has subscribers, and it
+  /// closes when the Dynamic Form is disposed. The same holds for
+  /// [valueChanges], [statusChanges] and [select].
+  Stream<FormidableDynamicFormState> get changes =>
+      _hub.derive(() => _state, (state) => state, same: (_, _) => false);
+
+  /// The state of the Dynamic Form, each time a Field or a Nested Form is
+  /// registered or removed, or the value or presence of a Field in it changes.
+  /// Touching, submitting and errors are not value changes.
+  Stream<FormidableDynamicFormState> get valueChanges =>
+      _hub.derive<List<Object?>, FormidableDynamicFormState>(
+        () => valueKeyOf(this),
+        (_) => _state,
+        same: sameValueKey,
+      );
+
+  /// The status of the Dynamic Form, each time it changes between valid and
+  /// invalid. It is invalid when anything registered in it is.
+  Stream<FormidableStatus> get statusChanges => _hub.derive(
+    () => isValid ? FormidableStatus.valid : FormidableStatus.invalid,
+    (status) => status,
+  );
+
+  /// What [selector] returns for the state of the Dynamic Form, each time it
+  /// differs (by `==`) from what it returned before. The first selection is
+  /// computed when you listen, so the first event is a real change.
+  Stream<R> select<R>(R Function(FormidableDynamicFormState state) selector) =>
+      _hub.derive(() => selector(_state), (selection) => selection);
+
   /// The registered keys, in registration order.
-  List<String> get keys => _state.keys;
+  List<String> get keys => _entries.keys.toList(growable: false);
 
   /// The registered nodes, in registration order.
   Iterable<FormidableNode> get children =>
@@ -177,6 +288,14 @@ final class FormidableDynamicForm
         },
         clear: field.clear,
         output: () => field.output,
+        read: (state) {
+          final fieldState = state as FormidableFieldState<T>;
+          if (fieldState.isSet) return fieldState.value as T;
+          if (defaultValue != null) return defaultValue;
+          if (null is T) return null;
+          throw StateError('A required Field is Unset and has no output.');
+        },
+        state: () => field.state,
       ),
     );
     return field;
@@ -189,7 +308,14 @@ final class FormidableDynamicForm
     _checkFree(key);
     _add(
       key,
-      _Entry(F, form, clear: form.clear, output: () => form.outputOrNull),
+      _Entry(
+        F,
+        form,
+        clear: form.clear,
+        output: () => form.outputOrNull,
+        read: (state) => (state as FormidableFormState).form.value,
+        state: () => form.state,
+      ),
     );
     return form;
   }
@@ -301,47 +427,43 @@ final class FormidableDynamicForm
     _structureChanged(entry.node);
   }
 
-  /// Publishes the new key list, and lets the Form treat the structure change
+  /// Publishes the new state, and lets the Form treat the structure change
   /// like a write: [changed] goes to the Form Effects, then everything is
   /// validated again.
   void _structureChanged(FormidableNode changed) {
-    final next = FormidableDynamicFormState(_entries.keys.toList());
-    final keysChanged = next != _state;
-    _state = next;
+    _publish();
     final pipeline = _pipeline;
-    if (pipeline == null) {
-      _notifyChange();
-    } else {
+    if (pipeline != null) {
       pipeline.change(changed, () => true);
       pipeline.focusLayoutChanged();
     }
-    if (keysChanged) notifyListeners();
+    _notifyIfChanged();
   }
 
-  void _follow(FormidableNode node) => node is FormidableForm<Object?>
-      ? node.addChangeListener(_notifyChange)
-      : node.addListener(_notifyChange);
+  /// Follows what is registered: the state of the Dynamic Form holds the state
+  /// of every child, so a change below it is a change of its state.
+  void _follow(FormidableNode node) => node.addListener(_onChildChanged);
 
-  void _unfollow(FormidableNode node) => node is FormidableForm<Object?>
-      ? node.removeChangeListener(_notifyChange)
-      : node.removeListener(_notifyChange);
+  void _unfollow(FormidableNode node) => node.removeListener(_onChildChanged);
 
-  /// Calls [listener] after every change of any child or of the keys, even one
-  /// that leaves [state] equal. A listener of [state] is called only when the
-  /// keys change. A parent Form follows its Dynamic Form with this.
-  void addChangeListener(void Function() listener) {
-    assert(!isDisposed, 'Cannot add a listener to a disposed object.');
-    _changeListeners.add(listener);
+  void _onChildChanged() {
+    _publish();
+    _notifyIfChanged();
   }
 
-  void removeChangeListener(void Function() listener) =>
-      _changeListeners.remove(listener);
+  void _publish() {
+    _state = FormidableDynamicFormState(
+      {for (final entry in _entries.entries) entry.key: entry.value.state()},
+      readers: {
+        for (final entry in _entries.entries) entry.key: entry.value.read,
+      },
+    );
+  }
 
-  void _notifyChange() {
-    if (isDisposed) return;
-    for (final listener in List.of(_changeListeners)) {
-      if (_changeListeners.contains(listener)) listener();
-    }
+  void _notifyIfChanged() {
+    if (_state == _notified) return;
+    _notified = _state;
+    notifyListeners();
   }
 
   // FormidableNode.
@@ -408,7 +530,7 @@ final class FormidableDynamicForm
       node.dispose();
     }
     _entries.clear();
-    _changeListeners.clear();
+    _streamHub?.close();
     super.dispose();
   }
 }
@@ -422,6 +544,8 @@ final class _Entry {
     this.write,
     required this.clear,
     required this.output,
+    required this.read,
+    required this.state,
   });
 
   final Type type;
@@ -431,4 +555,11 @@ final class _Entry {
   final void Function(Object?)? write;
   final void Function() clear;
   final Object? Function() output;
+
+  /// The value of the node from one of its states.
+  final Object? Function(Object state) read;
+
+  /// The current state of the node, a [FormidableFieldState] or the state of
+  /// the Nested Form.
+  final Object Function() state;
 }
