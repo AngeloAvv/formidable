@@ -25,6 +25,9 @@ jobs:
           - packages/formidable_cupertino
           - internal/formidable_test_schemas
           - example
+          - packages/formidable/example
+          - packages/formidable_material/example
+          - packages/formidable_cupertino/example
     uses: ./.github/workflows/analyze.yml
     with:
       working-directory: ${{ matrix.working-directory }}
@@ -42,6 +45,9 @@ jobs:
           - packages/formidable_cupertino
           - internal/formidable_test_schemas
           - example
+          - packages/formidable/example
+          - packages/formidable_material/example
+          - packages/formidable_cupertino/example
     uses: ./.github/workflows/test.yml
     with:
       working-directory: ${{ matrix.working-directory }}
