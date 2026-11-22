@@ -1,3 +1,7 @@
+## 0.2.0
+
+- Released in lockstep with the other packages. Requires `formidable` 0.2.0 and `formidable_flutter` 0.2.0; the widgets use `touch()`, `touched:` and `defined`, with no change to their own API.
+
 ## 0.1.0
 
 - Initial release.

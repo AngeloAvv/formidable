@@ -1,8 +1,19 @@
+## 0.2.0
+
+- **Breaking changes**
+  - The metadata of a Form moves from `state.form` to `state.meta`: `form.state.form.valid` becomes `form.state.meta.valid`, and `FormidableFormState(form: ...)` becomes `FormidableFormState(meta: ...)`.
+  - `isSet` becomes `defined`, on nodes, on states and on `FormidableFormMeta`: `field.isSet` becomes `field.defined`, `state.form.isSet` becomes `state.meta.defined`. `markOptional(initiallySet:)` becomes `markOptional(initiallyDefined:)`.
+  - `markAsTouched()` becomes `touch()`.
+  - `didChange(value, touch: true)` and `clear(touch: true)` take `touched:` instead, so the parameter no longer shadows the `touch()` method.
+  - `isValid`, `isDirty` and `isPending` are no longer public on Fields, Passthrough Fields, Forms, Field Arrays and Dynamic Forms (the runtime keeps them as `@internal`). Read the flags from the state: `field.isValid` becomes `field.state.valid`, `field.isDirty` becomes `field.state.dirty`, `form.isValid`, `form.isDirty` and `form.isPending` become `form.state.meta.valid`, `form.state.meta.dirty` and `form.state.meta.pending`.
+- Every State has a derived `valid` getter: `FormidableFieldState.valid`, `FormidableFormMeta.valid`, `FormidableFieldArrayState.valid` and `FormidableDynamicFormState.valid`. It adds no stored field, so equality and hash codes are unchanged.
+- `FormidableDynamicFormState` gets derived `valid`, `dirty` and `pending` getters.
+- ADR 0005 records that flags are read only from the State.
+
 ## 0.1.0
 
 - Initial release.
-- Typed, reactive Forms built from a Schema: a `FormidableField` per Schema field, immutable state snapshots with deep equality (Field state: value, defined, valid, status, dirty, touched, submitted, enabled, pending; Form state: the state of every child, Field Arrays and Dynamic Forms included, and the metadata of the Form under `state.meta`: status, valid, dirty, pending, defined, errors and the Schema value, built lazily on the first read from the child states) and listeners that notify once per change.
-- Flags are read from the state, never from the node: `field.state.valid`, `field.state.dirty`, `form.state.meta.valid`. A node offers actions (`setValue`, `clear`, `touch()`, `reset`, `commit`, `submit`...) plus `value` and `defined`, which are current even while Form Effects run. See ADR 0005.
+- Typed, reactive Forms built from a Schema: a `FormidableField` per Schema field, immutable state snapshots with deep equality (Field state: value, status, dirty, touched, submitted, enabled, pending; Form state: the state of every child, Field Arrays and Dynamic Forms included, and the metadata of the Form under `state.form`: status, dirty, pending, isSet, errors and the Schema value, built lazily on the first read from the child states) and listeners that notify once per change.
 - Unset is distinct from null, Presence rules (`@Required()`, defaults, nullable Fields) and `@Passthrough()` Fields.
 - Programmatic writes: `patch`, `replace`, `reset`, `commit`, `clear` and `batch`, all as a single change. A chosen null is written with `batch(() => form.notes.setValue(null))`, since a null `patch` argument means "leave unchanged".
 - Normalizers (`@Trim()` and others), Codecs, Form Effects and a catalog of about 150 built-in Validators with typed Validation Errors.
