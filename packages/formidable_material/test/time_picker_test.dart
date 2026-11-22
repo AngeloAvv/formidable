@@ -94,7 +94,7 @@ void main() {
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
-      expect(form.reminder.isSet, isFalse);
+      expect(form.reminder.defined, isFalse);
       expect(form.reminder.state.touched, isTrue);
     });
 
@@ -114,7 +114,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.clear));
       await tester.pump();
 
-      expect(form.alarm.isSet, isTrue);
+      expect(form.alarm.defined, isTrue);
       expect(form.alarm.value, isNull);
       expect(form.alarm.state.dirty, isTrue);
       expect(form.alarm.state.touched, isTrue);
@@ -127,7 +127,7 @@ void main() {
       await tester.pumpWidget(app(picker));
       expect(find.text('This field is required.'), findsNothing);
 
-      form.reminder.markAsTouched();
+      form.reminder.touch();
       await tester.pump();
 
       expect(find.text('This field is required.'), findsOneWidget);
@@ -143,7 +143,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.clear));
       await tester.pump();
 
-      expect(form.reminder.isSet, isFalse);
+      expect(form.reminder.defined, isFalse);
       expect(form.reminder.state.touched, isTrue);
     });
   });

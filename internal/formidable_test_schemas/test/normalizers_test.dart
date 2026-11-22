@@ -10,7 +10,7 @@ void main() {
       form.name.setValue('  Ada  ');
 
       expect(form.name.value, 'Ada');
-      expect(form.name.isSet, isTrue);
+      expect(form.name.defined, isTrue);
     });
 
     test('turns whitespace-only text into Unset, which a required Field '
@@ -19,7 +19,7 @@ void main() {
 
       form.name.setValue(' \t\n ');
 
-      expect(form.name.isSet, isFalse);
+      expect(form.name.defined, isFalse);
       expect(form.name.value, isNull);
       expect(form.name.state.errors, [isA<FormidableRequiredError>()]);
     });
@@ -32,7 +32,7 @@ void main() {
 
         form.nickname.setValue('   ');
 
-        expect(form.nickname.isSet, isFalse);
+        expect(form.nickname.defined, isFalse);
         final valid = await form.submit() as FormidableSubmitValid<Contact>;
         expect(valid.value.nickname, isNull);
       },
@@ -69,7 +69,7 @@ void main() {
 
       form.note.setValue('  ');
 
-      expect(form.note.isSet, isTrue);
+      expect(form.note.defined, isTrue);
       expect(form.note.value, '  ');
     });
 
@@ -78,7 +78,7 @@ void main() {
 
       form.nickname.setValue(null);
 
-      expect(form.nickname.isSet, isTrue);
+      expect(form.nickname.defined, isTrue);
       expect(form.nickname.value, isNull);
     });
   });

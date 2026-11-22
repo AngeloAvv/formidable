@@ -27,7 +27,7 @@ A Field whose value has to be supplied when the Form is created and that can nev
 _Avoid_: Hidden field, internal field, readonly field
 
 **Unset**:
-The state of a Field the user has not given a value yet. This is different from a Field whose chosen value is null.
+The state of a Field the user has not given a value yet. This is different from a Field whose chosen value is null. A Field is Unset when it is not `defined`.
 _Avoid_: Empty, missing, blank
 
 ### Live form
@@ -49,7 +49,7 @@ A part of a Form whose Fields are registered at runtime under string keys rather
 _Avoid_: Untyped form, free form
 
 **State**:
-The immutable snapshot that a Field, a Field Array or a Form publishes, and that listeners, streams and widgets follow. The state of a Form holds the state of every child (Fields, Nested Forms, Field Arrays, Dynamic Forms), one member per Schema field, and its own metadata (status, dirty, pending, errors and the Schema value) under `state.form`. It differs from the previous one whenever anything below the Form changes. The Schema value is built lazily, from the states, on the first read. The generator types the state after the Schema, for example `SignUpFormState`.
+The immutable snapshot that a Field, a Field Array or a Form publishes, and that listeners, streams and widgets follow. Boolean flags (`valid`, `dirty`, `pending`, and on a Field or a Field Array also `touched`, `enabled` and `submitted`) are read from the state, never from the node (`form.state.meta.valid`, `field.state.dirty`). The state of a Form holds the state of every child (Fields, Nested Forms, Field Arrays, Dynamic Forms), one member per Schema field, and its own metadata (status, valid, dirty, pending, defined, errors and the Schema value) under `state.meta`. It differs from the previous one whenever anything below the Form changes. The Schema value is built lazily, from the states, on the first read. The generator types the state after the Schema, for example `SignUpFormState`.
 _Avoid_: Model, view model, store
 
 **Value change**:

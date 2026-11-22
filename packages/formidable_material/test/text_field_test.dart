@@ -42,7 +42,7 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'ang');
 
     expect(form.username.value, 'ang');
-    expect(form.username.isSet, isTrue);
+    expect(form.username.defined, isTrue);
   });
 
   testWidgets('shows the current value again after the Field changes in code', (
@@ -70,7 +70,7 @@ void main() {
 
     await tester.enterText(find.byType(TextField).first, '');
 
-    expect(form.username.isSet, isFalse);
+    expect(form.username.defined, isFalse);
   });
 
   group('error text', () {
@@ -114,7 +114,7 @@ void main() {
     testWidgets('disappears when the value becomes valid', (tester) async {
       late SignUpForm form;
       await tester.pumpWidget(page(create: () => form = SignUpForm()));
-      form.username.markAsTouched();
+      form.username.touch();
       await tester.pump();
       expect(find.text('This field is required.'), findsOneWidget);
 

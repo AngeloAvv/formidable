@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import '../normalizers/normalizer.dart';
 import '../validation/async_validator.dart';
 import '../validation/validation_error.dart';
@@ -62,6 +64,36 @@ final class FormidableDynamicFormState {
   /// [FormidableFieldState] for a Field, the generated state of a Nested Form
   /// for a Nested Form.
   final Map<String, Object> states;
+
+  /// Whether every registered Field and Nested Form is valid, which is true
+  /// while nothing is registered. It is derived from [states].
+  bool get valid => states.values.every(
+    (state) => switch (state) {
+      FormidableFieldState<Object?>(:final valid) => valid,
+      FormidableFormState(:final meta) => meta.valid,
+      _ => true,
+    },
+  );
+
+  /// Whether any registered Field or Nested Form differs from its initial
+  /// state. It is derived from [states].
+  bool get dirty => states.values.any(
+    (state) => switch (state) {
+      FormidableFieldState<Object?>(:final dirty) => dirty,
+      FormidableFormState(:final meta) => meta.dirty,
+      _ => false,
+    },
+  );
+
+  /// Whether any registered Field or Nested Form is still waiting for a
+  /// result. It is derived from [states].
+  bool get pending => states.values.any(
+    (state) => switch (state) {
+      FormidableFieldState<Object?>(:final pending) => pending,
+      FormidableFormState(:final meta) => meta.pending,
+      _ => false,
+    },
+  );
 
   /// The registered keys, in registration order.
   List<String> get keys => states.keys.toList(growable: false);
@@ -290,7 +322,7 @@ final class FormidableDynamicForm
         output: () => field.output,
         read: (state) {
           final fieldState = state as FormidableFieldState<T>;
-          if (fieldState.isSet) return fieldState.value as T;
+          if (fieldState.defined) return fieldState.value as T;
           if (defaultValue != null) return defaultValue;
           if (null is T) return null;
           throw StateError('A required Field is Unset and has no output.');
@@ -313,7 +345,7 @@ final class FormidableDynamicForm
         form,
         clear: form.clear,
         output: () => form.outputOrNull,
-        read: (state) => (state as FormidableFormState).form.value,
+        read: (state) => (state as FormidableFormState).meta.value,
         state: () => form.state,
       ),
     );
@@ -469,12 +501,15 @@ final class FormidableDynamicForm
   // FormidableNode.
 
   @override
+  @internal
   bool get isValid => children.every((node) => node.isValid);
 
   @override
+  @internal
   bool get isDirty => children.any((node) => node.isDirty);
 
   @override
+  @internal
   bool get isPending => children.any((node) => node.isPending);
 
   @override

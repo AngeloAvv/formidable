@@ -50,7 +50,7 @@ void main() {
       );
       expect(find.text('This field is required.'), findsNothing);
 
-      form.notifications.markAsTouched();
+      form.notifications.touch();
       await tester.pump();
 
       expect(find.text('This field is required.'), findsOneWidget);

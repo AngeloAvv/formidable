@@ -167,12 +167,12 @@ void main() {
   group('a parse error in a generated Form', () {
     test('makes an optional Field invalid, and blocks submit', () async {
       final form = MeasurementsForm(age: 30);
-      expect(form.weight.isValid, isTrue);
+      expect(form.weight.state.valid, isTrue);
 
       const error = FormidableNumberParseError(input: '12a');
       form.weight.reject(error);
 
-      expect(form.weight.isSet, isFalse);
+      expect(form.weight.defined, isFalse);
       expect(form.weight.state.errors, [error]);
       final result = await form.submit();
       final invalid = result as FormidableSubmitInvalid<Measurements>;
@@ -223,7 +223,7 @@ void main() {
 
       expect(form.weight.inputError, isNull);
       expect(form.weight.state.errors, isEmpty);
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.status, FormidableStatus.valid);
       expect(await form.submit(), isA<FormidableSubmitValid<Measurements>>());
     });
 

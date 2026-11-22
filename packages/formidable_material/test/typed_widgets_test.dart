@@ -68,7 +68,7 @@ void main() {
         app(
           FormidableTypedFormSelector<SignUpForm, SignUpFormState, String?>(
             form: form,
-            selector: (state) => state.form.value?.username,
+            selector: (state) => state.meta.value?.username,
             builder: (context, username) {
               builds++;
               return Text('u:$username');
@@ -81,7 +81,7 @@ void main() {
       await tester.pump();
       expect(find.text('u:angelo2'), findsOneWidget);
 
-      form.username.markAsTouched(); // the selected value is the same
+      form.username.touch(); // the selected value is the same
       await tester.pump();
       expect(builds, 2);
 
@@ -97,7 +97,7 @@ void main() {
         app(
           FormidableFormBuilder<SignUpForm>(
             form: form,
-            builder: (context, state) => Text('d:${state.form.dirty}'),
+            builder: (context, state) => Text('d:${state.meta.dirty}'),
           ),
         ),
       );
@@ -152,7 +152,7 @@ void main() {
         ),
       );
 
-      form.username.markAsTouched();
+      form.username.touch();
       await tester.pump();
       expect(builds, 1);
 
@@ -172,7 +172,7 @@ void main() {
             create: () => form = SignUpForm(username: 'angelo'),
             child: SignUpFormListener(
               listenWhen: (previous, next) =>
-                  previous.form.dirty != next.form.dirty,
+                  previous.meta.dirty != next.meta.dirty,
               listener: (context, state) => seen.add(state.username.value),
               child: const SizedBox(),
             ),
@@ -198,7 +198,7 @@ void main() {
           SignUpFormScope(
             create: () => form = SignUpForm(),
             child: SignUpFormSelector<bool>(
-              selector: (state) => state.form.value != null,
+              selector: (state) => state.meta.value != null,
               builder: (context, canSubmit) {
                 builds++;
                 return Text('can:$canSubmit');

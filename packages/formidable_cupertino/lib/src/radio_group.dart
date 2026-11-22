@@ -28,7 +28,7 @@ class FormidableCupertinoRadioGroup<T extends Object>
              groupValue: control.value,
              onChanged: (value) {
                if (!control.enabled || value == null) return;
-               control.didChange(value, touch: true);
+               control.didChange(value, touched: true);
              },
              child: child,
            ),

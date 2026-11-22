@@ -91,6 +91,20 @@ void main() {
       );
     });
 
+    test('the state reads valid, dirty and pending from what is registered', () {
+      final form = SurveyForm();
+      expect(form.answers.state.valid, isTrue);
+      expect(form.answers.state.dirty, isFalse);
+      expect(form.answers.state.pending, isFalse);
+
+      final age = form.answers.register<int>('age');
+      expect(form.answers.state.valid, isFalse);
+
+      age.setValue(7);
+      expect(form.answers.state.valid, isTrue);
+      expect(form.answers.state.dirty, isTrue);
+    });
+
     test('fails when nothing is registered under the key', () {
       final form = SurveyForm();
 
@@ -143,11 +157,11 @@ void main() {
     test('makes the Form valid again when the invalid Field goes away', () {
       final form = SurveyForm()..title.setValue('Pets');
       form.answers.register<int>('age');
-      expect(form.state.form.status, FormidableStatus.invalid);
+      expect(form.state.meta.status, FormidableStatus.invalid);
 
       form.answers.remove('age');
 
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.status, FormidableStatus.valid);
     });
 
     test('fails when nothing is registered under the key', () {
@@ -181,9 +195,9 @@ void main() {
       )..setValue('Re');
 
       expect(nickname.state.errors, [isA<FormidableMinLengthError>()]);
-      expect(form.state.form.status, FormidableStatus.invalid);
+      expect(form.state.meta.status, FormidableStatus.invalid);
       nickname.setValue('Rex');
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.status, FormidableStatus.valid);
     });
 
     test('accepts a Validator typed for a supertype of the Field', () {
@@ -242,7 +256,7 @@ void main() {
       );
 
       expect(age.state.errors, [isA<PasswordMismatch>()]);
-      expect(form.state.form.status, FormidableStatus.invalid);
+      expect(form.state.meta.status, FormidableStatus.invalid);
     });
   });
 
@@ -270,7 +284,7 @@ void main() {
       final form = SurveyForm()..title.setValue('Pets');
       form.answers.registerForm(
         'home',
-        PlaceForm()..markOptional(initiallySet: false),
+        PlaceForm()..markOptional(initiallyDefined: false),
       );
 
       expect(form.value!.answers, {'home': null});
@@ -298,7 +312,7 @@ void main() {
 
       country.setValue('FR');
 
-      expect(province.isSet, isFalse);
+      expect(province.defined, isFalse);
     });
 
     test('a Form Effect reacts to a typed Field and writes a dynamic one', () {
@@ -319,7 +333,7 @@ void main() {
       // The new Field counts as changed, so the Effect clears the province.
       form.answers.register<String>('country');
 
-      expect(province.isSet, isFalse);
+      expect(province.defined, isFalse);
     });
 
     test('a Form Validator addresses dynamic Fields', () {
@@ -360,7 +374,7 @@ void main() {
       age.setValue(7);
 
       expect(formCalls, 1);
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.status, FormidableStatus.valid);
     });
   });
 
@@ -370,7 +384,7 @@ void main() {
 
       form.answers.register<String?>('nickname');
 
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
     });
 
     test('writing a dynamic Field makes the Form dirty and back again', () {
@@ -378,11 +392,10 @@ void main() {
       final nickname = form.answers.register<String?>('nickname');
 
       nickname.setValue('Rex');
-      expect(form.state.form.dirty, isTrue);
-      expect(form.answers.isDirty, isTrue);
+      expect(form.state.meta.dirty, isTrue);
 
       nickname.clear();
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
     });
 
     test('reset restores the values and keeps the Fields registered', () {
@@ -392,9 +405,9 @@ void main() {
 
       form.reset();
 
-      expect(nickname.isSet, isFalse);
+      expect(nickname.defined, isFalse);
       expect(form.answers.contains('nickname'), isTrue);
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
     });
 
     test('commit makes the current values the initial state', () {
@@ -403,7 +416,7 @@ void main() {
       nickname.setValue('Rex');
 
       form.commit();
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
 
       nickname.setValue('Max');
       form.reset();
@@ -422,7 +435,7 @@ void main() {
         final age = form.answers.register<int>('age');
 
         expect(age.value, 7);
-        expect(form.state.form.dirty, isFalse);
+        expect(form.state.meta.dirty, isFalse);
         expect(form.value!.answers, {'age': 7});
       },
     );
@@ -465,7 +478,7 @@ void main() {
 
       expect(form.title.value, 'Cats');
       expect(age.value, 3);
-      expect(nickname.isSet, isFalse);
+      expect(nickname.defined, isFalse);
     });
 
     test('a written value of the wrong type fails with a clear error', () {

@@ -22,7 +22,7 @@ abstract class FormidableEffect<F extends FormidableForm<Object?>> {
   /// Applies the rule to [form].
   ///
   /// Read Fields through [FormidableField.value] and
-  /// [FormidableField.isSet]: their `state` (errors included) is only updated
+  /// [FormidableField.defined]: their `state` (errors included) is only updated
   /// after every Effect has run.
   void apply(F form, FormidableEffectContext context);
 }

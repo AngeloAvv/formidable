@@ -26,7 +26,7 @@ void main() {
         await tester.pump();
       }
 
-      expect(beta.isSet, isTrue);
+      expect(beta.defined, isTrue);
       expect(beta.value, isNull);
       expect(beta.state.dirty, isTrue);
       expect(beta.state.touched, isTrue);
@@ -49,7 +49,7 @@ void main() {
       await tester.tap(find.byType(CupertinoCheckbox)); // true -> mixed
       await tester.pump();
 
-      expect(beta.isSet, isTrue);
+      expect(beta.defined, isTrue);
       expect(beta.value, isNull);
       expect(beta.state.dirty, isTrue);
     });
@@ -68,7 +68,7 @@ void main() {
         await tester.pump();
       }
 
-      expect(beta.isSet, isFalse);
+      expect(beta.defined, isFalse);
       expect(beta.state.touched, isTrue);
     });
   });

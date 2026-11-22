@@ -25,6 +25,6 @@ class FormidableWheelsState<V extends Object>
   void wheelsChanged(V value) {
     if (!enabled) return;
     _reported = value;
-    didChange(value, touch: true);
+    didChange(value, touched: true);
   }
 }

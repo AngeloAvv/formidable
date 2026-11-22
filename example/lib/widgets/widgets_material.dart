@@ -158,7 +158,7 @@ class _ProfileBodyState extends State<_ProfileBody> {
                 divisions: 4,
                 focusNode: control.focusNode,
                 onChanged: (position) =>
-                    control.didChange(position, touch: true),
+                    control.didChange(position, touched: true),
               ),
               FormidableMaterialErrorLine(text: control.errorText),
             ],

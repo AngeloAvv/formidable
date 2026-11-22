@@ -55,7 +55,7 @@ class FormidableMaterialSwitch extends FormidableFieldWidget<bool, bool> {
                Switch(
                  value: value,
                  onChanged: control.enabled
-                     ? (next) => control.didChange(next, touch: true)
+                     ? (next) => control.didChange(next, touched: true)
                      : null,
                  focusNode: control.focusNode,
                  activeThumbColor: activeThumbColor,

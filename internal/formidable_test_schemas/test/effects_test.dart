@@ -11,7 +11,7 @@ void main() {
 
       form.country.setValue('FR');
 
-      expect(form.province.isSet, isFalse);
+      expect(form.province.defined, isFalse);
     });
 
     test('see a change only in the Effects that ask for it', () {
@@ -107,7 +107,7 @@ void main() {
       form.country.setValue('FR');
 
       expect(seen, hasLength(1));
-      expect(seen.single.isSet, isFalse);
+      expect(seen.single.defined, isFalse);
       expect(seen.single.errors, isEmpty);
     });
 
@@ -123,11 +123,11 @@ void main() {
 
     test('leave a touched Field touched', () {
       final form = AddressForm(revision: 0, country: 'IT', province: 'MI');
-      form.province.markAsTouched();
+      form.province.touch();
 
       form.country.setValue('FR');
 
-      expect(form.province.isSet, isFalse);
+      expect(form.province.defined, isFalse);
       expect(form.province.state.touched, isTrue);
     });
 
@@ -176,7 +176,7 @@ void main() {
       form.armed.setValue(false);
       form.ping.setValue(5);
 
-      expect(form.pong.isSet, isFalse);
+      expect(form.pong.defined, isFalse);
     });
   });
 }

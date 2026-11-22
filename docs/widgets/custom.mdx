@@ -39,14 +39,14 @@ FormidableFieldWidget<Color?, Color?>(
   builder: (context, control) => SwatchPicker(
     colors: const [Colors.red, Colors.green, Colors.blue],
     selected: control.value,
-    onSelected: (color) => control.didChange(color, touch: true),
+    onSelected: (color) => control.didChange(color, touched: true),
     errorText: control.errorText,
   ),
 )
 ```
 
 - `control.value` is what the Field holds, so the picker follows changes made in code (a reset, a patch).
-- `control.didChange(color, touch: true)` writes the Field and marks it touched. The picker can't "lose focus", so the first tap is what counts, and `errorText` shows after it. Without `touch: true`, the error shows after the picker's focus node loses focus; give `control.focusNode` to a `Focus` widget around the picker to get that.
+- `control.didChange(color, touched: true)` writes the Field and marks it touched. The picker can't "lose focus", so the first tap is what counts, and `errorText` shows after it. Without `touched: true`, the error shows after the picker's focus node loses focus; give `control.focusNode` to a `Focus` widget around the picker to get that.
 - `control.errorText` is null until the error should show, with the same policy and Validation Messages as every other Formidable widget.
 
 ## As a subclass
@@ -66,7 +66,7 @@ class FormidableColorPicker extends FormidableFieldWidget<Color?, Color?> {
          builder: (context, control) => SwatchPicker(
            colors: colors,
            selected: control.value,
-           onSelected: (color) => control.didChange(color, touch: true),
+           onSelected: (color) => control.didChange(color, touched: true),
            errorText: control.errorText,
          ),
        );
@@ -89,9 +89,9 @@ class _CountingState extends FormidableFieldWidgetState<Color?, Color?> {
   int writes = 0;
 
   @override
-  void didChange(Color? value, {bool touch = false}) {
+  void didChange(Color? value, {bool touched = false}) {
     writes++;
-    super.didChange(value, touch: touch);
+    super.didChange(value, touched: touched);
   }
 }
 ```
@@ -117,7 +117,7 @@ FormidableFieldWidget<int, double>(
   codec: const RatingCodec(),
   builder: (context, control) => Slider(
     value: control.value ?? 0,
-    onChanged: (position) => control.didChange(position, touch: true),
+    onChanged: (position) => control.didChange(position, touched: true),
   ),
 )
 ```
@@ -130,7 +130,7 @@ A widget that takes text input uses the same helpers as the text fields: give `c
 
 ## What the widget gives you
 
-- The Field is **touched** when the focus node loses focus, or on `touch: true`.
+- The Field is **touched** when the focus node loses focus, or on `touched: true`.
 - It is registered for **focus navigation** and for focusing the first invalid Field on submit.
 - It rebuilds when the Field changes: value, errors, enabled, pending.
 - The focus node is **owned** by the control and disposed with it, unless you pass `focusNode:`, which is never disposed by the widget.

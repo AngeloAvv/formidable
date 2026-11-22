@@ -20,7 +20,7 @@ void main() {
     test('does not run while the Field is Unset', () {
       final form = _form();
 
-      expect(form.lucky.isSet, isFalse);
+      expect(form.lucky.defined, isFalse);
       expect(form.lucky.state.errors, isEmpty);
     });
 
@@ -95,7 +95,7 @@ void main() {
       form.reset();
 
       expect(form.confirmation.state.errors, isEmpty);
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.status, FormidableStatus.valid);
       expect(notifications, 1);
     });
 
@@ -154,7 +154,7 @@ void main() {
 
       form.password.setValue('another-one');
 
-      expect(form.state.form.status, FormidableStatus.invalid);
+      expect(form.state.meta.status, FormidableStatus.invalid);
       expect(notifications, greaterThan(0));
     });
 

@@ -53,7 +53,7 @@ class FormidableMaterialSegmentedButton<T> extends FormidableFieldWidget<T, T> {
                    enabled: segment.enabled,
                  ),
              ],
-             selected: {if (control.isSet) (control.value as T,)},
+             selected: {if (control.defined) (control.value as T,)},
              // The empty selection is how an Unset Field is shown.
              // Deselecting is filtered below, so it only happens with
              // allowDeselect.
@@ -61,11 +61,11 @@ class FormidableMaterialSegmentedButton<T> extends FormidableFieldWidget<T, T> {
              onSelectionChanged: control.enabled
                  ? (selection) {
                      if (selection.isNotEmpty) {
-                       control.didChange(selection.first.$1, touch: true);
+                       control.didChange(selection.first.$1, touched: true);
                      } else if (allowDeselect) {
                        // Deselecting is a choice: null when the Field admits
                        // it, Unset when it does not.
-                       control.didChange(null, touch: true);
+                       control.didChange(null, touched: true);
                      }
                    }
                  : null,

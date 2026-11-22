@@ -66,7 +66,7 @@ void main() {
       expect(builds, 1);
       expect(find.text('v:null'), findsOneWidget);
 
-      form.username.markAsTouched();
+      form.username.touch();
       await tester.pump();
       expect(builds, 2);
       expect(find.text('v:abc'), findsOneWidget);
@@ -246,7 +246,7 @@ void main() {
           SignUpFormScope(
             create: () => form = SignUpForm(),
             child: FormidableFormBuilder<SignUpForm>(
-              builder: (context, state) => Text('s:${state.form.status.name}'),
+              builder: (context, state) => Text('s:${state.meta.status.name}'),
             ),
           ),
         ),
@@ -268,7 +268,7 @@ void main() {
         app(
           FormidableFormBuilder<SignUpForm>(
             form: form,
-            builder: (context, state) => Text('d:${state.form.dirty}'),
+            builder: (context, state) => Text('d:${state.meta.dirty}'),
           ),
         ),
       );
@@ -288,7 +288,7 @@ void main() {
           FormidableFormBuilder<SignUpForm>(
             form: form,
             buildWhen: (previous, current) =>
-                previous.form.status != current.form.status,
+                previous.meta.status != current.meta.status,
             builder: (context, state) {
               builds++;
               return const SizedBox();
@@ -314,8 +314,8 @@ void main() {
           FormidableFormListener<SignUpForm>(
             form: form,
             listenWhen: (previous, current) =>
-                previous.form.status != current.form.status,
-            listener: (context, state) => seen.add(state.form.status),
+                previous.meta.status != current.meta.status,
+            listener: (context, state) => seen.add(state.meta.status),
             child: const SizedBox(),
           ),
         ),
@@ -336,7 +336,7 @@ void main() {
           SignUpFormScope(
             create: () => form = SignUpForm(),
             child: FormidableFormListener<SignUpForm>(
-              listener: (context, state) => seen.add(state.form.status),
+              listener: (context, state) => seen.add(state.meta.status),
               child: const SizedBox(),
             ),
           ),
@@ -357,7 +357,7 @@ void main() {
         app(
           FormidableFormSelector<SignUpForm, String?>(
             form: form,
-            selector: (state) => (state.form.value as SignUp?)?.username,
+            selector: (state) => (state.meta.value as SignUp?)?.username,
             builder: (context, username) {
               builds++;
               return Text('u:$username');
@@ -387,7 +387,7 @@ void main() {
         app(
           FormidableFormSelector<SignUpForm, bool>(
             form: form,
-            selector: (state) => state.form.value != null,
+            selector: (state) => state.meta.value != null,
             builder: (context, canSubmit) {
               builds++;
               return Text('can:$canSubmit');
@@ -557,7 +557,7 @@ void main() {
         app(
           ValueListenableBuilder<FormidableFormState>(
             valueListenable: form.asValueListenable(),
-            builder: (context, state, _) => Text('s:${state.form.status.name}'),
+            builder: (context, state, _) => Text('s:${state.meta.status.name}'),
           ),
         ),
       );

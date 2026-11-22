@@ -50,7 +50,7 @@ class FormidableCupertinoSwitch extends FormidableFieldWidget<bool?, bool?> {
            child: CupertinoSwitch(
              value: control.value ?? false,
              onChanged: control.enabled
-                 ? (value) => control.didChange(value, touch: true)
+                 ? (value) => control.didChange(value, touched: true)
                  : null,
              activeTrackColor: activeTrackColor,
              inactiveTrackColor: inactiveTrackColor,

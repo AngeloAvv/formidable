@@ -95,7 +95,7 @@ void main() {
 
       await type(tester, '');
 
-      expect(form.weight.isSet, isFalse);
+      expect(form.weight.defined, isFalse);
       expect(form.weight.state.errors, isEmpty);
     });
 
@@ -120,7 +120,7 @@ void main() {
       expect(form.nickname.value, 'angelo');
 
       await type(tester, '');
-      expect(form.nickname.isSet, isFalse);
+      expect(form.nickname.defined, isFalse);
     });
 
     testWidgets('works with a DateTime Field', (tester) async {
@@ -154,7 +154,7 @@ void main() {
 
       await type(tester, '12a');
 
-      expect(form.weight.isSet, isFalse);
+      expect(form.weight.defined, isFalse);
       expect(form.weight.state.errors, [
         const FormidableNumberParseError(input: '12a'),
       ]);
@@ -254,8 +254,8 @@ void main() {
 
         await tester.enterText(find.byType(TextField).at(0), 'x');
         await tester.enterText(find.byType(TextField).at(1), 'y');
-        form.weight.markAsTouched();
-        form.born.markAsTouched();
+        form.weight.touch();
+        form.born.touch();
         await tester.pump();
 
         expect(find.text(number[language]!), findsOneWidget);

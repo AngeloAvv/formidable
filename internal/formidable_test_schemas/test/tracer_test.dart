@@ -56,7 +56,7 @@ void main() {
       test('from an existing Schema instance sets every Field', () {
         final form = SignUpForm.from(const SignUp(username: 'angelo'));
 
-        expect(form.username.isSet, isTrue);
+        expect(form.username.defined, isTrue);
         expect(form.username.value, 'angelo');
       });
 
@@ -65,7 +65,7 @@ void main() {
         final omitted = SignUpForm();
 
         expect(prefilled.username.value, 'angelo');
-        expect(omitted.username.isSet, isFalse);
+        expect(omitted.username.defined, isFalse);
         expect(omitted.username.value, isNull);
       });
     });
@@ -79,12 +79,12 @@ void main() {
 
           form.username.setValue('ab');
 
-          expect(before.isSet, isFalse);
+          expect(before.defined, isFalse);
           expect(before.touched, isFalse);
           expect(before.errors, [isA<FormidableRequiredError>()]);
           final after = form.username.state;
           expect(after.value, 'ab');
-          expect(after.isSet, isTrue);
+          expect(after.defined, isTrue);
           expect(after.status, FormidableStatus.invalid);
           expect(after.errors, [
             const FormidableMinLengthError(minLength: 4, actualLength: 2),
@@ -102,14 +102,14 @@ void main() {
       test('clear returns the Field to Unset', () {
         final form = SignUpForm(username: 'angelo')..username.clear();
 
-        expect(form.username.isSet, isFalse);
+        expect(form.username.defined, isFalse);
         expect(form.username.state.errors, [isA<FormidableRequiredError>()]);
       });
 
       test('becomes touched once marked as touched', () {
         final form = SignUpForm();
 
-        form.username.markAsTouched();
+        form.username.touch();
 
         expect(form.username.state.touched, isTrue);
       });
@@ -125,8 +125,8 @@ void main() {
 
         form.username.setValue('ab');
         form.username.setValue('ab');
-        form.username.markAsTouched();
-        form.username.markAsTouched();
+        form.username.touch();
+        form.username.touch();
 
         expect(fieldNotifications, 2);
         // The Form state holds the state of the Field: it follows it.
@@ -136,7 +136,7 @@ void main() {
 
         expect(fieldNotifications, 3);
         expect(formNotifications, 3);
-        expect(form.state.form.status, FormidableStatus.valid);
+        expect(form.state.meta.status, FormidableStatus.valid);
       });
 
       test('stop after a listener is removed or the Form is disposed', () {
@@ -170,7 +170,7 @@ void main() {
         () async {
           final form = ProfileForm(email: 'a@b.c');
           expect(form.bio.value, '');
-          expect(form.bio.isSet, isTrue);
+          expect(form.bio.defined, isTrue);
 
           form.bio.setValue('hello');
           form.bio.clear();
@@ -183,9 +183,9 @@ void main() {
       test('a Field set to null is different from an Unset Field', () {
         final form = ProfileForm(email: 'a@b.c')..nickname.setValue(null);
 
-        expect(form.nickname.isSet, isTrue);
+        expect(form.nickname.defined, isTrue);
         expect(form.nickname.value, isNull);
-        expect(ProfileForm(email: 'a@b.c').nickname.isSet, isFalse);
+        expect(ProfileForm(email: 'a@b.c').nickname.defined, isFalse);
       });
     });
   });

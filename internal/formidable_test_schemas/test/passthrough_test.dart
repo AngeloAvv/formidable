@@ -40,13 +40,12 @@ void main() {
       expect(valid.value.id, 8);
     });
 
-    test('are never invalid and never decide the Form status', () {
+    test('never decide the Form status', () {
       final form = EditUserForm(id: 7);
 
-      expect(form.id.isValid, isTrue);
-      expect(form.state.form.status, FormidableStatus.invalid); // name is Unset
+      expect(form.state.meta.status, FormidableStatus.invalid); // name is Unset
       form.name.setValue('x');
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.status, FormidableStatus.valid);
     });
 
     test('a nullable Passthrough can be set to null', () async {

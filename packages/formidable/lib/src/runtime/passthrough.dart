@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import '../validation/validation_error.dart';
 import 'node.dart';
 import 'notifier.dart';
@@ -80,12 +82,15 @@ final class FormidablePassthrough<T>
   T get output => _value;
 
   @override
+  @internal
   bool get isValid => true;
 
   @override
+  @internal
   bool get isDirty => _value != _initial;
 
   @override
+  @internal
   bool get isPending => false;
 
   @override

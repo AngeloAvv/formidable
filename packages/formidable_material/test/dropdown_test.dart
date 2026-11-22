@@ -70,7 +70,7 @@ void main() {
       await tester.pumpWidget(app(dropdown));
       expect(find.text('This field is required.'), findsNothing);
 
-      form.country.markAsTouched();
+      form.country.touch();
       await tester.pump();
 
       expect(find.text('This field is required.'), findsOneWidget);

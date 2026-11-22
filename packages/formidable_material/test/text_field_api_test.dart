@@ -226,7 +226,7 @@ void main() {
 
   group('decoration', () {
     testWidgets('keeps what the caller set and adds the error', (tester) async {
-      name.markAsTouched();
+      name.touch();
       await tester.pumpWidget(
         app(
           FormidableMaterialTextField<String>(
@@ -255,7 +255,7 @@ void main() {
     testWidgets('an errorText of the caller wins over the Field', (
       tester,
     ) async {
-      name.markAsTouched();
+      name.touch();
       await tester.pumpWidget(
         app(
           FormidableMaterialTextField<String>(
@@ -292,7 +292,7 @@ void main() {
             builder: (context, state) => FormidableMaterialTextField<String>(
               field: name,
               decoration: InputDecoration(
-                suffixIcon: state.isSet
+                suffixIcon: state.defined
                     ? IconButton(
                         icon: const Icon(Icons.clear),
                         onPressed: name.clear,
@@ -312,7 +312,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.clear));
       await tester.pump();
 
-      expect(name.isSet, isFalse);
+      expect(name.defined, isFalse);
       expect(find.byIcon(Icons.clear), findsNothing);
       expect(
         tester.widget<EditableText>(find.byType(EditableText)).controller.text,
@@ -321,7 +321,7 @@ void main() {
     });
 
     testWidgets('a null decoration draws none, and no error', (tester) async {
-      name.markAsTouched();
+      name.touch();
       await tester.pumpWidget(
         app(FormidableMaterialTextField<String>(field: name, decoration: null)),
       );

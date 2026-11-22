@@ -65,7 +65,7 @@ void main() {
     await tester.pump();
 
     expect(shown(tester), '  ');
-    expect(form.city.isSet, isFalse);
+    expect(form.city.defined, isFalse);
   });
 
   testWidgets('shows a value written in code, after the user typed', (

@@ -38,14 +38,14 @@ On a nullable Field, `setValue(null)` is a value, and `clear()` makes the Field 
 ```dart
 final form = ProfileForm(email: 'a@b.c');
 
-form.nickname.isSet;        // false: Unset
+form.nickname.defined;  // false: Unset
 form.nickname.setValue(null);
-form.nickname.isSet;        // true: null was chosen
+form.nickname.defined;  // true: null was chosen
 form.nickname.clear();
-form.nickname.isSet;        // false again
+form.nickname.defined;  // false again
 ```
 
-`value` is `null` in both cases, so read `isSet` to tell them apart. The Field state snapshot (`form.nickname.state`) also carries `isSet`.
+`value` is `null` in both cases, so read `defined` to tell them apart. The Field state snapshot (`form.nickname.state`) also carries `defined`.
 
 `setValue` takes exactly the Field's type: the compiler rejects `null` for a non-nullable Field.
 

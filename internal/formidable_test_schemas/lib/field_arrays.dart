@@ -81,7 +81,7 @@ class FirstPlaceNeedsStreet extends FormidableFormValidator<DirectoryForm> {
 
   @override
   List<FormidableFieldError> validate(DirectoryForm form) =>
-      form.places.isNotEmpty && !form.places.items.first.node.street.isSet
+      form.places.isNotEmpty && !form.places.items.first.node.street.defined
       ? [
           FormidableFieldError(
             form.places.items.first.node.street,

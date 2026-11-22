@@ -152,7 +152,7 @@ void main() {
       await pump(tester, slider);
 
       expect(current(tester).value, 0);
-      expect(form.volume.isSet, isFalse);
+      expect(form.volume.defined, isFalse);
     });
 
     testWidgets('dragging sets the Field and touches it', (tester) async {
@@ -165,7 +165,7 @@ void main() {
       await gesture.up();
       await tester.pumpAndSettle();
 
-      expect(form.volume.isSet, isTrue);
+      expect(form.volume.defined, isTrue);
       expect(form.volume.value, greaterThan(0));
       expect(form.volume.state.touched, isTrue);
     });

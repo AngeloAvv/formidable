@@ -1,3 +1,5 @@
+import 'package:meta/meta.dart';
+
 import '../validation/validation_error.dart';
 import 'pipeline.dart';
 
@@ -13,12 +15,15 @@ import 'pipeline.dart';
 /// the snapshot changed".
 abstract interface class FormidableNode {
   /// Whether this node and everything below it has no errors.
+  @internal
   bool get isValid;
 
   /// Whether this node or anything below it differs from its initial state.
+  @internal
   bool get isDirty;
 
   /// Whether this node or anything below it is still waiting for a result.
+  @internal
   bool get isPending;
 
   /// Adds the errors of this node and of everything below it to [into], in

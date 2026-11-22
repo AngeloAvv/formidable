@@ -16,7 +16,7 @@ void main() {
       expect(form.phones.length, 2);
       final first = form.phones.items[0].node;
       expect(first, isA<TelephoneForm>());
-      expect(first.number.isSet, isFalse);
+      expect(first.number.defined, isFalse);
       expect(form.phones.items[1].node.number.value, '555');
     });
 
@@ -108,7 +108,7 @@ void main() {
       form.phones.clear();
 
       expect(form.phones.length, 0);
-      expect(form.phones.isSet, isFalse);
+      expect(form.phones.defined, isFalse);
     });
   });
 
@@ -141,7 +141,43 @@ void main() {
       form.phones.items.first.node.number.setValue('5');
 
       expect(states, hasLength(1));
-      expect(states.single.form.status, FormidableStatus.invalid);
+      expect(states.single.meta.status, FormidableStatus.invalid);
+    });
+
+    test('valid reads the errors of the array and of every item', () {
+      final form = PersonForm();
+      form.phones.add(const Telephone(number: '555'));
+      expect(form.phones.state.valid, isTrue);
+
+      form.phones.items.first.node.number.setValue('5');
+
+      expect(form.phones.state.valid, isFalse);
+      expect(form.phones.state.errors, isEmpty);
+    });
+
+    test('valid is true for an empty array with no array level errors', () {
+      final form = PersonForm();
+
+      expect(form.phones.state.items, isEmpty);
+      expect(form.phones.state.valid, isTrue);
+    });
+
+    test('valid is false for an empty array that has errors of its own', () {
+      final form = TeamForm();
+
+      expect(form.members.state.errors, isNotEmpty);
+      expect(form.members.state.valid, isFalse);
+    });
+
+    test('valid reads an item that is a Field', () {
+      final form = LabelsForm();
+      form.tags.add();
+
+      expect(form.tags.state.valid, isFalse);
+
+      form.tags.items.first.node.setValue('flutter');
+
+      expect(form.tags.state.valid, isTrue);
     });
 
     test('a Form listener hears every item edit', () {
@@ -161,14 +197,14 @@ void main() {
     test('an invalid item makes the Form invalid, a fixed one valid again', () {
       final form = PersonForm()..name.setValue('A');
       form.phones.add(const Telephone(number: '555'));
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.status, FormidableStatus.valid);
 
       form.phones.add();
-      expect(form.state.form.status, FormidableStatus.invalid);
+      expect(form.state.meta.status, FormidableStatus.invalid);
       expect(form.value, isNull);
 
       form.phones.removeAt(1);
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.status, FormidableStatus.valid);
       expect(form.value!.phones.single.number, '555');
     });
 
@@ -193,9 +229,9 @@ void main() {
     test('an empty required array is Unset and invalid', () {
       final form = TeamForm();
 
-      expect(form.members.isSet, isFalse);
+      expect(form.members.defined, isFalse);
       expect(form.members.state.errors, [const FormidableRequiredError()]);
-      expect(form.state.form.status, FormidableStatus.invalid);
+      expect(form.state.meta.status, FormidableStatus.invalid);
     });
 
     test('MinItems and MaxItems judge the number of items', () {
@@ -295,7 +331,7 @@ void main() {
 
       expect(form.phones.length, 2);
       expect(form.phones.items[1].node.label.value, 'x');
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
     });
 
     test('the partial constructor takes a list', () {
@@ -314,12 +350,12 @@ void main() {
       final original = form.phones.items.first.node;
 
       form.phones.add();
-      expect(form.state.form.dirty, isTrue);
+      expect(form.state.meta.dirty, isTrue);
 
       form.phones.removeAt(0);
       form.reset();
 
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
       expect(form.phones.length, 1);
       expect(form.phones.items.first.node, same(original));
       expect(original.number.value, '555');
@@ -337,10 +373,10 @@ void main() {
       );
 
       form.phones.move(0, 1);
-      expect(form.state.form.dirty, isTrue);
+      expect(form.state.meta.dirty, isTrue);
 
       form.reset();
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
       expect(form.phones.items.map((i) => i.node.number.value), ['aaa', 'bbb']);
     });
 
@@ -353,10 +389,10 @@ void main() {
       );
 
       form.phones.items.first.node.number.setValue('777');
-      expect(form.state.form.dirty, isTrue);
+      expect(form.state.meta.dirty, isTrue);
 
       form.commit();
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
 
       form.reset();
       expect(form.phones.items.first.node.number.value, '777');
@@ -453,7 +489,7 @@ void main() {
 
       expect(form.tags.length, 2);
       expect(form.tags.items.first.node.value, 'flutter');
-      expect(form.tags.items.last.node.isSet, isFalse);
+      expect(form.tags.items.last.node.defined, isFalse);
     });
 
     test('items use the each Validators and Normalizers', () {
@@ -548,7 +584,7 @@ void main() {
 
       form.places.items[0].node.street.setValue('C');
 
-      expect(form.places.items[0].node.zip.isSet, isFalse);
+      expect(form.places.items[0].node.zip.defined, isFalse);
       expect(form.places.items[1].node.zip.value, '2');
     });
 
@@ -578,11 +614,11 @@ void main() {
     test('a removed item no longer takes part in validation', () {
       final form = DirectoryForm();
       form.logins.add(const Credentials(password: 'a', confirmation: 'b'));
-      expect(form.state.form.status, FormidableStatus.invalid);
+      expect(form.state.meta.status, FormidableStatus.invalid);
 
       form.logins.removeAt(0);
 
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.status, FormidableStatus.valid);
     });
   });
 }

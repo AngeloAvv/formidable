@@ -4,11 +4,11 @@ import 'status.dart';
 /// An immutable snapshot of a Field.
 ///
 /// [value] is null both when the Field is Unset and when null was chosen, so
-/// read [isSet] to tell them apart.
+/// read [defined] to tell them apart.
 final class FormidableFieldState<T> {
   FormidableFieldState({
     required this.value,
-    required this.isSet,
+    required this.defined,
     required List<FormidableValidationError> errors,
     required this.touched,
     this.dirty = false,
@@ -21,7 +21,7 @@ final class FormidableFieldState<T> {
   final T? value;
 
   /// Whether the Field holds a value. An Unset Field is not set.
-  final bool isSet;
+  final bool defined;
 
   /// Every error of the Field, in the order of its annotations.
   final List<FormidableValidationError> errors;
@@ -46,6 +46,9 @@ final class FormidableFieldState<T> {
   /// check are not in [errors] yet.
   final bool pending;
 
+  /// Whether the Field has no errors. It is derived from [errors].
+  bool get valid => errors.isEmpty;
+
   FormidableStatus get status =>
       errors.isEmpty ? FormidableStatus.valid : FormidableStatus.invalid;
 
@@ -53,7 +56,7 @@ final class FormidableFieldState<T> {
   bool operator ==(Object other) =>
       other is FormidableFieldState<T> &&
       other.value == value &&
-      other.isSet == isSet &&
+      other.defined == defined &&
       other.touched == touched &&
       other.dirty == dirty &&
       other.enabled == enabled &&
@@ -64,7 +67,7 @@ final class FormidableFieldState<T> {
   @override
   int get hashCode => Object.hash(
     value,
-    isSet,
+    defined,
     touched,
     dirty,
     enabled,
@@ -75,7 +78,7 @@ final class FormidableFieldState<T> {
 
   @override
   String toString() =>
-      'FormidableFieldState(value: $value, isSet: $isSet, '
+      'FormidableFieldState(value: $value, defined: $defined, '
       'touched: $touched, dirty: $dirty, enabled: $enabled, '
       'submitted: $submitted, pending: $pending, errors: $errors)';
 

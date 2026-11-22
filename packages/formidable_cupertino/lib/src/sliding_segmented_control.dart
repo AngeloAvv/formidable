@@ -47,7 +47,7 @@ class FormidableCupertinoSlidingSegmentedControl<T extends Object>
                    : null,
                onValueChanged: (value) {
                  if (!control.enabled || value == null) return;
-                 control.didChange(value, touch: true);
+                 control.didChange(value, touched: true);
                },
                disabledChildren: disabledChildren,
                thumbColor: thumbColor ?? defaults.thumbColor,

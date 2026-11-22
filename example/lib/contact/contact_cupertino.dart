@@ -114,7 +114,7 @@ class _EditBodyState extends State<_EditBody> {
         },
       );
       // The user may not have left the Field yet: show the error now.
-      form.email.markAsTouched();
+      form.email.touch();
       return;
     }
     widget.store.save(form.value!);
@@ -162,7 +162,7 @@ class _EditBodyState extends State<_EditBody> {
           spacing: 12,
           children: [
             ContactFormSelector<bool>(
-              selector: (state) => state.form.value != null && state.form.dirty,
+              selector: (state) => state.meta.value != null && state.meta.dirty,
               builder: (context, canSave) => CupertinoButton.filled(
                 onPressed: canSave ? () => _save(form) : null,
                 child: const Text('Save'),

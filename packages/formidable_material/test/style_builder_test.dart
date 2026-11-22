@@ -38,7 +38,7 @@ void main() {
       expect(style(tester), isNull);
 
       await tester.enterText(find.byType(TextField), 'ab');
-      name.markAsTouched();
+      name.touch();
       await tester.pump();
       expect(style(tester)?.color, Colors.red);
 

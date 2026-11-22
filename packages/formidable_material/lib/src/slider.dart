@@ -71,7 +71,7 @@ class FormidableMaterialSlider<T extends num?>
                  focusNode: control.focusNode,
                  onChanged: control.enabled
                      ? (next) =>
-                           control.didChange(_toFieldType<T>(next), touch: true)
+                           control.didChange(_toFieldType<T>(next), touched: true)
                      : null,
                  secondaryTrackValue: secondaryTrackValue,
                  onChangeStart: onChangeStart,

@@ -71,32 +71,32 @@ void main() {
     test('has status, dirty, pending and Form-level errors', () {
       final form = SignUpForm();
 
-      expect(form.state.form.status, FormidableStatus.invalid);
-      expect(form.state.form.dirty, isFalse);
-      expect(form.state.form.pending, isFalse);
-      expect(form.state.form.errors, isEmpty);
+      expect(form.state.meta.status, FormidableStatus.invalid);
+      expect(form.state.meta.dirty, isFalse);
+      expect(form.state.meta.pending, isFalse);
+      expect(form.state.meta.errors, isEmpty);
     });
 
     test('is dirty while any Field is dirty and clean again afterwards', () {
       final form = ProfileForm(email: 'a@b.c');
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
 
       form.nickname.setValue('ange');
-      expect(form.state.form.dirty, isTrue);
+      expect(form.state.meta.dirty, isTrue);
 
       form.nickname.clear();
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
     });
 
     test('a Passthrough Field makes the Form dirty when it changes', () {
       final form = EditUserForm(id: 1, name: 'a');
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
 
       form.id.setValue(2);
-      expect(form.state.form.dirty, isTrue);
+      expect(form.state.meta.dirty, isTrue);
 
       form.id.setValue(1);
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
     });
 
     test('notifies on every change of the Form, in order', () {
@@ -107,9 +107,9 @@ void main() {
       form.username.setValue('ab'); // dirty changes
       form.username.setValue('abc'); // still dirty and invalid
       form.username.setValue('angelo'); // valid
-      form.username.markAsTouched(); // touched is part of the state now
+      form.username.touch(); // touched is part of the state now
 
-      expect(seen.map((s) => (s.form.status, s.form.dirty)), [
+      expect(seen.map((s) => (s.meta.status, s.meta.dirty)), [
         (FormidableStatus.invalid, true),
         (FormidableStatus.invalid, true),
         (FormidableStatus.valid, true),
@@ -123,10 +123,10 @@ void main() {
 
       form.username.setValue('angelo');
 
-      expect(before.form.status, FormidableStatus.invalid);
+      expect(before.meta.status, FormidableStatus.invalid);
       expect(form.state, isNot(before));
       expect(
-        () => before.form.errors.add(const FormidableRequiredError()),
+        () => before.meta.errors.add(const FormidableRequiredError()),
         throwsUnsupportedError,
       );
     });
@@ -134,7 +134,7 @@ void main() {
     test('notifications are synchronous', () {
       final form = SignUpForm();
       FormidableStatus? seen;
-      form.addListener(() => seen = form.state.form.status);
+      form.addListener(() => seen = form.state.meta.status);
 
       form.username.setValue('angelo');
 

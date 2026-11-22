@@ -209,8 +209,8 @@ class PasswordWithoutUsername extends FormidableFormValidator<SignUpForm> {
 
   @override
   List<FormidableFieldError> validate(SignUpForm form) =>
-      form.username.isSet &&
-          form.password.isSet &&
+      form.username.defined &&
+          form.password.defined &&
           form.password.value!.contains(form.username.value!)
       ? [FormidableFieldError(form.password, const PasswordHasUsernameError())]
       : const [];

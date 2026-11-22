@@ -119,15 +119,15 @@ class FormidableMaterialRadioGroup<T> extends FormidableFieldWidget<T, T> {
              // Values are boxed in a record so that "nothing selected" (a null
              // group value) is different from the option whose value is null.
              RadioGroup<(T,)>(
-               groupValue: control.isSet ? (control.value as T,) : null,
+               groupValue: control.defined ? (control.value as T,) : null,
                onChanged: (choice) {
                  if (!control.enabled) return;
                  if (choice != null) {
-                   control.didChange(choice.$1, touch: true);
+                   control.didChange(choice.$1, touched: true);
                  } else if (toggleable) {
                    // Deselecting is a choice: null when the Field admits it,
                    // Unset when it does not.
-                   control.didChange(null, touch: true);
+                   control.didChange(null, touched: true);
                  }
                },
                child: Column(

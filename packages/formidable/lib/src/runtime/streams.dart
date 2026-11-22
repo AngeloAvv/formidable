@@ -142,12 +142,12 @@ void collectValueKey(FormidableNode node, List<Object?> into) {
   switch (node) {
     case FormidableField<Object?>():
       into
-        ..add(node.state.isSet)
+        ..add(node.state.defined)
         ..add(node.state.value);
     case FormidablePassthrough<Object?>():
       into.add(node.value);
     case FormidableForm<Object?>():
-      into.add(node.isSet);
+      into.add(node.defined);
       for (final child in node.nodes) {
         collectValueKey(child, into);
       }

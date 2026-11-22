@@ -44,7 +44,7 @@ class FormidableMaterialCheckbox<T extends bool?>
   }) : super(
          builder: (context, control) {
            // Unset is shown as unchecked: the box has no state for "not chosen".
-           final value = control.isSet ? control.value : false;
+           final value = control.defined ? control.value : false;
            return Column(
              crossAxisAlignment: CrossAxisAlignment.start,
              mainAxisSize: MainAxisSize.min,
@@ -52,7 +52,7 @@ class FormidableMaterialCheckbox<T extends bool?>
                Checkbox(
                  value: value,
                  onChanged: control.enabled
-                     ? (next) => control.didChange(next as T?, touch: true)
+                     ? (next) => control.didChange(next as T?, touched: true)
                      : null,
                  focusNode: control.focusNode,
                  tristate: tristate,

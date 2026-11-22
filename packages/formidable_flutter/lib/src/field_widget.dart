@@ -26,7 +26,7 @@ typedef FormidableFieldWidgetBuilder<T, V> = Widget Function(
 /// ([FormidableFieldWidgetState.value], [FormidableFieldWidgetState.errorText],
 /// [FormidableFieldWidgetState.enabled]) and takes what the user did
 /// ([FormidableFieldWidgetState.didChange],
-/// [FormidableFieldWidgetState.markAsTouched]). It also owns the focus node,
+/// [FormidableFieldWidgetState.touch]). It also owns the focus node,
 /// makes the Field touched when it loses focus, and takes part in keyboard
 /// navigation between Fields.
 ///
@@ -39,7 +39,7 @@ typedef FormidableFieldWidgetBuilder<T, V> = Widget Function(
 ///     : super(
 ///         builder: (context, control) => ColorPicker(
 ///           selected: control.value,
-///           onSelected: (color) => control.didChange(color, touch: true),
+///           onSelected: (color) => control.didChange(color, touched: true),
 ///           errorText: control.errorText,
 ///         ),
 ///       );
@@ -107,7 +107,7 @@ class FormidableFieldWidgetState<T, V>
   FormidableFieldState<T> get state => _field.state;
 
   /// Whether the Field holds a value.
-  bool get isSet => _field.isSet;
+  bool get defined => _field.defined;
 
   /// The Codec between the Field and the view value, or null when there is
   /// none.
@@ -116,7 +116,7 @@ class FormidableFieldWidgetState<T, V>
   /// The value to show: the value of the Field seen through the [codec], or
   /// null while the Field is Unset (or holds null).
   V? get value {
-    if (!_field.isSet) return null;
+    if (!_field.defined) return null;
     final value = _field.value;
     if (value == null) return null;
     final codec = _codec;
@@ -188,10 +188,10 @@ class FormidableFieldWidgetState<T, V>
   /// parsed. A parse error rejects the Field, which becomes invalid even when
   /// it is optional, until the next valid input.
   ///
-  /// With [touch], the Field also becomes touched. A widget that has no moment
+  /// With [touched], the Field also becomes touched. A widget that has no moment
   /// of "losing focus", such as a color picker or a checkbox, passes it so
   /// that the first interaction counts.
-  void didChange(V? value, {bool touch = false}) {
+  void didChange(V? value, {bool touched = false}) {
     final codec = _codec;
     if (value == null) {
       if (codec == null && null is T) {
@@ -211,19 +211,19 @@ class FormidableFieldWidgetState<T, V>
           _field.reject(error);
       }
     }
-    if (touch) markAsTouched();
+    if (touched) touch();
   }
 
-  /// The user removed the value: the Field becomes Unset. With [touch] it also
+  /// The user removed the value: the Field becomes Unset. With [touched] it also
   /// becomes touched.
-  void clear({bool touch = false}) {
+  void clear({bool touched = false}) {
     _field.clear();
-    if (touch) markAsTouched();
+    if (touched) touch();
   }
 
   /// The user interacted with the widget and left it. The Field becomes
   /// touched, which is what shows its errors under the default policy.
-  void markAsTouched() => _field.markAsTouched();
+  void touch() => _field.touch();
 
   /// The Codec to use, called when the dependencies or the widget change.
   /// The default is the [FormidableFieldWidget.codec]; a subclass can look it
@@ -334,7 +334,7 @@ class FormidableFieldWidgetState<T, V>
 
   void _onFocusChanged() {
     final hasFocus = _focusNode.hasFocus;
-    if (_hadFocus && !hasFocus) _field.markAsTouched();
+    if (_hadFocus && !hasFocus) _field.touch();
     _hadFocus = hasFocus;
   }
 }

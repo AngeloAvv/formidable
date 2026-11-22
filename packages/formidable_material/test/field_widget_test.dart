@@ -28,7 +28,7 @@ class _Swatches extends StatelessWidget {
         for (final color in colors)
           GestureDetector(
             key: ValueKey(color),
-            onTap: () => control.didChange(color, touch: true),
+            onTap: () => control.didChange(color, touched: true),
             child: SizedBox(
               width: 20,
               height: 20,
@@ -84,7 +84,7 @@ void main() {
       await tester.pump();
 
       expect(color.value, _blue);
-      expect(color.isSet, isTrue);
+      expect(color.defined, isTrue);
       expect(find.text('picked ${_blue.toString()}'), findsOneWidget);
     });
 
@@ -108,7 +108,7 @@ void main() {
         _app(
           FormidableFieldWidget<Color?, Color?>(
             field: color,
-            builder: (context, c) => Text('${(control = c).state.isSet}'),
+            builder: (context, c) => Text('${(control = c).state.defined}'),
           ),
         ),
       );
@@ -119,7 +119,7 @@ void main() {
       await tester.pump();
 
       expect(control.state.value, _red);
-      expect(control.isSet, isTrue);
+      expect(control.defined, isTrue);
     });
   });
 
@@ -155,15 +155,15 @@ void main() {
     ) async {
       await mount(tester, color);
 
-      control.didChange(_red, touch: true);
+      control.didChange(_red, touched: true);
 
       expect(color.state.touched, isTrue);
     });
 
-    testWidgets('markAsTouched touches the Field', (tester) async {
+    testWidgets('touch touches the Field', (tester) async {
       await mount(tester, color);
 
-      control.markAsTouched();
+      control.touch();
 
       expect(color.state.touched, isTrue);
     });
@@ -175,14 +175,14 @@ void main() {
 
       control.clear();
 
-      expect(field.isSet, isFalse);
+      expect(field.defined, isFalse);
       expect(field.state.touched, isFalse);
     });
 
     testWidgets('clear can touch the Field in the same call', (tester) async {
       await mount(tester, color);
 
-      control.clear(touch: true);
+      control.clear(touched: true);
 
       expect(color.state.touched, isTrue);
     });
@@ -194,7 +194,7 @@ void main() {
 
       control.didChange(null);
 
-      expect(color.isSet, isTrue);
+      expect(color.defined, isTrue);
       expect(color.value, isNull);
     });
 
@@ -218,7 +218,7 @@ void main() {
 
       strict.didChange(null);
 
-      expect(field.isSet, isFalse);
+      expect(field.defined, isFalse);
     });
   });
 
@@ -270,7 +270,7 @@ void main() {
       expect(rating.value, 3);
 
       control.didChange(null);
-      expect(rating.isSet, isFalse);
+      expect(rating.defined, isFalse);
     });
 
     testWidgets('a parse failure rejects the Field with the error', (
@@ -295,7 +295,7 @@ void main() {
       control.didChange(2);
 
       expect(rating.inputError, isA<FormidableParseError>());
-      expect(rating.isValid, isFalse);
+      expect(rating.state.valid, isFalse);
     });
   });
 
@@ -304,7 +304,7 @@ void main() {
       await tester.pumpWidget(_app(_ColorPicker(field: color)));
       expect(find.byKey(const Key('error')), findsNothing);
 
-      color.markAsTouched();
+      color.touch();
       await tester.pump();
 
       expect(find.byKey(const Key('error')), findsOneWidget);
@@ -312,7 +312,7 @@ void main() {
 
     testWidgets('picking a value hides the required error', (tester) async {
       await tester.pumpWidget(_app(_ColorPicker(field: color)));
-      color.markAsTouched();
+      color.touch();
       await tester.pump();
 
       await tester.tap(find.byKey(const ValueKey(_red)));
@@ -355,7 +355,7 @@ void main() {
           child: _app(_ColorPicker(field: color)),
         ),
       );
-      color.markAsTouched();
+      color.touch();
       await tester.pump();
       expect(find.byKey(const Key('error')), findsNothing);
 
@@ -365,7 +365,7 @@ void main() {
     });
 
     testWidgets('use the messages of the widget', (tester) async {
-      color.markAsTouched();
+      color.touch();
       await tester.pumpWidget(
         _app(
           _ColorPicker(
@@ -381,7 +381,7 @@ void main() {
     });
 
     testWidgets('follow the messages of the config', (tester) async {
-      color.markAsTouched();
+      color.touch();
       await tester.pumpWidget(
         FormidableConfig(
           messages: const FormidableMessages().on<FormidableRequiredError>(
@@ -635,7 +635,7 @@ void _textTests() {
       expect(control.textController.text, '12');
 
       control.didChange('');
-      expect(age.isSet, isFalse);
+      expect(age.defined, isFalse);
       expect(control.textController.text, isEmpty);
     });
 
@@ -737,8 +737,8 @@ class _CountingState extends FormidableFieldWidgetState<Color?, Color?> {
   int writes = 0;
 
   @override
-  void didChange(Color? value, {bool touch = false}) {
+  void didChange(Color? value, {bool touched = false}) {
     writes++;
-    super.didChange(value, touch: touch);
+    super.didChange(value, touched: touched);
   }
 }

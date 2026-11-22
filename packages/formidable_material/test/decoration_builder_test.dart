@@ -48,7 +48,7 @@ void main() {
       await tester.tap(find.byKey(const Key('clear')));
       await tester.pump();
 
-      expect(name.isSet, isFalse);
+      expect(name.defined, isFalse);
       expect(
         tester.widget<EditableText>(find.byType(EditableText)).controller.text,
         isEmpty,
@@ -60,7 +60,7 @@ void main() {
       await tester.pumpWidget(app(field()));
 
       await tester.enterText(find.byType(TextField), 'ab');
-      name.markAsTouched();
+      name.touch();
       await tester.pump();
 
       expect(find.text('Name'), findsOneWidget);
@@ -79,7 +79,7 @@ void main() {
       );
 
       await tester.enterText(find.byType(TextField), 'ab');
-      name.markAsTouched();
+      name.touch();
       await tester.pump();
 
       expect(find.text('Mine'), findsOneWidget);
@@ -146,14 +146,14 @@ void main() {
       await tester.tap(find.byKey(const Key('clear')));
       await tester.pump();
 
-      expect(country.isSet, isFalse);
+      expect(country.defined, isFalse);
       expect(find.text('Pick one'), findsOneWidget);
     });
 
     testWidgets('still gets the Validation Message', (tester) async {
       await tester.pumpWidget(app(dropdown()));
 
-      country.markAsTouched();
+      country.touch();
       await tester.pump();
 
       expect(find.text('This field is required.'), findsOneWidget);
@@ -212,7 +212,7 @@ void main() {
         ),
       );
 
-      birthday.markAsTouched();
+      birthday.touch();
       await tester.pump();
 
       expect(find.text('This field is required.'), findsOneWidget);

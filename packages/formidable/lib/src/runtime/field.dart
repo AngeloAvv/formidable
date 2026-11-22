@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
 import '../normalizers/normalizer.dart';
 import '../validation/async_validator.dart';
 import '../validation/required_error.dart';
@@ -56,9 +58,9 @@ final class FormidableField<T>
     final start = initial == null
         ? (defaultValue == null ? null : (value: defaultValue))
         : _normalize(initial.value);
-    _isSet = start != null;
+    _defined = start != null;
     _value = start?.value;
-    _initialIsSet = _isSet;
+    _initialDefined = _defined;
     _initialValue = _value;
     _state = _stateFor();
     _notified = _state;
@@ -72,7 +74,7 @@ final class FormidableField<T>
   final T? _defaultValue;
   FormidablePipeline? _pipeline;
   T? _value;
-  bool _isSet = false;
+  bool _defined = false;
   bool _touched = false;
   bool _enabled = true;
   bool _submitted = false;
@@ -93,7 +95,7 @@ final class FormidableField<T>
   bool _readyForFormCheck = false;
   late FormidableFieldState<T> _state;
   late FormidableFieldState<T> _notified;
-  late bool _initialIsSet;
+  late bool _initialDefined;
   late T? _initialValue;
 
   @override
@@ -121,14 +123,14 @@ final class FormidableField<T>
   ///
   /// The event is `null` both when the Field becomes Unset and when null is
   /// chosen on a nullable Field, so a change from one to the other emits
-  /// `null` although the value read as `null` before too. Read [isSet] in the
+  /// `null` although the value read as `null` before too. Read [defined] in the
   /// listener to tell them apart (ADR-0003).
   ///
   /// ```dart
   /// form.query.valueChanges.listen((query) => search(query));
   /// ```
-  Stream<T?> get valueChanges => _hub.derive<({bool isSet, T? value}), T?>(
-    () => (isSet: _state.isSet, value: _state.value),
+  Stream<T?> get valueChanges => _hub.derive<({bool defined, T? value}), T?>(
+    () => (defined: _state.defined, value: _state.value),
     (key) => key.value,
   );
 
@@ -147,16 +149,17 @@ final class FormidableField<T>
       _hub.derive(() => selector(_state), (selection) => selection);
 
   /// The current value, or null while the Field is Unset. Null is also a valid
-  /// chosen value for a nullable [T], so check [isSet] to tell them apart.
+  /// chosen value for a nullable [T], so check [defined] to tell them apart.
   ///
   /// It is current even while Form Effects run, unlike [state].
   T? get value => _value;
 
   /// Whether the Field holds a value.
-  bool get isSet => _isSet;
+  bool get defined => _defined;
 
   /// Whether the Field has no errors.
   @override
+  @internal
   bool get isValid => _state.errors.isEmpty;
 
   /// Gives the Field a value. The type is exactly the Field's type, so the
@@ -226,7 +229,7 @@ final class FormidableField<T>
   /// that the user touched the Field. Form Effects do not run.
   @override
   void reset() {
-    _assign(_initialIsSet ? (value: _initialValue as T) : null);
+    _assign(_initialDefined ? (value: _initialValue as T) : null);
     _touched = false;
     _stale = true;
     _settle();
@@ -236,7 +239,7 @@ final class FormidableField<T>
   /// is no longer dirty.
   @override
   void commit() {
-    _initialIsSet = _isSet;
+    _initialDefined = _defined;
     _initialValue = _value;
     _stale = true;
     _settle();
@@ -254,7 +257,7 @@ final class FormidableField<T>
   FormidableValidationError? get inputError => _inputError;
 
   /// Records that the user interacted with the Field and left it.
-  void markAsTouched() {
+  void touch() {
     if (_touched) return;
     _touched = true;
     _refresh();
@@ -345,16 +348,18 @@ final class FormidableField<T>
   /// An Unset Field produces its default, then null when [T] is nullable. If
   /// neither applies the Field has a required error and this throws.
   T get output {
-    if (_isSet) return _value as T;
+    if (_defined) return _value as T;
     if (_defaultValue != null) return _defaultValue as T;
     if (null is T) return null as T;
     throw StateError('A required Field is Unset and has no output.');
   }
 
   @override
+  @internal
   bool get isDirty => _state.dirty;
 
   @override
+  @internal
   bool get isPending => _state.pending;
 
   /// Whether an asynchronous Form Validator that reads this Field may run:
@@ -430,13 +435,13 @@ final class FormidableField<T>
   bool _assign(({T value})? next) {
     final lifted = _inputError != null;
     _inputError = null;
-    final isSet = next != null;
+    final defined = next != null;
     final value = next?.value;
-    if (isSet == _isSet && value == _value) {
+    if (defined == _defined && value == _value) {
       if (lifted) _stale = true;
       return lifted;
     }
-    _isSet = isSet;
+    _defined = defined;
     _value = value;
     _applied = const [];
     _stale = true;
@@ -445,8 +450,8 @@ final class FormidableField<T>
 
   /// Makes the Field Unset with [error]. Returns whether anything changed.
   bool _reject(FormidableValidationError error) {
-    if (!_isSet && _inputError == error) return false;
-    _isSet = false;
+    if (!_defined && _inputError == error) return false;
+    _defined = false;
     _value = null;
     _inputError = error;
     _applied = const [];
@@ -475,21 +480,22 @@ final class FormidableField<T>
   }
 
   FormidableFieldState<T> _stateFor() {
-    final own = _isSet
+    final own = _defined
         ? (_enabled ? _validate(_value) : const <FormidableValidationError>[])
         : _inputError != null
         ? [_inputError!]
         : _presenceErrors();
-    final passes = _isSet && _enabled && own.isEmpty && _formErrors.isEmpty;
+    final passes = _defined && _enabled && own.isEmpty && _formErrors.isEmpty;
     _driveAsync(wanted: passes);
     _readyForFormCheck = passes && !_asyncPending && _asyncErrors.isEmpty;
     return FormidableFieldState<T>(
       value: _value,
-      isSet: _isSet,
+      defined: _defined,
       touched: _touched,
       enabled: _enabled,
       submitted: _submitted,
-      dirty: _isSet != _initialIsSet || (_isSet && _value != _initialValue),
+      dirty:
+          _defined != _initialDefined || (_defined && _value != _initialValue),
       pending: _asyncPending || (_enabled && _asyncFormPending),
       errors: [
         ...own,

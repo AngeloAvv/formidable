@@ -118,7 +118,7 @@ Save is on only while the Form is valid *and* has changes, so the generated [For
 ```dart
 // example/lib/contact/contact_material.dart
 ContactFormSelector<bool>(
-  selector: (state) => state.form.value != null && state.form.dirty,
+  selector: (state) => state.meta.value != null && state.meta.dirty,
   builder: (context, canSave) => FilledButton(
     onPressed: canSave ? () => _save(form) : null,
     child: const Text('Save'),
@@ -161,12 +161,12 @@ if (emailIsInUse(form.email.value)) {
     },
   );
   // The user may not have left the Field yet: show the error now.
-  form.email.markAsTouched();
+  form.email.touch();
   return;
 }
 ```
 
-`markAsTouched()` makes the error show even if the user never left the Field; the message comes from `FormidableConfig.messages`, as in the [sign-up guide](/guides/sign-up).
+`touch()` makes the error show even if the user never left the Field; the message comes from `FormidableConfig.messages`, as in the [sign-up guide](/guides/sign-up).
 
 ## 6. Warn before leaving
 

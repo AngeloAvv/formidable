@@ -96,7 +96,7 @@ class FormidableMaterialDatePicker<T extends DateTime?>
              decoration:
                  decorationBuilder?.call(context, control) ?? decoration,
              onClear: clearable
-                 ? () => control.didChange(null, touch: true)
+                 ? () => control.didChange(null, touched: true)
                  : null,
              autofocus: autofocus,
              onTap: () async {
@@ -134,9 +134,9 @@ class FormidableMaterialDatePicker<T extends DateTime?>
                  calendarDelegate: calendarDelegate,
                );
                if (picked == null) {
-                 control.markAsTouched();
+                 control.touch();
                } else {
-                 control.didChange(picked as T, touch: true);
+                 control.didChange(picked as T, touched: true);
                }
              },
            );

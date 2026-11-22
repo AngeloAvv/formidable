@@ -18,7 +18,7 @@ void main() {
     testWidgets('says the failed check in ${entry.key}', (tester) async {
       final field = FormidableField<String>(initial: (value: 'alice'))
         ..applyErrors([FormidableAsyncCheckFailedError(StateError('offline'))])
-        ..markAsTouched();
+        ..touch();
       await tester.pumpWidget(
         MaterialApp(
           locale: Locale(entry.key),

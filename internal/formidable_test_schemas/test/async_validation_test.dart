@@ -38,7 +38,7 @@ void main() {
 
         expect(form.username.state.pending, isFalse);
         expect(form.username.state.errors, [const TakenError('alice')]);
-        expect(form.username.isValid, isFalse);
+        expect(form.username.state.valid, isFalse);
       });
     });
 
@@ -335,19 +335,19 @@ void main() {
       fakeAsync((async) {
         final (:form, :usernames, :emails) = _create();
 
-        expect(form.state.form.pending, isFalse);
+        expect(form.state.meta.pending, isFalse);
         form.username.setValue('alice');
         form.email.setValue('a@b.c');
-        expect(form.state.form.pending, isTrue);
+        expect(form.state.meta.pending, isTrue);
 
         async.elapse(_debounce);
         usernames.answer('alice', taken: false);
         async.flushMicrotasks();
-        expect(form.state.form.pending, isTrue);
+        expect(form.state.meta.pending, isTrue);
 
         emails.answer('a@b.c', taken: false);
         async.flushMicrotasks();
-        expect(form.state.form.pending, isFalse);
+        expect(form.state.meta.pending, isFalse);
       });
     });
   });
@@ -360,7 +360,7 @@ void main() {
           email: 'a@b.c',
         );
 
-        expect(form.state.form.status, FormidableStatus.valid);
+        expect(form.state.meta.status, FormidableStatus.valid);
         expect(form.value, isNull);
 
         async.elapse(_debounce);
@@ -567,7 +567,7 @@ void main() {
         async.flushMicrotasks();
 
         expect(field.state.errors, [isA<TakenError>()]);
-        expect(form.isValid, isFalse);
+        expect(form.state.meta.valid, isFalse);
       });
     });
   });

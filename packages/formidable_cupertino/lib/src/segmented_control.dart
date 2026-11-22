@@ -42,7 +42,7 @@ class FormidableCupertinoSegmentedControl<T extends Object>
                  : null,
              onValueChanged: (value) {
                if (!control.enabled) return;
-               control.didChange(value, touch: true);
+               control.didChange(value, touched: true);
              },
              unselectedColor: unselectedColor,
              selectedColor: selectedColor,

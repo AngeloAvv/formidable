@@ -27,8 +27,8 @@ class MustMatch extends FormidableCrossFieldRule {
     List<FormidableField<Object?>> references,
   ) {
     final other = references.single;
-    if (!target.isSet) return const [];
-    return other.isSet && other.value == target.value
+    if (!target.defined) return const [];
+    return other.defined && other.value == target.value
         ? const []
         : const [FormidableMustMatchError()];
   }
@@ -62,7 +62,7 @@ class Different extends FormidableCrossFieldRule {
     List<FormidableField<Object?>> references,
   ) {
     final other = references.single;
-    if (!target.isSet || !other.isSet) return const [];
+    if (!target.defined || !other.defined) return const [];
     return other.value == target.value
         ? const [FormidableDifferentError()]
         : const [];
@@ -134,8 +134,8 @@ class Compare extends FormidableCrossFieldRule {
     List<FormidableField<Object?>> references,
   ) {
     final other = references.single;
-    final a = target.isSet ? target.value : null;
-    final b = other.isSet ? other.value : null;
+    final a = target.defined ? target.value : null;
+    final b = other.defined ? other.value : null;
     if (a == null || b == null) return const [];
     // Safe: the generator only accepts two comparable Fields of one type.
     final order = (a as Comparable<Object?>).compareTo(b);
@@ -182,8 +182,8 @@ class DateRangeOrder extends FormidableCrossFieldRule {
     List<FormidableField<Object?>> references,
   ) {
     final other = references.single;
-    final end = target.isSet ? target.value : null;
-    final start = other.isSet ? other.value : null;
+    final end = target.defined ? target.value : null;
+    final start = other.defined ? other.value : null;
     if (end is! DateTime || start is! DateTime) return const [];
     final ordered = allowSame ? !end.isBefore(start) : end.isAfter(start);
     return ordered

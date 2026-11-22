@@ -204,7 +204,7 @@ The button should follow the state of the Form. Instead of checking validity ins
 
 ```dart
 SignUpFormSelector<FormidableStatus>(
-  selector: (state) => state.form.status,
+  selector: (state) => state.meta.status,
   builder: (context, status) => FilledButton(
     onPressed: status == FormidableStatus.valid
         ? () => _onSubmit(form)
@@ -216,11 +216,11 @@ SignUpFormSelector<FormidableStatus>(
 
 Put it where the comment is in step 5.
 
-- `selector` picks one value from the typed `SignUpFormState`. `state.form.status` is `FormidableStatus.valid` when no Field has an error, and `invalid` otherwise.
+- `selector` picks one value from the typed `SignUpFormState`. `state.meta.status` is `FormidableStatus.valid` when no Field has an error, and `invalid` otherwise.
 - The Selector rebuilds its `builder` only when the picked value changes. Typing a character that keeps the form invalid does not rebuild the button, and the one keystroke that makes the form valid enables it.
 - A button with `onPressed: null` is disabled, so the callback never has to ask whether the form is valid.
 
-The state has more to select from, such as `state.form.dirty` and `state.form.pending`. See [State and reactive widgets](/form/state).
+The state has more to select from, such as `state.meta.dirty` and `state.meta.pending`. See [State and reactive widgets](/form/state).
 
 ## 7. Submit
 

@@ -26,20 +26,20 @@ void main() {
 
       expect(state.username, form.username.state);
       expect(state.username.value, 'ab');
-      expect(state.form.status, FormidableStatus.invalid);
-      expect(state.form.dirty, isFalse);
-      expect(state.form.pending, isFalse);
-      expect(state.form.errors, isEmpty);
+      expect(state.meta.status, FormidableStatus.invalid);
+      expect(state.meta.dirty, isFalse);
+      expect(state.meta.pending, isFalse);
+      expect(state.meta.errors, isEmpty);
     });
 
     test('holds the Schema value, null while the Form is invalid', () {
       final form = SignUpForm(username: 'ab');
-      expect(form.state.form.value, isNull);
+      expect(form.state.meta.value, isNull);
 
       form.username.setValue('angelo');
 
-      expect(form.state.form.value?.username, 'angelo');
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.value?.username, 'angelo');
+      expect(form.state.meta.status, FormidableStatus.valid);
     });
 
     test('differs after a change that keeps the Form valid', () {
@@ -49,14 +49,14 @@ void main() {
       form.username.setValue('angelo2');
 
       expect(form.state, isNot(before));
-      expect(form.state.form.status, before.form.status);
+      expect(form.state.meta.status, before.meta.status);
     });
 
     test('differs when only touched changes', () {
       final form = SignUpForm(username: 'angelo');
       final before = form.state;
 
-      form.username.markAsTouched();
+      form.username.touch();
 
       expect(form.state, isNot(before));
       expect(form.state.username.touched, isTrue);
@@ -77,7 +77,7 @@ void main() {
       expect(
         state ==
             FormidableFormState(
-              form: FormidableFormMeta<Object?>(status: FormidableStatus.valid),
+              meta: FormidableFormMeta<Object?>(status: FormidableStatus.valid),
             ),
         isFalse,
       );
@@ -91,11 +91,11 @@ void main() {
       var notifications = 0;
       form.addListener(() => notifications++);
 
-      form.username.markAsTouched();
-      form.username.markAsTouched();
+      form.username.touch();
+      form.username.touch();
 
       expect(notifications, 1);
-      expect(form.state.form.value, isNot(same(before.form.value)));
+      expect(form.state.meta.value, isNot(same(before.meta.value)));
     });
 
     test('toString names the state and its Fields', () {
@@ -122,8 +122,8 @@ void main() {
 
       form.username.setValue('angelo2'); // valid -> valid
       form.username.setValue('angelo3'); // nothing the old state reported
-      form.username.markAsTouched();
-      form.username.markAsTouched(); // already touched: no change
+      form.username.touch();
+      form.username.touch(); // already touched: no change
 
       expect(seen.map((s) => s.username.value), [
         'angelo2',
@@ -178,13 +178,13 @@ void main() {
         name: 'Angelo',
         home: const Address(street: 'Via Roma'),
       );
-      expect(form.state.work.form.isSet, isFalse);
-      expect(form.state.home.form.isSet, isTrue);
+      expect(form.state.work.meta.defined, isFalse);
+      expect(form.state.home.meta.defined, isTrue);
 
       form.work.street.setValue('Via Torino');
 
-      expect(form.state.work.form.isSet, isTrue);
-      expect(form.state.work.form.dirty, isTrue);
+      expect(form.state.work.meta.defined, isTrue);
+      expect(form.state.work.meta.dirty, isTrue);
     });
 
     test('the Schema value holds the Nested Form value', () {
@@ -194,8 +194,8 @@ void main() {
         billing: const Address(street: 'Via Po'),
       );
 
-      expect(form.state.form.value?.home.street, 'Via Roma');
-      expect(form.state.home.form.value?.street, 'Via Roma');
+      expect(form.state.meta.value?.home.street, 'Via Roma');
+      expect(form.state.home.meta.value?.street, 'Via Roma');
     });
   });
 
