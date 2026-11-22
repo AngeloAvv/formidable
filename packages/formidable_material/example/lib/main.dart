@@ -86,12 +86,10 @@ class _SignUpPageState extends State<SignUpPage> {
             field: form.acceptedTerms,
             title: const Text('I accept the terms and conditions'),
           ),
-          SignUpFormSelector<FormidableStatus>(
-            selector: (state) => state.meta.status,
-            builder: (context, status) => FilledButton(
-              onPressed: status == FormidableStatus.valid
-                  ? () => _onSubmit(form)
-                  : null,
+          SignUpFormSelector<bool>(
+            selector: (state) => state.meta.valid,
+            builder: (context, valid) => FilledButton(
+              onPressed: valid ? () => _onSubmit(form) : null,
               child: const Text('Sign up'),
             ),
           ),

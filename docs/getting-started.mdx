@@ -25,15 +25,15 @@ Add the packages to `pubspec.yaml`. `http` is only there for the final request.
 dependencies:
   flutter:
     sdk: flutter
-  formidable: ^0.1.0
-  formidable_flutter: ^0.1.0
-  formidable_material: ^0.1.0
+  formidable: ^0.2.0
+  formidable_flutter: ^0.2.0
+  formidable_material: ^0.2.0
   http: ^1.2.0
   material_ui: ^1.11.0
 
 dev_dependencies:
   build_runner: ^2.4.0
-  formidable_generator: ^0.1.0
+  formidable_generator: ^0.2.0
 ```
 
 `formidable` is the pure Dart core with the annotations. `formidable_flutter` binds a Form to the widget tree, and `formidable_material` gives you Material widgets that are already wired to a Form. Prefer Cupertino? Use `formidable_cupertino` instead, see [Cupertino widgets](/widgets/cupertino).
@@ -200,15 +200,13 @@ The checkbox works the same way: the first tap touches the Field, so an unticked
 
 ## 6. Enable the button while the form is valid
 
-The button should follow the state of the Form. Instead of checking validity inside `onPressed`, read the status from the Form state and let Flutter rebuild the button when it changes. `SignUpFormSelector` does exactly that:
+The button should follow the state of the Form. Instead of checking validity inside `onPressed`, read the validity from the Form state and let Flutter rebuild the button when it changes. `SignUpFormSelector` does exactly that:
 
 ```dart
-SignUpFormSelector<FormidableStatus>(
-  selector: (state) => state.meta.status,
-  builder: (context, status) => FilledButton(
-    onPressed: status == FormidableStatus.valid
-        ? () => _onSubmit(form)
-        : null,
+SignUpFormSelector<bool>(
+  selector: (state) => state.meta.valid,
+  builder: (context, valid) => FilledButton(
+    onPressed: valid ? () => _onSubmit(form) : null,
     child: const Text('Sign up'),
   ),
 ),
@@ -216,11 +214,11 @@ SignUpFormSelector<FormidableStatus>(
 
 Put it where the comment is in step 5.
 
-- `selector` picks one value from the typed `SignUpFormState`. `state.meta.status` is `FormidableStatus.valid` when no Field has an error, and `invalid` otherwise.
+- `selector` picks one value from the typed `SignUpFormState`. `state.meta.valid` is true when no Field has an error. It also stays true while an asynchronous check is still running, because nothing has failed yet, so read `state.meta.pending` as well if the button must wait for it.
 - The Selector rebuilds its `builder` only when the picked value changes. Typing a character that keeps the form invalid does not rebuild the button, and the one keystroke that makes the form valid enables it.
 - A button with `onPressed: null` is disabled, so the callback never has to ask whether the form is valid.
 
-The state has more to select from, such as `state.meta.dirty` and `state.meta.pending`. See [State and reactive widgets](/form/state).
+The state has more to select from, such as `state.meta.status`, `state.meta.dirty` and `state.meta.pending`. See [State and reactive widgets](/form/state).
 
 ## 7. Submit
 

@@ -670,7 +670,7 @@ class SignUp {
         final result = await _build(
           scopeBuilder,
           schema,
-          pubspec: 'name: app\ndependencies:\n  formidable_flutter: ^0.1.0\n',
+          pubspec: 'name: app\ndependencies:\n  formidable_flutter: ^0.2.0\n',
         );
 
         expect(result.succeeded, isTrue);
@@ -684,7 +684,7 @@ class SignUp {
       final result = await _build(
         scopeBuilder,
         schema,
-        pubspec: 'name: app\ndependencies:\n  formidable: ^0.1.0\n',
+        pubspec: 'name: app\ndependencies:\n  formidable: ^0.2.0\n',
       );
 
       expect(result.succeeded, isTrue);

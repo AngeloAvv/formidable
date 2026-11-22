@@ -1,7 +1,7 @@
 name: formidable_cupertino_example
 description: Example app for formidable_cupertino, a sign-up page.
 publish_to: none
-version: 0.1.0
+version: 0.2.0
 
 resolution: workspace
 
@@ -12,9 +12,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  formidable: ^0.1.0
-  formidable_cupertino: ^0.1.0
-  formidable_flutter: ^0.1.0
+  formidable: ^0.2.0
+  formidable_cupertino: ^0.2.0
+  formidable_flutter: ^0.2.0
   cupertino_ui: ^1.1.0
 
 dev_dependencies:
@@ -22,4 +22,4 @@ dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:
     sdk: flutter
-  formidable_generator: ^0.1.0
+  formidable_generator: ^0.2.0

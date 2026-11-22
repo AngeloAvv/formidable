@@ -9,11 +9,11 @@ The code generator of [Formidable](https://github.com/AngeloAvv/formidable), a r
 
 ```yaml
 dependencies:
-  formidable: ^0.1.0
+  formidable: ^0.2.0
 
 dev_dependencies:
   build_runner: ^2.4.0
-  formidable_generator: ^0.1.0
+  formidable_generator: ^0.2.0
 ```
 
 A Flutter app also adds `formidable_flutter` and the widget package it uses (`formidable_material` or `formidable_cupertino`).

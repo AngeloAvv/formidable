@@ -100,12 +100,10 @@ class _SignUpPageState extends State<SignUpPage> {
               ),
             ),
             const SizedBox(height: 12),
-            SignUpFormSelector<FormidableStatus>(
-              selector: (state) => state.meta.status,
-              builder: (context, status) => CupertinoButton.filled(
-                onPressed: status == FormidableStatus.valid
-                    ? () => _onSubmit(form)
-                    : null,
+            SignUpFormSelector<bool>(
+              selector: (state) => state.meta.valid,
+              builder: (context, valid) => CupertinoButton.filled(
+                onPressed: valid ? () => _onSubmit(form) : null,
                 child: const Text('Sign up'),
               ),
             ),
