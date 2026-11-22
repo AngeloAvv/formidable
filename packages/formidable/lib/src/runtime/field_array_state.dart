@@ -1,4 +1,6 @@
 import '../validation/validation_error.dart';
+import 'field_state.dart';
+import 'form_state.dart';
 
 /// An immutable snapshot of a Field Array.
 ///
@@ -53,11 +55,23 @@ final class FormidableFieldArrayState<S> {
   /// Schema value from, and it does not take part in equality.
   Object? get outputOrNull => _outputOrNull?.call();
 
+  /// Whether the array and every item in it have no errors. It is derived from
+  /// [errors] and from the states in [items].
+  bool get valid =>
+      errors.isEmpty &&
+      items.every(
+        (item) => switch (item) {
+          FormidableFieldState<Object?>(:final valid) => valid,
+          FormidableFormState(:final meta) => meta.valid,
+          _ => true,
+        },
+      );
+
   /// How many items the array has.
   int get length => ids.length;
 
   /// Whether the array holds a value. An empty array is Unset.
-  bool get isSet => ids.isNotEmpty;
+  bool get defined => ids.isNotEmpty;
 
   @override
   bool operator ==(Object other) =>

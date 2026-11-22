@@ -14,8 +14,8 @@ class ComparesValidPassword extends FormidableFormValidator<NewPasswordForm> {
 
   @override
   List<FormidableFieldError> validate(NewPasswordForm form) =>
-      form.password.isValid &&
-          form.confirmation.isSet &&
+      form.password.state.valid &&
+          form.confirmation.defined &&
           form.password.value != form.confirmation.value
       ? [
           FormidableFieldError(

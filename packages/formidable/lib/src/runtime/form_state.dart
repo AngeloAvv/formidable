@@ -4,8 +4,8 @@ import 'status.dart';
 /// The metadata of a Form, as one immutable snapshot: its status, its flags,
 /// its Form-level errors and its Schema value.
 ///
-/// It is what `state.form` returns, for a generated Form and for a plain one,
-/// so that code reads `state.form.status` either way. The Fields of the Form
+/// It is what `state.meta` returns, for a generated Form and for a plain one,
+/// so that code reads `state.meta.status` either way. The Fields of the Form
 /// live next to it in the state (`state.email`), which is why the metadata has
 /// a namespace of its own: a Schema field can be called `status` or `dirty`
 /// without hiding anything.
@@ -21,7 +21,7 @@ final class FormidableFormMeta<S> {
     required this.status,
     this.dirty = false,
     this.pending = false,
-    this.isSet = true,
+    this.defined = true,
     List<FormidableValidationError> errors = const [],
     S? Function()? buildValue,
   }) : errors = List.unmodifiable(errors),
@@ -29,6 +29,10 @@ final class FormidableFormMeta<S> {
 
   /// Whether the Form, with every Field below it, has errors.
   final FormidableStatus status;
+
+  /// Whether the Form, with every Field below it, has no errors. It is
+  /// derived from [status].
+  bool get valid => status == FormidableStatus.valid;
 
   /// Whether any Field differs from its initial state.
   final bool dirty;
@@ -38,7 +42,7 @@ final class FormidableFormMeta<S> {
 
   /// Whether the Form holds a value. It is false only for an optional Nested
   /// Form that is Unset.
-  final bool isSet;
+  final bool defined;
 
   /// Errors that belong to the Form as a whole, not to a Field.
   final List<FormidableValidationError> errors;
@@ -59,7 +63,7 @@ final class FormidableFormMeta<S> {
       _buildValue = null;
       _built = true;
       if (build != null &&
-          isSet &&
+          defined &&
           status == FormidableStatus.valid &&
           !pending) {
         _value = build();
@@ -74,17 +78,17 @@ final class FormidableFormMeta<S> {
       other.status == status &&
       other.dirty == dirty &&
       other.pending == pending &&
-      other.isSet == isSet &&
+      other.defined == defined &&
       _sameErrors(other.errors, errors);
 
   @override
   int get hashCode =>
-      Object.hash(status, dirty, pending, isSet, Object.hashAll(errors));
+      Object.hash(status, dirty, pending, defined, Object.hashAll(errors));
 
   @override
   String toString() =>
       'FormidableFormMeta(status: $status, dirty: $dirty, '
-      'pending: $pending, isSet: $isSet, errors: $errors)';
+      'pending: $pending, defined: $defined, errors: $errors)';
 
   static bool _sameErrors(
     List<FormidableValidationError> a,
@@ -101,31 +105,31 @@ final class FormidableFormMeta<S> {
 /// An immutable snapshot of a Form.
 ///
 /// The metadata of the Form (status, dirty, pending, errors, the Schema value)
-/// is under [form]. A generated Form publishes a subclass of this
+/// is under [meta]. A generated Form publishes a subclass of this
 /// (`SignUpFormState`) that also holds the state of every child: the
 /// [FormidableFieldState] of each Field, the state of each Field Array and of
 /// each Nested Form, one getter per Schema field. Equality is deep, so any
 /// change below the Form gives a state that is different from the previous
 /// one.
 class FormidableFormState {
-  /// Creates a state around [form].
-  FormidableFormState({required this.form});
+  /// Creates a state around [meta].
+  FormidableFormState({required this.meta});
 
   /// The metadata of the Form: [FormidableFormMeta.status],
   /// [FormidableFormMeta.dirty], [FormidableFormMeta.pending],
-  /// [FormidableFormMeta.isSet], [FormidableFormMeta.errors] and
+  /// [FormidableFormMeta.defined], [FormidableFormMeta.errors] and
   /// [FormidableFormMeta.value]. A generated state narrows it to the Schema.
-  final FormidableFormMeta<Object?> form;
+  final FormidableFormMeta<Object?> meta;
 
   @override
   bool operator ==(Object other) =>
       other is FormidableFormState &&
       other.runtimeType == runtimeType &&
-      other.form == form;
+      other.meta == meta;
 
   @override
-  int get hashCode => form.hashCode;
+  int get hashCode => meta.hashCode;
 
   @override
-  String toString() => 'FormidableFormState($form)';
+  String toString() => 'FormidableFormState($meta)';
 }

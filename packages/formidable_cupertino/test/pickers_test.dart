@@ -43,13 +43,13 @@ void main() {
     ) async {
       await pump(tester, picker);
 
-      expect(form.born.isSet, isFalse);
+      expect(form.born.defined, isFalse);
       expect(form.born.state.touched, isFalse);
 
       await tester.drag(find.byType(CupertinoDatePicker), const Offset(0, -60));
       await tester.pumpAndSettle();
 
-      expect(form.born.isSet, isTrue);
+      expect(form.born.defined, isTrue);
       expect(form.born.state.touched, isTrue);
     });
 
@@ -101,7 +101,7 @@ void main() {
 
     testWidgets('a change sets the Field and touches it', (tester) async {
       await pump(tester, picker);
-      expect(form.alarm.isSet, isFalse);
+      expect(form.alarm.defined, isFalse);
 
       await tester.drag(
         find.byType(CupertinoTimerPicker),
@@ -109,7 +109,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(form.alarm.isSet, isTrue);
+      expect(form.alarm.defined, isTrue);
       expect(form.alarm.state.touched, isTrue);
     });
   });

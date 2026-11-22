@@ -45,7 +45,7 @@ void main() {
     form.contact.street.setValue('Main street');
     form.phones.items[1].node.number.setValue('12');
     note.setValue('hello');
-    expect(form.isDirty, isTrue);
+    expect(form.state.meta.dirty, isTrue);
 
     final result = await form.submit();
 
@@ -57,7 +57,7 @@ void main() {
     ]);
 
     form.reset();
-    expect(form.isDirty, isFalse);
-    expect(note.isSet, isFalse);
+    expect(form.state.meta.dirty, isFalse);
+    expect(note.defined, isFalse);
   });
 }

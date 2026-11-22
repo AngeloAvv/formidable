@@ -134,7 +134,7 @@ class FormidableMaterialDatePicker<T extends DateTime?>
                  calendarDelegate: calendarDelegate,
                );
                if (picked == null) {
-                 control.markAsTouched();
+                 control.touch();
                } else {
                  control.didChange(picked as T, touch: true);
                }

@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import '../cross_field/rule.dart';
 import 'dart:async';
 
@@ -55,7 +56,7 @@ abstract class FormidableForm<S>
   FormidableFormState? _state;
   FormidablePipeline? _parent;
   bool _optional = false;
-  bool _initiallySet = true;
+  bool _initiallyDefined = true;
   List<FormidableValidationError> _formErrors = const [];
 
   /// The children of the Form, in Schema declaration order.
@@ -94,7 +95,7 @@ abstract class FormidableForm<S>
   /// changes, and neither is the Form becoming valid on its own: it is not tied
   /// to [value], which is null until the Form is valid. The event is the state,
   /// so the listener reads the Fields it cares about (`state.email.value`), or
-  /// `state.form.value` for the Schema instance when the Form is valid. A
+  /// `state.meta.value` for the Schema instance when the Form is valid. A
   /// generated Form types it after its state.
   ///
   /// ```dart
@@ -109,7 +110,7 @@ abstract class FormidableForm<S>
 
   /// The status of the Form, each time it changes between valid and invalid.
   Stream<FormidableStatus> get statusChanges =>
-      _hub.derive(() => state.form.status, (status) => status);
+      _hub.derive(() => state.meta.status, (status) => status);
 
   /// What [selector] returns for the state of the Form, each time it differs
   /// (by `==`) from what it returned before. The first selection is computed
@@ -126,7 +127,7 @@ abstract class FormidableForm<S>
   /// otherwise (and while an optional Nested Form is Unset). It is the
   /// [FormidableFormMeta.value] of the current [state], so the Schema
   /// constructor runs on the first read after a change, not on every change.
-  S? get value => (state.form as FormidableFormMeta<S>).value;
+  S? get value => (state.meta as FormidableFormMeta<S>).value;
 
   /// Whether the Form holds a value, as opposed to being an Unset optional
   /// Nested Form. It is always true for a Form that is not an optional Nested
@@ -137,23 +138,23 @@ abstract class FormidableForm<S>
   /// was created from a Schema instance. It becomes Unset again when it is
   /// back at its initial state, so reset and patch need no special case.
   /// While it is Unset it is valid and has no output, whatever its Fields say.
-  bool get isSet =>
-      !_optional || _initiallySet || _nodes.any((node) => node.isDirty);
+  bool get defined =>
+      !_optional || _initiallyDefined || _nodes.any((node) => node.isDirty);
 
   /// The Schema instance a parent Form puts in its own output: [buildOutput],
   /// or null while an optional Nested Form is Unset. Called only when every
   /// Field of a set Form is valid.
-  S? get outputOrNull => isSet ? buildOutput() : null;
+  S? get outputOrNull => defined ? buildOutput() : null;
 
   /// Makes this Form an optional Nested Form. Called by the generated parent
   /// Form, once, before [attach] of the parent.
   ///
-  /// [initiallySet] says whether it starts as set (it was created from a
+  /// [initiallyDefined] says whether it starts as set (it was created from a
   /// Schema instance) or Unset.
-  void markOptional({required bool initiallySet}) {
+  void markOptional({required bool initiallyDefined}) {
     assert(_parent == null, 'markOptional must be called before attach.');
     _optional = true;
-    _initiallySet = initiallySet;
+    _initiallyDefined = initiallyDefined;
     _state = _computeState();
   }
 
@@ -173,7 +174,7 @@ abstract class FormidableForm<S>
   void commit() => batch(() {
     // An optional Nested Form that is set now stays set: presence is part of
     // the initial state.
-    _initiallySet = isSet;
+    _initiallyDefined = defined;
     for (final node in _nodes) {
       node.commit();
     }
@@ -425,7 +426,7 @@ abstract class FormidableForm<S>
   void _collectFormErrors(
     Map<FormidableNode, List<FormidableValidationError>> into,
   ) {
-    if (!isSet) return;
+    if (!defined) return;
     if (_formValidators.isNotEmpty) {
       final fields = _fieldsBelow().toSet();
       for (final validator in _formValidators) {
@@ -500,7 +501,7 @@ abstract class FormidableForm<S>
       );
       run.dependencies = dependencies;
       // An Unset optional Nested Form is not validated.
-      if (!owner.isSet ||
+      if (!owner.defined ||
           !dependencies.every((field) => field.readyForFormCheck)) {
         run.cancel();
         continue;
@@ -684,14 +685,17 @@ abstract class FormidableForm<S>
   // FormidableNode, for a Form that is nested in another one.
 
   @override
+  @internal
   bool get isValid =>
-      !isSet || (_formErrors.isEmpty && _nodes.every((node) => node.isValid));
+      !defined || (_formErrors.isEmpty && _nodes.every((node) => node.isValid));
 
   @override
+  @internal
   bool get isDirty => _nodes.any((node) => node.isDirty);
 
   @override
-  bool get isPending => isSet && _nodes.any((node) => node.isPending);
+  @internal
+  bool get isPending => defined && _nodes.any((node) => node.isPending);
 
   /// Marks every Field of a set Nested Form as touched and submitted, and
   /// drops its applied Form errors, like `submit()` does for the root Form. An
@@ -699,7 +703,7 @@ abstract class FormidableForm<S>
   /// Fields the user never meant to fill in.
   @override
   void markSubmitted() {
-    if (!isSet) return;
+    if (!defined) return;
     // Every Field changes, and the Form notifies once.
     _holdTree(1);
     try {
@@ -722,7 +726,7 @@ abstract class FormidableForm<S>
   void collectErrors(
     Map<FormidableNode, List<FormidableValidationError>> into,
   ) {
-    if (!isSet) return;
+    if (!defined) return;
     for (final node in _nodes) {
       node.collectErrors(into);
     }
@@ -776,7 +780,7 @@ abstract class FormidableForm<S>
     status: isValid ? FormidableStatus.valid : FormidableStatus.invalid,
     dirty: isDirty,
     pending: isPending,
-    isSet: isSet,
+    defined: defined,
     errors: _formErrors,
   );
 
@@ -796,14 +800,14 @@ abstract class FormidableForm<S>
     required FormidableStatus status,
     required bool dirty,
     required bool pending,
-    required bool isSet,
+    required bool defined,
     required List<FormidableValidationError> errors,
   }) => FormidableFormState(
-    form: FormidableFormMeta<S>(
+    meta: FormidableFormMeta<S>(
       status: status,
       dirty: dirty,
       pending: pending,
-      isSet: isSet,
+      defined: defined,
       errors: errors,
       buildValue: buildOutput,
     ),

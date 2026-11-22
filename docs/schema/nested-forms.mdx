@@ -68,7 +68,7 @@ The rules of [required and optional Fields](/schema/presence) apply to a Nested 
 | `final Address? work;` | Optional: **Unset** until the user fills it. |
 | `@Required() final Address? work;` | Required: always present. The user has to fill it in. |
 
-An Unset optional Nested Form is valid, does not block submit and contributes `null` to the output. It is set (`form.work.isSet`) as soon as one of its Fields differs from its initial state, and from then on its Fields' rules apply. When every Field goes back to its initial state, it is Unset again. Because that is derived from dirty, reset and patch need no special handling. A Nested Form created from a Schema instance (`ContactForm.from(...)` with a non-null `work`) starts set.
+An Unset optional Nested Form is valid, does not block submit and contributes `null` to the output. It is set (`form.work.defined`) as soon as one of its Fields differs from its initial state, and from then on its Fields' rules apply. When every Field goes back to its initial state, it is Unset again. Because that is derived from dirty, reset and patch need no special handling. A Nested Form created from a Schema instance (`ContactForm.from(...)` with a non-null `work`) starts set.
 
 There is nothing to mark Unset by hand: to take an optional Nested Form out of the output, put its Fields back to their initial state.
 

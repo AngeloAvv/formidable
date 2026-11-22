@@ -106,7 +106,7 @@ class FormidableMaterialTimePicker<T extends TimeOfDay?>
                  emptyInitialInput: emptyInitialInput,
                );
                if (picked == null) {
-                 control.markAsTouched();
+                 control.touch();
                } else {
                  control.didChange(picked as T, touch: true);
                }

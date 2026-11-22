@@ -27,7 +27,7 @@ void main() {
       );
 
       expect(thumb(tester), 2);
-      expect(form.volume.isSet, isFalse);
+      expect(form.volume.defined, isFalse);
     });
 
     testWidgets('shows the value of the Field, kept within min and max', (
@@ -57,7 +57,7 @@ void main() {
       await tester.tapAt(tester.getCenter(find.byType(Slider)));
       await tester.pump();
 
-      expect(form.volume.isSet, isTrue);
+      expect(form.volume.defined, isTrue);
       expect(form.volume.value, closeTo(5, 0.1));
       expect(form.volume.state.touched, isTrue);
     });
@@ -82,7 +82,7 @@ void main() {
       );
       expect(find.text('This field is required.'), findsNothing);
 
-      form.volume.markAsTouched();
+      form.volume.touch();
       await tester.pump();
 
       expect(find.text('This field is required.'), findsOneWidget);

@@ -910,9 +910,10 @@ class SignUp {
       'applyErrors',
       'dispose',
       'focusOrder',
-      'isSet',
+      'defined',
       'isValid',
       'isDirty',
+      'isPending',
       'buildOutput',
       'buildState',
       'hashCode',
@@ -923,9 +924,9 @@ class SignUp {
       'statusChanges',
       'select',
       'hasListeners',
-      // The metadata of the generated state lives under `form`, so `form` is
+      // The metadata of the generated state lives under `meta`, so `meta` is
       // the only name the state takes from the Schema's Fields.
-      'form',
+      'meta',
     ]) {
       test('fails for a Field named $name', () async {
         final result = await build(name);
@@ -944,8 +945,8 @@ class SignUp {
       expect(result.succeeded, isTrue);
     });
 
-    // The metadata of the Form is under `state.form`, so these names are free.
-    for (final name in ['status', 'dirty', 'pending', 'errors']) {
+    // The metadata of the Form is under `state.meta`, so these names are free.
+    for (final name in ['form', 'status', 'dirty', 'pending', 'errors']) {
       test('accepts a Field named $name', () async {
         final result = await build(name);
 

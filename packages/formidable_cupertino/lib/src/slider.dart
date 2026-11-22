@@ -37,7 +37,7 @@ class FormidableCupertinoSlider
              value: (control.value ?? min).clamp(min, max),
              onChanged: control.enabled ? control.didChange : null,
              onChangeStart: (value) {
-               control.markAsTouched();
+               control.touch();
                onChangeStart?.call(value);
              },
              onChangeEnd: onChangeEnd,

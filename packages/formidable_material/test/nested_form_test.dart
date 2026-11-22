@@ -28,12 +28,12 @@ void main() {
             FormidableFormBuilder<AddressForm>(
               form: context.checkoutForm.shipping,
               builder: (context, state) => Text(
-                'shipping:${state.form.status.name}:${state.form.dirty}',
+                'shipping:${state.meta.status.name}:${state.meta.dirty}',
               ),
             ),
             FormidableFormBuilder<CheckoutForm>(
               builder: (context, state) =>
-                  Text('checkout:${state.form.status.name}'),
+                  Text('checkout:${state.meta.status.name}'),
             ),
           ],
         ),
@@ -52,7 +52,7 @@ void main() {
     await tester.pump();
 
     expect(form.billing.street.value, 'Via Roma');
-    expect(form.state.form.dirty, isTrue);
+    expect(form.state.meta.dirty, isTrue);
     expect(find.text('checkout:valid'), findsOneWidget);
   });
 
@@ -63,7 +63,7 @@ void main() {
     await tester.pumpWidget(page(form));
 
     await tester.enterText(find.byType(TextField).first, 'ab');
-    form.billing.street.markAsTouched();
+    form.billing.street.touch();
     await tester.pump();
 
     expect(
@@ -89,7 +89,7 @@ void main() {
     await tester.enterText(find.byType(TextField).last, 'ab');
     await tester.pump();
 
-    expect(form.shipping.isSet, isTrue);
+    expect(form.shipping.defined, isTrue);
     expect(find.text('shipping:invalid:true'), findsOneWidget);
     expect(find.text('checkout:invalid'), findsOneWidget);
   });
@@ -127,7 +127,7 @@ void main() {
         CheckoutFormScope.value(
           form: form,
           child: CheckoutFormSelector<String?>(
-            selector: (state) => state.form.value?.billing.street,
+            selector: (state) => state.meta.value?.billing.street,
             builder: (context, street) => Text('street:$street'),
           ),
         ),

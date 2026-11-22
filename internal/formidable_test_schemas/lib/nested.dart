@@ -135,7 +135,7 @@ class StreetNeedsZip extends FormidableFormValidator<DeliveryForm> {
 
   @override
   List<FormidableFieldError> validate(DeliveryForm form) =>
-      form.place.street.isSet && !form.place.zip.isSet
+      form.place.street.defined && !form.place.zip.defined
       ? [FormidableFieldError(form.place.zip, const PasswordMismatch())]
       : const [];
 }

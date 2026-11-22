@@ -101,7 +101,7 @@ void main() {
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
 
-      expect(form.birthday.isSet, isFalse);
+      expect(form.birthday.defined, isFalse);
       expect(form.birthday.state.touched, isTrue);
     });
 
@@ -111,7 +111,7 @@ void main() {
       await tester.pumpWidget(app(picker));
       expect(find.text('This field is required.'), findsNothing);
 
-      form.birthday.markAsTouched();
+      form.birthday.touch();
       await tester.pump();
 
       expect(find.text('This field is required.'), findsOneWidget);
@@ -128,7 +128,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.clear));
       await tester.pump();
 
-      expect(form.birthday.isSet, isFalse);
+      expect(form.birthday.defined, isFalse);
       expect(form.birthday.state.touched, isTrue);
       expect(find.text('2024-07-04'), findsNothing);
     });
@@ -149,7 +149,7 @@ void main() {
       await tester.tap(find.byIcon(Icons.clear));
       await tester.pump();
 
-      expect(form.graduation.isSet, isTrue);
+      expect(form.graduation.defined, isTrue);
       expect(form.graduation.value, isNull);
       expect(form.graduation.state.dirty, isTrue);
       expect(form.graduation.state.touched, isTrue);

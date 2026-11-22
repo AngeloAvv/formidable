@@ -431,7 +431,7 @@ void main() {
 
       await tester.tap(find.text('Free'));
       await tester.pump();
-      expect(plan.isSet, isFalse);
+      expect(plan.defined, isFalse);
 
       await tester.tap(find.text('Pro'));
       await tester.pump();
@@ -458,7 +458,7 @@ void main() {
       expect(tile(1).enabled, isFalse);
       await tester.tap(find.text('Pro'));
       await tester.pump();
-      expect(plan.isSet, isFalse);
+      expect(plan.defined, isFalse);
     });
 
     testWidgets('a toggleable group on a non-nullable Field goes Unset', (
@@ -481,7 +481,7 @@ void main() {
       await tester.tap(find.text('Pro'));
       await tester.pump();
 
-      expect(plan.isSet, isFalse);
+      expect(plan.defined, isFalse);
       expect(plan.state.touched, isTrue);
     });
 

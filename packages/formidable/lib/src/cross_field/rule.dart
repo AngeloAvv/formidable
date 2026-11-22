@@ -119,7 +119,7 @@ extension FormidableFieldFilled on FormidableField<Object?> {
   /// it is not an empty string, collection or map. `false` for the number zero
   /// and for `false`.
   bool get isFilled {
-    if (!isSet) return false;
+    if (!defined) return false;
     return switch (value) {
       null => false,
       final String text => text.isNotEmpty,
@@ -132,4 +132,4 @@ extension FormidableFieldFilled on FormidableField<Object?> {
 
 /// Whether [field] is set to exactly [value]. An Unset Field equals nothing.
 bool formidableFieldEquals(FormidableField<Object?> field, Object? value) =>
-    field.isSet && field.value == value;
+    field.defined && field.value == value;

@@ -71,7 +71,7 @@ void main() {
             const TextField(key: Key('other')),
             FormidableFormBuilder<LoginForm>(
               builder: (context, state) => Text(
-                'form:${state.form.errors.map((e) => e.toString()).join(',')}',
+                'form:${state.meta.errors.map((e) => e.toString()).join(',')}',
               ),
             ),
           ],
@@ -205,7 +205,7 @@ void main() {
     testWidgets('does not accept input and shows no errors', (tester) async {
       await tester.pumpWidget(page());
       await tester.enterText(field('Password'), 'a');
-      form.password.markAsTouched();
+      form.password.touch();
       await tester.pump();
       expect(find.text(passwordTooShort), findsOneWidget);
 
@@ -246,7 +246,7 @@ void main() {
     ) async {
       await tester.pumpWidget(page());
       await tester.enterText(field('Username'), 'angelo');
-      form.username.markAsTouched();
+      form.username.touch();
       form.applyErrors(
         fieldErrors: {
           form.username: [const _Taken()],

@@ -53,7 +53,7 @@ void main() {
       final form = itinerary();
       final changes = collect(form.title.changes);
 
-      form.title.markAsTouched();
+      form.title.touch();
 
       expect(changes, hasLength(1));
       expect(changes.single.touched, isTrue);
@@ -63,7 +63,7 @@ void main() {
       final form = itinerary();
       final values = collect(form.title.valueChanges);
 
-      form.title.markAsTouched();
+      form.title.touch();
       form.markSubmitted();
 
       expect(values, isEmpty);
@@ -83,10 +83,10 @@ void main() {
     test('valueChanges emits null for Unset and for a chosen null', () {
       final form = itinerary();
       final values = collect(form.footer.valueChanges);
-      expect(form.footer.isSet, isFalse);
+      expect(form.footer.defined, isFalse);
 
       form.footer.setValue(null); // Unset -> null chosen: presence changes
-      expect(form.footer.isSet, isTrue);
+      expect(form.footer.defined, isTrue);
       form.footer.setValue('bye');
       form.footer.clear(); // back to Unset
 
@@ -100,7 +100,7 @@ void main() {
       form.title.clear();
 
       expect(values, [null]);
-      expect(form.title.isSet, isFalse);
+      expect(form.title.defined, isFalse);
     });
 
     test('statusChanges emits only when the status changes', () {
@@ -110,7 +110,7 @@ void main() {
       form.title.setValue('x'); // MinLength(2): invalid
       form.title.setValue('xy'); // valid
       form.title.setValue('xz'); // still valid
-      form.title.markAsTouched();
+      form.title.touch();
 
       expect(statuses, [FormidableStatus.invalid, FormidableStatus.valid]);
     });
@@ -120,7 +120,7 @@ void main() {
       final lengths = collect(form.title.select((s) => s.value?.length));
 
       form.title.setValue('Oslo'); // length 4, like Rome
-      form.title.markAsTouched();
+      form.title.touch();
       form.title.setValue('Paris');
       form.title.setValue('Milan'); // length 5 again
 
@@ -140,10 +140,10 @@ void main() {
 
     test('select compares with ==, so a record selection works', () {
       final form = itinerary();
-      final pairs = collect(form.title.select((s) => (s.isSet, s.touched)));
+      final pairs = collect(form.title.select((s) => (s.defined, s.touched)));
 
       form.title.setValue('Oslo');
-      form.title.markAsTouched();
+      form.title.touch();
 
       expect(pairs, [(true, true)]);
     });
@@ -211,7 +211,7 @@ void main() {
       field.valueChanges.listen((_) {}, onDone: () => done.add('value'));
       field.statusChanges.listen((_) {}, onDone: () => done.add('status'));
       field
-          .select((s) => s.isSet)
+          .select((s) => s.defined)
           .listen((_) {}, onDone: () => done.add('select'));
 
       field.dispose();
@@ -222,7 +222,7 @@ void main() {
 
     test('are closed when the Field is already disposed', () async {
       final field = FormidableField<String>()..dispose();
-      final unsubscribed = field.select((s) => s.isSet);
+      final unsubscribed = field.select((s) => s.defined);
 
       expect(await field.changes.isEmpty, isTrue);
       expect(await field.valueChanges.isEmpty, isTrue);
@@ -232,7 +232,7 @@ void main() {
 
     test('a stream created before the dispose is closed when subscribed', () {
       final field = FormidableField<String>();
-      final stream = field.select((s) => s.isSet);
+      final stream = field.select((s) => s.defined);
 
       field.dispose();
 
@@ -296,14 +296,14 @@ void main() {
       (form as SignUpForm).username.setValue('angelo2');
 
       expect(events.single, isA<SignUpFormState>());
-      expect(events.single.form.value, isA<SignUp>());
+      expect(events.single.meta.value, isA<SignUp>());
     });
 
     test('changes emits on any state change', () {
       final form = itinerary();
       final changes = collect(form.changes);
 
-      form.title.markAsTouched();
+      form.title.touch();
       form.markSubmitted();
       form.title.setValue('Oslo');
 
@@ -314,8 +314,8 @@ void main() {
       final form = itinerary();
       final values = collect(form.valueChanges);
 
-      form.title.markAsTouched();
-      form.footer.markAsTouched();
+      form.title.touch();
+      form.footer.touch();
       form.markSubmitted();
 
       expect(values, isEmpty);
@@ -339,7 +339,7 @@ void main() {
       final form = itinerary();
       final values = collect(form.valueChanges);
 
-      form.contact.street.markAsTouched();
+      form.contact.street.touch();
       form.contact.street.setValue('Via Appia');
 
       expect(values, hasLength(1));
@@ -353,7 +353,7 @@ void main() {
       form.phones.add(const Telephone(number: '333')); // added
       form.phones.move(0, 2); // moved
       form.phones[0].node.number.setValue('999'); // edited
-      form.phones[0].node.number.markAsTouched(); // not a value change
+      form.phones[0].node.number.touch(); // not a value change
       form.phones.removeAt(1); // removed
 
       expect(values, hasLength(4));
@@ -366,7 +366,7 @@ void main() {
 
       final note = form.extras.register<String>('note'); // registered
       note.setValue('hi'); // written
-      note.markAsTouched();
+      note.touch();
       form.extras.remove('note'); // removed
 
       expect(values, hasLength(3));
@@ -391,13 +391,13 @@ void main() {
       );
       addTearDown(form.dispose);
       final values = collect(form.valueChanges);
-      expect(form.work.isSet, isFalse);
+      expect(form.work.defined, isFalse);
 
       form.work.street.setValue('Via Appia'); // work becomes set
       form.work.street.clear(); // work is Unset again
 
       expect(values, hasLength(2));
-      expect(form.work.isSet, isFalse);
+      expect(form.work.defined, isFalse);
     });
 
     test('valueChanges is not the Form becoming valid', () {
@@ -420,7 +420,7 @@ void main() {
       form.username.setValue('angelo');
 
       expect(values, hasLength(1));
-      expect(values.single.form.value?.username, 'angelo');
+      expect(values.single.meta.value?.username, 'angelo');
     });
 
     test('valueChanges emits once for a batch', () {
@@ -460,7 +460,7 @@ void main() {
 
       form.username.setValue('ab');
       form.username.setValue('abc'); // still invalid
-      form.username.markAsTouched();
+      form.username.touch();
       form.username.setValue('abcdef');
 
       expect(statuses, [FormidableStatus.invalid, FormidableStatus.valid]);
@@ -473,7 +473,7 @@ void main() {
         form.select((s) => (s.title.value, s.footer.value)),
       );
 
-      form.title.markAsTouched();
+      form.title.touch();
       form.contact.street.setValue('Via Appia'); // not selected
       form.title.setValue('Oslo');
       form.footer.setValue('bye');
@@ -485,7 +485,7 @@ void main() {
     test('select can read the metadata of the Form', () {
       final form = SignUpForm(username: 'angelo');
       addTearDown(form.dispose);
-      final dirty = collect(form.select((s) => s.form.dirty));
+      final dirty = collect(form.select((s) => s.meta.dirty));
 
       form.username.setValue('angelo2');
       form.username.setValue('angelo3');
@@ -592,7 +592,7 @@ void main() {
       final selection = collect(form.contact.select((s) => s.zip.value));
 
       form.title.setValue('Oslo');
-      form.contact.street.markAsTouched();
+      form.contact.street.touch();
       expect(values, isEmpty);
 
       form.contact.street.setValue('Via Appia');
@@ -626,7 +626,7 @@ void main() {
         form.phones.add(const Telephone(number: '333'));
         form.phones.move(2, 0);
         form.phones[1].node.number.setValue('999');
-        form.phones[1].node.number.markAsTouched();
+        form.phones[1].node.number.touch();
         form.phones.removeAt(0);
 
         expect(values, hasLength(4));
@@ -639,8 +639,8 @@ void main() {
       final changes = collect(form.phones.changes);
       final values = collect(form.phones.valueChanges);
 
-      form.phones.markAsTouched();
-      form.phones[0].node.number.markAsTouched();
+      form.phones.touch();
+      form.phones[0].node.number.touch();
 
       expect(changes, hasLength(2));
       expect(values, isEmpty);
@@ -674,7 +674,7 @@ void main() {
       final values = collect(form.tags.valueChanges);
 
       form.tags[0].node.setValue('cd');
-      form.tags[0].node.markAsTouched();
+      form.tags[0].node.touch();
       form.tags.add('ef');
 
       expect(values, hasLength(2));
@@ -693,7 +693,7 @@ void main() {
         form.title.setValue('Oslo'); // not the Dynamic Form
         final age = form.extras.register<int>('age');
         age.setValue(3);
-        age.markAsTouched();
+        age.touch();
         form.extras.remove('age');
 
         expect(values, hasLength(3));
@@ -742,7 +742,7 @@ void main() {
             );
           });
 
-          form.title.markAsTouched();
+          form.title.touch();
           form.title.setValue('Pa');
           async.elapse(const Duration(milliseconds: 100));
           form.title.setValue('Par');

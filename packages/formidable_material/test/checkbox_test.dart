@@ -36,7 +36,7 @@ void main() {
       await tester.tap(find.byType(Checkbox));
       await tester.pump();
 
-      expect(form.terms.isSet, isTrue);
+      expect(form.terms.defined, isTrue);
       expect(form.terms.value, isTrue);
 
       await tester.tap(find.byType(Checkbox));
@@ -67,7 +67,7 @@ void main() {
         app((form) => FormidableMaterialCheckbox(field: form.terms)),
       );
 
-      form.terms.markAsTouched();
+      form.terms.touch();
       await tester.pump();
 
       expect(find.text('This field is required.'), findsOneWidget);
@@ -106,7 +106,7 @@ void main() {
       await tester.tap(find.byType(Checkbox)); // true -> null
       await tester.pump();
 
-      expect(form.beta.isSet, isTrue);
+      expect(form.beta.defined, isTrue);
       expect(form.beta.value, isNull);
       expect(tester.widget<Checkbox>(find.byType(Checkbox)).value, isNull);
     });

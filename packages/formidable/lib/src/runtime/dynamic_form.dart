@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import '../normalizers/normalizer.dart';
 import '../validation/async_validator.dart';
 import '../validation/validation_error.dart';
@@ -290,7 +291,7 @@ final class FormidableDynamicForm
         output: () => field.output,
         read: (state) {
           final fieldState = state as FormidableFieldState<T>;
-          if (fieldState.isSet) return fieldState.value as T;
+          if (fieldState.defined) return fieldState.value as T;
           if (defaultValue != null) return defaultValue;
           if (null is T) return null;
           throw StateError('A required Field is Unset and has no output.');
@@ -313,7 +314,7 @@ final class FormidableDynamicForm
         form,
         clear: form.clear,
         output: () => form.outputOrNull,
-        read: (state) => (state as FormidableFormState).form.value,
+        read: (state) => (state as FormidableFormState).meta.value,
         state: () => form.state,
       ),
     );
@@ -469,12 +470,15 @@ final class FormidableDynamicForm
   // FormidableNode.
 
   @override
+  @internal
   bool get isValid => children.every((node) => node.isValid);
 
   @override
+  @internal
   bool get isDirty => children.any((node) => node.isDirty);
 
   @override
+  @internal
   bool get isPending => children.any((node) => node.isPending);
 
   @override

@@ -1,3 +1,4 @@
+import 'package:meta/meta.dart';
 import '../validation/required_error.dart';
 import '../validation/validation_error.dart';
 import '../validation/validator.dart';
@@ -230,7 +231,7 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
   }
 
   /// Whether the array has items. An empty array is Unset.
-  bool get isSet => _items.isNotEmpty;
+  bool get defined => _items.isNotEmpty;
 
   /// The list the array contributes to the Schema instance: the value of every
   /// item. An empty array produces its default. Call it only when the array is
@@ -249,7 +250,7 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
   }
 
   /// Records that the user interacted with the array.
-  void markAsTouched() {
+  void touch() {
     if (_touched) return;
     _touched = true;
     _refresh();
@@ -258,13 +259,16 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
   // FormidableNode.
 
   @override
+  @internal
   bool get isValid =>
       _state.errors.isEmpty && _items.every((item) => item.node.isValid);
 
   @override
+  @internal
   bool get isDirty => _structureChanged || _items.any((i) => i.node.isDirty);
 
   @override
+  @internal
   bool get isPending => _items.any((item) => item.node.isPending);
 
   @override

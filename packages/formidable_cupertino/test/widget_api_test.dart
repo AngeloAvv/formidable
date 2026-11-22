@@ -97,7 +97,7 @@ void main() {
       expect(form.terms.value, isTrue);
       await tester.tap(find.byType(CupertinoCheckbox));
       await tester.pump();
-      expect(form.terms.isSet, isFalse);
+      expect(form.terms.defined, isFalse);
       expect(form.terms.state.touched, isTrue);
     });
 

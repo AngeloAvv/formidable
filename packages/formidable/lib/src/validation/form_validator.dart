@@ -21,7 +21,7 @@ final class FormidableFieldError {
 /// It runs after the synchronous Field Validators, whenever any Field changes
 /// and once when the Form is created. The errors it returns are added after
 /// the Field's own errors and never replace them. Unlike a Field Validator it
-/// runs whether or not the Fields have a value, so check `isSet` on the
+/// runs whether or not the Fields have a value, so check `defined` on the
 /// handles it reads.
 abstract class FormidableFormValidator<F extends FormidableForm<Object?>> {
   const FormidableFormValidator();

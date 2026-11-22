@@ -39,10 +39,10 @@ class InList extends FormidableCrossFieldRule {
     FormidableField<Object?> target,
     List<FormidableField<Object?>> references,
   ) {
-    final value = target.isSet ? target.value : null;
+    final value = target.defined ? target.value : null;
     if (value == null) return const [];
     final list = references.single;
-    final items = list.isSet ? list.value : null;
+    final items = list.defined ? list.value : null;
     return items is Iterable<Object?> && items.contains(value)
         ? const []
         : const [FormidableInListError()];
@@ -68,9 +68,9 @@ class UniqueBy<E> extends FormidableCrossFieldRule {
     FormidableField<Object?> target,
     List<FormidableField<Object?>> references,
   ) {
-    final value = target.isSet ? target.value : null;
+    final value = target.defined ? target.value : null;
     final list = references.single;
-    final items = list.isSet ? list.value : null;
+    final items = list.defined ? list.value : null;
     if (value == null || items is! Iterable<Object?>) return const [];
     // Safe: the generator checks the type of the Field and of the elements.
     final wanted = key(value as E);

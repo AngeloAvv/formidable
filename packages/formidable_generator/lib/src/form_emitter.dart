@@ -176,7 +176,7 @@ String emitForm(SchemaModel schema) {
   out.writeln('    required FormidableStatus status,');
   out.writeln('    required bool dirty,');
   out.writeln('    required bool pending,');
-  out.writeln('    required bool isSet,');
+  out.writeln('    required bool defined,');
   out.writeln('    required List<FormidableValidationError> errors,');
   out.writeln('  }) {');
   for (final f in fields) {
@@ -184,11 +184,11 @@ String emitForm(SchemaModel schema) {
     out.writeln('    final ${f.name}\$ = this.${f.name}.state;');
   }
   out.writeln('    return ${schema.stateName}(');
-  out.writeln('      form: FormidableFormMeta<${schema.name}>(');
+  out.writeln('      meta: FormidableFormMeta<${schema.name}>(');
   out.writeln('        status: status,');
   out.writeln('        dirty: dirty,');
   out.writeln('        pending: pending,');
-  out.writeln('        isSet: isSet,');
+  out.writeln('        defined: defined,');
   out.writeln('        errors: errors,');
   out.writeln('        // Built from the child states, on the first read.');
   out.writeln('        buildValue: () => ${_constructFromStates(schema)},');
@@ -214,25 +214,25 @@ String _state(SchemaModel schema) {
       '/// The state of a [${schema.formName}]: the state of every Field, Nested',
     )
     ..writeln(
-      '/// Form and Field Array below it, and its own status under [form], as one',
+      '/// Form and Field Array below it, and its own status under [meta], as one',
     )
     ..writeln('/// immutable snapshot with deep equality.')
     ..writeln('final class $name extends FormidableFormState {')
     ..writeln('  $name({')
-    ..writeln('    required FormidableFormMeta<${schema.name}> form,');
+    ..writeln('    required FormidableFormMeta<${schema.name}> meta,');
   for (final f in fields) {
     out.writeln('    required this.${f.name},');
   }
   out
-    ..writeln('  }) : super(form: form);')
+    ..writeln('  }) : super(meta: meta);')
     ..writeln()
     ..writeln(
       '  /// The status, flags, errors and Schema value of the Form. The value',
     )
     ..writeln('  /// is lazy and does not take part in equality.')
     ..writeln('  @override')
-    ..writeln('  FormidableFormMeta<${schema.name}> get form =>')
-    ..writeln('      super.form as FormidableFormMeta<${schema.name}>;');
+    ..writeln('  FormidableFormMeta<${schema.name}> get meta =>')
+    ..writeln('      super.meta as FormidableFormMeta<${schema.name}>;');
   for (final f in fields) {
     out
       ..writeln()
@@ -256,7 +256,7 @@ String _state(SchemaModel schema) {
     )
     ..writeln()
     ..writeln('  @override')
-    ..writeln("  String toString() => '$name(form: \$form'");
+    ..writeln("  String toString() => '$name(meta: \$meta'");
   for (final f in fields) {
     out.writeln("      ', ${f.name}: \$${f.name}'");
   }
@@ -338,7 +338,7 @@ String _nested(FieldModel f) {
   final create =
       '$name == null ? $form($injected) : $form.from($name$fromInjected)';
   return _isOptionalNested(f)
-      ? '($create)..markOptional(initiallySet: $name != null)'
+      ? '($create)..markOptional(initiallyDefined: $name != null)'
       : create;
 }
 
@@ -368,7 +368,7 @@ String _array(FieldModel f) {
     create =
         'initial == null ? $form($injected) : $form.from(initial$fromInjected)';
     read = 'item.buildOutput()';
-    readState = 'state.form.value!';
+    readState = 'state.meta.value!';
   } else {
     final source = array.fieldArraySource!;
     final itemArguments = [
@@ -446,7 +446,7 @@ String _fromState(FieldModel f) {
         : '$state.outputOrNull as $list';
   }
   if (f.isNested) {
-    return _isOptionalNested(f) ? '$state.form.value' : '$state.form.value!';
+    return _isOptionalNested(f) ? '$state.meta.value' : '$state.meta.value!';
   }
   if (f.isPassthrough) return state;
   // The state holds `T?`, which is `T` already when the Field is nullable.
@@ -455,7 +455,7 @@ String _fromState(FieldModel f) {
       : '$state.value as ${f.typeSource}';
   return f.defaultSource == null
       ? value
-      : '$state.isSet ? $value : ${f.defaultSource}';
+      : '$state.defined ? $value : ${f.defaultSource}';
 }
 
 String _construct(SchemaModel schema) {

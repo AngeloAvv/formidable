@@ -158,7 +158,7 @@ void main() {
       await tester.enterText(input('Place 2'), 'Turin');
 
       expect(form.stops.items[1].node.place.value, 'Turin');
-      expect(form.stops.items[0].node.place.isSet, isFalse);
+      expect(form.stops.items[0].node.place.defined, isFalse);
     });
 
     testWidgets('shows the errors of the array itself', (tester) async {

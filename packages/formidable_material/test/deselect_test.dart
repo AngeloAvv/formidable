@@ -42,7 +42,7 @@ void main() {
       await tester.tap(find.text('Pro'));
       await tester.pump();
 
-      expect(plan.isSet, isTrue);
+      expect(plan.defined, isTrue);
       expect(plan.value, isNull);
       expect(plan.state.dirty, isTrue);
       expect(plan.state.touched, isTrue);
@@ -67,7 +67,7 @@ void main() {
       await tester.tap(find.text('Pro'));
       await tester.pump();
 
-      expect(plan.isSet, isTrue);
+      expect(plan.defined, isTrue);
       expect(plan.value, isNull);
       expect(plan.state.dirty, isTrue);
     });
@@ -92,7 +92,7 @@ void main() {
       await tester.tap(find.text('Pro'));
       await tester.pump();
 
-      expect(plan.isSet, isFalse);
+      expect(plan.defined, isFalse);
       expect(plan.state.touched, isTrue);
     });
   });
@@ -123,7 +123,7 @@ void main() {
       await tester.tap(find.text('Pro'));
       await tester.pump();
 
-      expect(plan.isSet, isTrue);
+      expect(plan.defined, isTrue);
       expect(plan.value, isNull);
       expect(plan.state.dirty, isTrue);
       expect(plan.state.touched, isTrue);
@@ -149,7 +149,7 @@ void main() {
       await tester.tap(find.text('Pro'));
       await tester.pump();
 
-      expect(plan.isSet, isFalse);
+      expect(plan.defined, isFalse);
       expect(plan.state.touched, isTrue);
     });
   });
@@ -175,7 +175,7 @@ void main() {
 
       await tapThroughToNull(tester, find.byType(Checkbox));
 
-      expect(beta.isSet, isTrue);
+      expect(beta.defined, isTrue);
       expect(beta.value, isNull);
       expect(beta.state.dirty, isTrue);
       expect(beta.state.touched, isTrue);
@@ -192,7 +192,7 @@ void main() {
 
       await tapThroughToNull(tester, find.byType(Checkbox));
 
-      expect(beta.isSet, isFalse);
+      expect(beta.defined, isFalse);
       expect(beta.state.touched, isTrue);
     });
 
@@ -213,7 +213,7 @@ void main() {
 
         await tapThroughToNull(tester, find.byType(Checkbox));
 
-        expect(beta.isSet, isTrue);
+        expect(beta.defined, isTrue);
         expect(beta.value, isNull);
         expect(beta.state.dirty, isTrue);
         expect(beta.state.touched, isTrue);
@@ -237,7 +237,7 @@ void main() {
 
         await tapThroughToNull(tester, find.byType(Checkbox));
 
-        expect(beta.isSet, isFalse);
+        expect(beta.defined, isFalse);
         expect(beta.state.touched, isTrue);
       },
     );

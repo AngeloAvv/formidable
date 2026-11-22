@@ -99,7 +99,7 @@ void main() {
             body: PasswordChangeFormScope(
               create: () =>
                   PasswordChangeForm(password: 'a', confirmation: 'b')
-                    ..confirmation.markAsTouched(),
+                    ..confirmation.touch(),
               child: Builder(
                 builder: (context) => FormidableMaterialTextField(
                   field: context.passwordChangeForm.confirmation,

@@ -28,7 +28,7 @@ void main() {
 
       form.mood.clear();
 
-      expect(form.mood.isSet, isFalse);
+      expect(form.mood.defined, isFalse);
       expect(form.mood.state.errors, [isA<FormidableRequiredError>()]);
     });
   });
@@ -55,21 +55,21 @@ void main() {
       final unset = PresenceForm(email: 'a@b.c');
       final chosen = PresenceForm(email: 'a@b.c')..nickname.setValue(null);
 
-      expect(unset.nickname.isSet, isFalse);
-      expect(chosen.nickname.isSet, isTrue);
+      expect(unset.nickname.defined, isFalse);
+      expect(chosen.nickname.defined, isTrue);
       expect(unset.nickname.value, chosen.nickname.value);
       expect(unset.nickname.state, isNot(chosen.nickname.state));
     });
 
     test('a defaulted Field starts with its default and returns to it', () {
       final form = PresenceForm(email: 'a@b.c');
-      expect(form.bio.isSet, isTrue);
+      expect(form.bio.defined, isTrue);
       expect(form.bio.value, 'none');
 
       form.bio.setValue('hi');
       form.bio.clear();
 
-      expect(form.bio.isSet, isFalse);
+      expect(form.bio.defined, isFalse);
     });
   });
 }

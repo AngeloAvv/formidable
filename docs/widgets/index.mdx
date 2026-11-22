@@ -32,7 +32,7 @@ The `builder` receives the **control**, the state object of the widget. It rebui
 | Member | What it is |
 | --- | --- |
 | `value` | The value to show: the Field seen through the Codec, or null while the Field is Unset. |
-| `isSet` | Whether the Field holds a value. This tells Unset from a chosen null. |
+| `defined` | Whether the Field holds a value. This tells Unset from a chosen null. |
 | `state` | The `FormidableFieldState<T>` snapshot: errors, touched, dirty, submitted, pending. |
 | `errorText` | The Validation Message to show, or null. It follows the [error display policy](/form/submit) and the [message lookup](/validation/messages). |
 | `enabled` | Whether the Field accepts input. A disabled Field is not part of the Form. |
@@ -46,7 +46,7 @@ and takes what the user did:
 | --- | --- |
 | `didChange(value, {touch})` | Writes the value through the Codec and the Field pipeline (Normalizers, Validators). With `touch: true` it also marks the Field touched. |
 | `clear({touch})` | Puts the Field back to Unset. |
-| `markAsTouched()` | Marks the Field touched, for an interaction that changed nothing, such as a cancelled dialog. |
+| `touch()` | Marks the Field touched, for an interaction that changed nothing, such as a cancelled dialog. |
 
 A Field becomes touched when its focus node loses focus. A widget that cannot take focus has no "loses focus" moment, so its first interaction is what makes the Field touched: pass `touch: true`.
 

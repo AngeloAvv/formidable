@@ -183,7 +183,7 @@ void main() {
       isNull,
     );
 
-    name.markAsTouched();
+    name.touch();
     await tester.pump();
 
     expect(
@@ -270,7 +270,7 @@ void main() {
       await tester.pump();
 
       expect(find.byKey(const Key('clear')), findsNothing);
-      expect(name.isSet, isFalse);
+      expect(name.defined, isFalse);
       expect(
         tester
             .widget<CupertinoTextField>(find.byType(CupertinoTextField))
@@ -324,7 +324,7 @@ void main() {
       );
 
       await tester.enterText(find.byType(CupertinoTextField), 'ab');
-      name.markAsTouched();
+      name.touch();
       await tester.pump();
 
       expect(
@@ -352,7 +352,7 @@ void main() {
       expect(style(), isNull);
 
       await tester.enterText(find.byType(CupertinoTextField), 'ab');
-      name.markAsTouched();
+      name.touch();
       await tester.pump();
       expect(style()?.color, CupertinoColors.destructiveRed);
 

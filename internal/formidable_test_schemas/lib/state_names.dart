@@ -3,7 +3,7 @@ import 'package:formidable/formidable.dart';
 part 'state_names.formidable.dart';
 
 /// Fields named like the metadata of a Form state (`status`, `dirty`,
-/// `pending`, `errors`), which live under `state.form`, so a Schema may use
+/// `pending`, `errors`), which live under `state.meta`, so a Schema may use
 /// these names for its own Fields.
 @Formidable()
 class StateNames {

@@ -27,7 +27,7 @@ void main() {
 
           username.setValue('alice');
           expect(username.state.pending, isTrue);
-          expect(form.isPending, isTrue);
+          expect(form.state.meta.pending, isTrue);
           expect(usernames.calls, isEmpty);
 
           async.elapse(_debounce);
@@ -38,8 +38,8 @@ void main() {
 
           expect(username.state.pending, isFalse);
           expect(username.state.errors, [const TakenError('alice')]);
-          expect(form.isValid, isFalse);
-          expect(form.isPending, isFalse);
+          expect(form.state.meta.valid, isFalse);
+          expect(form.state.meta.pending, isFalse);
         });
       },
     );
@@ -56,7 +56,7 @@ void main() {
         usernames.answer('alice', taken: false);
         async.flushMicrotasks();
 
-        expect(form.isValid, isTrue);
+        expect(form.state.meta.valid, isTrue);
         expect(form.value!.answers, {'username': 'alice'});
       });
     });
@@ -128,12 +128,12 @@ void main() {
         form.answers
             .register<String>('username', asyncValidators: [usernames])
             .setValue('alice');
-        expect(form.isPending, isTrue);
+        expect(form.state.meta.pending, isTrue);
 
         form.answers.remove('username');
         async.elapse(const Duration(seconds: 5));
 
-        expect(form.isPending, isFalse);
+        expect(form.state.meta.pending, isFalse);
         expect(usernames.calls, isEmpty);
       });
     });
@@ -167,7 +167,7 @@ void main() {
 
         member.username.setValue('alice');
         expect(member.username.state.pending, isTrue);
-        expect(form.isPending, isTrue);
+        expect(form.state.meta.pending, isTrue);
 
         async.elapse(_debounce);
         expect(usernames.calls, ['alice']);
@@ -175,8 +175,8 @@ void main() {
         async.flushMicrotasks();
 
         expect(member.username.state.errors, [const TakenError('alice')]);
-        expect(form.isValid, isFalse);
-        expect(form.isPending, isFalse);
+        expect(form.state.meta.valid, isFalse);
+        expect(form.state.meta.pending, isFalse);
       });
     });
 
@@ -218,12 +218,12 @@ void main() {
       fakeAsync((async) {
         final (:form, :usernames) = create();
         _add(form).username.setValue('alice');
-        expect(form.isPending, isTrue);
+        expect(form.state.meta.pending, isTrue);
 
         form.members.removeAt(0);
         async.elapse(const Duration(seconds: 5));
 
-        expect(form.isPending, isFalse);
+        expect(form.state.meta.pending, isFalse);
         expect(usernames.calls, isEmpty);
       });
     });

@@ -57,7 +57,7 @@ class FormidableTextFieldWidgetState<T>
   bool _writing = false;
 
   // What the Field held right after the last text the user typed.
-  ({bool isSet, T? value, FormidableValidationError? inputError})? _typed;
+  ({bool defined, T? value, FormidableValidationError? inputError})? _typed;
 
   @override
   FormidableTextFieldWidget<T> get widget =>
@@ -97,7 +97,7 @@ class FormidableTextFieldWidgetState<T>
       _writing = false;
     }
     _typed = (
-      isSet: field.isSet,
+      defined: field.defined,
       value: field.value,
       inputError: field.inputError,
     );
@@ -174,14 +174,14 @@ class FormidableTextFieldWidgetState<T>
       // The Field still holds what the user's last input made of it: the
       // controller is the user's, not a stale copy of the Field.
       if (!force &&
-          typed.isSet == field.isSet &&
+          typed.defined == field.defined &&
           typed.value == field.value &&
           typed.inputError == field.inputError) {
         return;
       }
       _typed = null;
     }
-    final fieldValue = field.isSet ? field.value : null;
+    final fieldValue = field.defined ? field.value : null;
     if (!force && _showsField(codec.parse(_controller.text), fieldValue)) {
       return;
     }
@@ -195,8 +195,9 @@ class FormidableTextFieldWidgetState<T>
   bool _showsField(FormidableParseResult<T> shown, T? fieldValue) =>
       switch (shown) {
         FormidableParsedValue<T>(:final value) =>
-          field.isSet && value == fieldValue,
-        FormidableParsedUnset<T>() => !field.isSet && field.inputError == null,
+          field.defined && value == fieldValue,
+        FormidableParsedUnset<T>() =>
+          !field.defined && field.inputError == null,
         FormidableParseFailure<T>(:final error) => field.inputError == error,
       };
 }

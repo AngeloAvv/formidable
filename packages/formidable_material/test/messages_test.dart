@@ -38,7 +38,7 @@ void main() {
 
   /// A sign-up page whose Field is touched, so that its error is visible.
   Widget signUp({FormidableMessages? messages}) => SignUpFormScope(
-    create: () => SignUpForm()..username.markAsTouched(),
+    create: () => SignUpForm()..username.touch(),
     child: Builder(
       builder: (context) => FormidableMaterialTextField(
         field: context.signUpForm.username,
@@ -48,7 +48,7 @@ void main() {
   );
 
   Widget account({FormidableMessages? messages}) => AccountFormScope(
-    create: () => AccountForm(username: 'admin')..username.markAsTouched(),
+    create: () => AccountForm(username: 'admin')..username.touch(),
     child: Builder(
       builder: (context) => FormidableMaterialTextField(
         field: context.accountForm.username,
@@ -90,8 +90,7 @@ void main() {
           app(
             locale: Locale(entry.key),
             child: SignUpFormScope(
-              create: () =>
-                  SignUpForm(username: 'ab')..username.markAsTouched(),
+              create: () => SignUpForm(username: 'ab')..username.touch(),
               child: Builder(
                 builder: (context) => FormidableMaterialTextField(
                   field: context.signUpForm.username,
@@ -178,7 +177,7 @@ void main() {
                 'need ${error.minLength - error.actualLength} more',
           ),
           child: SignUpFormScope(
-            create: () => SignUpForm(username: 'ab')..username.markAsTouched(),
+            create: () => SignUpForm(username: 'ab')..username.touch(),
             child: Builder(
               builder: (context) => FormidableMaterialTextField(
                 field: context.signUpForm.username,
@@ -331,8 +330,7 @@ void main() {
           app(
             locale: Locale(entry.key),
             child: ContactFormScope(
-              create: () =>
-                  ContactForm(reference: 'ab')..reference.markAsTouched(),
+              create: () => ContactForm(reference: 'ab')..reference.touch(),
               child: Builder(
                 builder: (context) => FormidableMaterialTextField(
                   field: context.contactForm.reference,

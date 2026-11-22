@@ -116,7 +116,7 @@ void main() {
       await tester.tap(find.text('Pro'));
       await tester.pump();
 
-      expect(form.layout.isSet, isFalse);
+      expect(form.layout.defined, isFalse);
       expect(form.layout.state.touched, isTrue);
       expect(selected(tester), isEmpty);
     });
@@ -134,7 +134,7 @@ void main() {
       );
       expect(find.text('This field is required.'), findsNothing);
 
-      form.layout.markAsTouched();
+      form.layout.touch();
       await tester.pump();
 
       expect(find.text('This field is required.'), findsOneWidget);
@@ -158,7 +158,7 @@ void main() {
       await tester.tap(find.text('Any'));
       await tester.pump();
 
-      expect(form.contact.isSet, isTrue);
+      expect(form.contact.defined, isTrue);
       expect(form.contact.value, isNull);
     });
   });

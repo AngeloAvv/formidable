@@ -73,8 +73,8 @@ class PasswordsMatch extends FormidableFormValidator<SignUpForm> {
 
   @override
   List<FormidableFieldError> validate(SignUpForm form) =>
-      form.password.isSet &&
-          form.confirmation.isSet &&
+      form.password.defined &&
+          form.confirmation.defined &&
           form.password.value != form.confirmation.value
       ? [FormidableFieldError(form.confirmation, const PasswordMismatchError())]
       : const [];
@@ -92,7 +92,7 @@ class SignUp {
 
 - It runs after the Field Validators, whenever any Field changes, and once when the Form is created.
 - Its errors are **added** to the errors of the Field, after them. They never replace them.
-- It runs whether or not the Fields have a value, so check `isSet` before reading `value`.
+- It runs whether or not the Fields have a value, so check `defined` before reading `value`.
 - `SignUpForm` is generated, so the type has to be written before the first build. The generated code passes the Form Validator to a Form of that exact type, so the compiler rejects a Form Validator typed for another Form.
 
 For the common rules, such as matching two Fields, prefer the built-in cross-field annotations.

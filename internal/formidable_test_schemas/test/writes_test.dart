@@ -93,7 +93,7 @@ void main() {
 
       form.patch(name: 'M');
       expect(form.name.state.errors, [isA<FormidableMinLengthError>()]);
-      expect(form.state.form.status, FormidableStatus.invalid);
+      expect(form.state.meta.status, FormidableStatus.invalid);
     });
 
     test('never marks a Field as touched', () {
@@ -111,7 +111,7 @@ void main() {
       form.patch(country: 'FR', province: 'PA');
 
       // The Effect sees the country change and clears the province.
-      expect(form.province.isSet, isFalse);
+      expect(form.province.defined, isFalse);
       expect(form.label.value, 'FR/-');
     });
   });
@@ -125,7 +125,7 @@ void main() {
       expect(form.id.value, 2);
       expect(form.name.value, 'Marco');
       expect(form.phone.value, isNull);
-      expect(form.phone.isSet, isTrue);
+      expect(form.phone.defined, isTrue);
       expect(form.note.value, 'vip');
     });
 
@@ -151,10 +151,10 @@ void main() {
       final form = contactForm();
 
       form.replace(const Contact(id: 2, name: 'Marco'));
-      expect(form.state.form.dirty, isTrue);
+      expect(form.state.meta.dirty, isTrue);
 
       form.replace(const Contact(id: 1, name: 'Angelo', phone: '123'));
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
     });
   });
 
@@ -167,18 +167,18 @@ void main() {
       form.reset();
 
       expect(form.name.value, 'Angelo');
-      expect(form.phone.isSet, isFalse);
+      expect(form.phone.defined, isFalse);
       expect(form.note.value, 'none');
-      expect(form.note.isSet, isTrue);
+      expect(form.note.defined, isTrue);
       expect(form.id.value, 1);
-      expect(form.state.form.dirty, isFalse);
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.dirty, isFalse);
+      expect(form.state.meta.status, FormidableStatus.valid);
     });
 
     test('clears errors and touched', () {
       final form = contactForm();
       form.name.setValue('M');
-      form.name.markAsTouched();
+      form.name.touch();
       expect(form.name.state.errors, isNotEmpty);
 
       form.reset();
@@ -193,7 +193,7 @@ void main() {
 
       form.reset();
 
-      expect(form.name.isSet, isFalse);
+      expect(form.name.defined, isFalse);
       expect(form.name.state.errors, [isA<FormidableRequiredError>()]);
     });
 
@@ -211,14 +211,14 @@ void main() {
     test('restores the initial state exactly, without rerunning Effects', () {
       final form = AddressForm(revision: 0, country: 'IT', province: 'MI');
       form.country.setValue('FR');
-      expect(form.province.isSet, isFalse);
+      expect(form.province.defined, isFalse);
 
       form.reset();
 
       expect(form.country.value, 'IT');
       expect(form.province.value, 'MI');
       expect(form.revision.value, 0);
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
     });
   });
 
@@ -226,11 +226,11 @@ void main() {
     test('makes the current state the initial state', () {
       final form = contactForm();
       form.patch(name: 'Marco', phone: '456', id: 3);
-      expect(form.state.form.dirty, isTrue);
+      expect(form.state.meta.dirty, isTrue);
 
       form.commit();
 
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
       expect(form.name.state.dirty, isFalse);
       expect(form.phone.state.dirty, isFalse);
       expect(form.name.value, 'Marco');
@@ -257,7 +257,7 @@ void main() {
       form.commit();
 
       expect(notifications, 1);
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
     });
 
     test('a Field changed back to the committed value is clean', () {
@@ -277,10 +277,10 @@ void main() {
       final form = contactForm();
 
       form.patch(name: 'Marco', phone: '456');
-      expect(form.state.form.dirty, isTrue);
+      expect(form.state.meta.dirty, isTrue);
 
       form.patch(name: 'Angelo', phone: '123');
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
     });
 
     test('takes its initial snapshot after the creation-time Form Effects', () {
@@ -289,7 +289,7 @@ void main() {
       // The Effects derived the label while the Form was being created.
       expect(form.label.value, 'IT/MI');
       expect(form.label.state.dirty, isFalse);
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
 
       form.reset();
       expect(form.label.value, 'IT/MI');

@@ -98,7 +98,7 @@ void main() {
       );
       expect(find.text('This field is required.'), findsNothing);
 
-      form.size.markAsTouched();
+      form.size.touch();
       await tester.pump();
 
       expect(find.text('This field is required.'), findsOneWidget);
@@ -144,14 +144,14 @@ void main() {
             ),
           ),
         );
-        form.contact.markAsTouched();
+        form.contact.touch();
         await tester.pump();
         expect(find.text('This field is required.'), findsOneWidget);
 
         await tester.tap(find.text('No preference'));
         await tester.pump();
 
-        expect(form.contact.isSet, isTrue);
+        expect(form.contact.defined, isTrue);
         expect(form.contact.value, isNull);
         expect(form.contact.state.errors, isEmpty);
         expect(find.text('This field is required.'), findsNothing);

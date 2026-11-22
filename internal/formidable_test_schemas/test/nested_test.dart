@@ -69,12 +69,12 @@ void main() {
         ..name.setValue('Angelo')
         ..billing.street.setValue('Via Milano')
         ..home.street.setValue('Via Roma');
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.status, FormidableStatus.valid);
 
       form.home.street.setValue('x');
 
-      expect(form.home.state.form.status, FormidableStatus.invalid);
-      expect(form.state.form.status, FormidableStatus.invalid);
+      expect(form.home.state.meta.status, FormidableStatus.invalid);
+      expect(form.state.meta.status, FormidableStatus.invalid);
       expect(form.value, isNull);
     });
 
@@ -129,8 +129,8 @@ void main() {
           ..home.street.setValue('Via Roma')
           ..billing.street.setValue('Via Milano');
 
-        expect(form.work.isSet, isFalse);
-        expect(form.work.state.form.status, FormidableStatus.valid);
+        expect(form.work.defined, isFalse);
+        expect(form.work.state.meta.status, FormidableStatus.valid);
         expect(form.work.value, isNull);
         final result = await form.submit() as FormidableSubmitValid<Contact>;
         expect(result.value.work, isNull);
@@ -142,7 +142,7 @@ void main() {
       form.home.street.setValue('Via Roma');
       form.billing.street.setValue('Via Milano');
 
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.status, FormidableStatus.valid);
     });
 
     test(
@@ -155,8 +155,8 @@ void main() {
 
         form.work.zip.setValue('00100');
 
-        expect(form.work.isSet, isTrue);
-        expect(form.state.form.status, FormidableStatus.invalid);
+        expect(form.work.defined, isTrue);
+        expect(form.state.meta.status, FormidableStatus.invalid);
         final invalid = await form.submit() as FormidableSubmitInvalid<Contact>;
         expect(invalid.errors.keys, [form.work.street]);
 
@@ -171,11 +171,11 @@ void main() {
       final form = ContactForm()..name.setValue('Angelo');
 
       form.work.zip.setValue('00100');
-      expect(form.work.isSet, isTrue);
+      expect(form.work.defined, isTrue);
       form.work.zip.clear();
 
-      expect(form.work.isSet, isFalse);
-      expect(form.work.state.form.dirty, isFalse);
+      expect(form.work.defined, isFalse);
+      expect(form.work.state.meta.dirty, isFalse);
     });
 
     test('is set when created from a Schema instance', () async {
@@ -188,7 +188,7 @@ void main() {
         ),
       );
 
-      expect(form.work.isSet, isTrue);
+      expect(form.work.defined, isTrue);
       expect(form.work.street.value, 'Via Napoli');
       final result = await form.submit() as FormidableSubmitValid<Contact>;
       expect(result.value.work!.street, 'Via Napoli');
@@ -203,15 +203,15 @@ void main() {
         ),
       );
 
-      expect(form.work.isSet, isFalse);
-      expect(form.state.form.dirty, isFalse);
+      expect(form.work.defined, isFalse);
+      expect(form.state.meta.dirty, isFalse);
     });
 
     test('a nullable Nested Form with @Required() is always set', () async {
       final form = ContactForm();
 
-      expect(form.billing.isSet, isTrue);
-      expect(form.home.isSet, isTrue);
+      expect(form.billing.defined, isTrue);
+      expect(form.home.defined, isTrue);
       final result = await form.submit() as FormidableSubmitInvalid<Contact>;
       expect(result.errors.containsKey(form.billing.street), isTrue);
     });
@@ -222,7 +222,7 @@ void main() {
         ..home.street.setValue('Via Roma')
         ..billing.street.setValue('Via Milano');
       final statuses = <FormidableStatus>[];
-      form.addListener(() => statuses.add(form.state.form.status));
+      form.addListener(() => statuses.add(form.state.meta.status));
 
       form.work.zip.setValue('00100');
 
@@ -233,17 +233,17 @@ void main() {
   group('Nested Form dirty and state', () {
     test('a nested change makes every ancestor dirty, and clean again', () {
       final form = OrderForm(title: 'T');
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
 
       form.owner.home.street.setValue('Via Roma');
 
-      expect(form.owner.home.state.form.dirty, isTrue);
-      expect(form.owner.state.form.dirty, isTrue);
-      expect(form.state.form.dirty, isTrue);
+      expect(form.owner.home.state.meta.dirty, isTrue);
+      expect(form.owner.state.meta.dirty, isTrue);
+      expect(form.state.meta.dirty, isTrue);
 
       form.owner.home.street.clear();
 
-      expect(form.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
     });
 
     test('a Nested Form starts clean when created from a Schema', () {
@@ -255,8 +255,8 @@ void main() {
         ),
       );
 
-      expect(form.state.form.dirty, isFalse);
-      expect(form.home.state.form.dirty, isFalse);
+      expect(form.state.meta.dirty, isFalse);
+      expect(form.home.state.meta.dirty, isFalse);
     });
 
     test('notifies the parent of every nested value change', () {
@@ -283,7 +283,7 @@ void main() {
       final form = ContactForm(home: const Address(street: 'Via Roma'));
 
       expect(form.home.street.value, 'Via Roma');
-      expect(form.home.state.form.dirty, isFalse);
+      expect(form.home.state.meta.dirty, isFalse);
     });
   });
 
@@ -295,7 +295,7 @@ void main() {
 
       form.place.street.setValue('B');
 
-      expect(form.place.zip.isSet, isFalse);
+      expect(form.place.zip.defined, isFalse);
     });
 
     test('a parent Effect sees a change in a nested Field', () {
@@ -341,7 +341,7 @@ void main() {
       expect(form.credentials.confirmation.state.errors, [
         const PasswordMismatch(),
       ]);
-      expect(form.credentials.state.form.status, FormidableStatus.invalid);
+      expect(form.credentials.state.meta.status, FormidableStatus.invalid);
 
       form.credentials.confirmation.setValue('a');
       expect(form.credentials.confirmation.state.errors, isEmpty);
@@ -352,7 +352,7 @@ void main() {
 
       form.place.street.setValue('Via Roma');
       expect(form.place.zip.state.errors, [const PasswordMismatch()]);
-      expect(form.state.form.status, FormidableStatus.invalid);
+      expect(form.state.meta.status, FormidableStatus.invalid);
 
       form.place.zip.setValue('00100');
       expect(form.place.zip.state.errors, isEmpty);
@@ -363,7 +363,7 @@ void main() {
       form.place.street.setValue('Via Roma');
       form.place.zip.setValue('00100');
 
-      expect(form.credentials.isSet, isFalse);
+      expect(form.credentials.defined, isFalse);
       expect(form.credentials.confirmation.state.errors, isEmpty);
       expect(await form.submit(), isA<FormidableSubmitValid<Delivery>>());
     });
@@ -397,7 +397,7 @@ void main() {
 
       expect(form.home.street.value, 'Via Napoli');
       expect(form.home.zip.value, '00100');
-      expect(form.state.form.dirty, isTrue);
+      expect(form.state.meta.dirty, isTrue);
       expect(notifications, 1);
     });
 
@@ -406,7 +406,7 @@ void main() {
 
       form.replace(contact(work: const Address(street: 'Via Torino')));
 
-      expect(form.work.isSet, isTrue);
+      expect(form.work.defined, isTrue);
       expect(form.work.street.value, 'Via Torino');
     });
 
@@ -417,8 +417,8 @@ void main() {
 
       form.replace(contact());
 
-      expect(form.work.street.isSet, isFalse);
-      expect(form.work.zip.isSet, isFalse);
+      expect(form.work.street.defined, isFalse);
+      expect(form.work.zip.defined, isFalse);
     });
 
     test('replace through two levels', () async {
@@ -434,17 +434,17 @@ void main() {
       final form = ContactForm.from(contact());
       form.home.street.setValue('x');
       form.work.zip.setValue('1');
-      form.home.street.markAsTouched();
-      expect(form.work.isSet, isTrue);
+      form.home.street.touch();
+      expect(form.work.defined, isTrue);
 
       form.reset();
 
       expect(form.home.street.value, 'Via Roma');
       expect(form.home.street.state.touched, isFalse);
-      expect(form.work.isSet, isFalse);
-      expect(form.work.zip.isSet, isFalse);
-      expect(form.state.form.dirty, isFalse);
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.work.defined, isFalse);
+      expect(form.work.zip.defined, isFalse);
+      expect(form.state.meta.dirty, isFalse);
+      expect(form.state.meta.status, FormidableStatus.valid);
     });
 
     test('reset notifies a Nested Form and its parent once', () {
@@ -471,9 +471,9 @@ void main() {
 
         form.commit();
 
-        expect(form.state.form.dirty, isFalse);
-        expect(form.home.state.form.dirty, isFalse);
-        expect(form.work.isSet, isTrue);
+        expect(form.state.meta.dirty, isFalse);
+        expect(form.home.state.meta.dirty, isFalse);
+        expect(form.work.defined, isTrue);
 
         form.reset();
         expect(form.home.street.value, 'Via Napoli');
@@ -486,8 +486,8 @@ void main() {
 
       form.home.clear();
 
-      expect(form.home.street.isSet, isFalse);
-      expect(form.home.zip.isSet, isFalse);
+      expect(form.home.street.defined, isFalse);
+      expect(form.home.zip.defined, isFalse);
     });
   });
 
@@ -520,7 +520,7 @@ void main() {
           billing: Address(street: 'Via Milano'),
         ),
       );
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.state.meta.status, FormidableStatus.valid);
 
       form.applyErrors(
         fieldErrors: {
@@ -529,8 +529,8 @@ void main() {
       );
 
       expect(form.home.street.state.errors, [const PasswordMismatch()]);
-      expect(form.home.state.form.status, FormidableStatus.invalid);
-      expect(form.state.form.status, FormidableStatus.invalid);
+      expect(form.home.state.meta.status, FormidableStatus.invalid);
+      expect(form.state.meta.status, FormidableStatus.invalid);
       final result = await form.submit() as FormidableSubmitInvalid<Contact>;
       expect(result.errors.keys, [form.home.street]);
     });
@@ -546,14 +546,14 @@ void main() {
 
       form.home.applyErrors(formErrors: [const PasswordMismatch()]);
 
-      expect(form.home.state.form.errors, [const PasswordMismatch()]);
-      expect(form.home.state.form.status, FormidableStatus.invalid);
-      expect(form.state.form.status, FormidableStatus.invalid);
+      expect(form.home.state.meta.errors, [const PasswordMismatch()]);
+      expect(form.home.state.meta.status, FormidableStatus.invalid);
+      expect(form.state.meta.status, FormidableStatus.invalid);
 
       form.home.zip.setValue('00100');
 
-      expect(form.home.state.form.errors, isEmpty);
-      expect(form.state.form.status, FormidableStatus.valid);
+      expect(form.home.state.meta.errors, isEmpty);
+      expect(form.state.meta.status, FormidableStatus.valid);
     });
   });
 }

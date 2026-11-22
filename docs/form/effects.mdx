@@ -36,7 +36,7 @@ An Effect is a const class typed on the generated Form, so it reaches every Fiel
 - **Synchronously.** When the write returns, the Effects have run.
 - **Until nothing changes.** When an Effect writes a Field, every Effect runs again, so an Effect can react to what another Effect did. An Effect should write only when the value has to change.
 
-Listeners of a Field are notified once per change, after the Effects ran and the Field was validated, with its final state. Inside an Effect, read Fields through `value` and `isSet`: their `state`, errors included, is updated after every Effect has run.
+Listeners of a Field are notified once per change, after the Effects ran and the Field was validated, with its final state. Inside an Effect, read Fields through `value` and `defined`: their `state`, errors included, is updated after every Effect has run.
 
 ## What changed
 

@@ -54,8 +54,8 @@ class PasswordsMatch extends FormidableFormValidator<RegistrationForm> {
 
   @override
   List<FormidableFieldError> validate(RegistrationForm form) =>
-      form.password.isSet &&
-          form.confirmation.isSet &&
+      form.password.defined &&
+          form.confirmation.defined &&
           form.password.value != form.confirmation.value
       ? [FormidableFieldError(form.confirmation, const PasswordMismatchError())]
       : const [];

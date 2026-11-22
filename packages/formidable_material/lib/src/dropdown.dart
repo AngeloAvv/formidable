@@ -69,13 +69,13 @@ class FormidableMaterialDropdown<T> extends FormidableFieldWidget<T, T> {
              decoration,
              decorationBuilder,
            ),
-           isEmpty: !control.isSet,
+           isEmpty: !control.defined,
            isFocused: control.focusNode.hasFocus,
            child: DropdownButtonHideUnderline(
              // Values are boxed in a record so that "nothing picked" (a null
              // value) is different from an item whose value is null.
              child: DropdownButton<(T,)>(
-               value: control.isSet ? (control.value as T,) : null,
+               value: control.defined ? (control.value as T,) : null,
                items: [
                  for (final item in items)
                    DropdownMenuItem<(T,)>(
