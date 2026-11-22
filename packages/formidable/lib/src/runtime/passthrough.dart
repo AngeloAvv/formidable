@@ -1,4 +1,5 @@
 import 'package:meta/meta.dart';
+
 import '../validation/validation_error.dart';
 import 'node.dart';
 import 'notifier.dart';

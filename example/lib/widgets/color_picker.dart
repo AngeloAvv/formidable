@@ -58,7 +58,7 @@ class SwatchPicker extends StatelessWidget {
 /// is a `Color`, and so is what the picker shows.
 ///
 /// The picker can't take focus, so the first tap is what touches the Field
-/// (`touch: true`), and the Validation Message shows after it.
+/// (`touched: true`), and the Validation Message shows after it.
 class FormidableColorPicker extends FormidableFieldWidget<Color?, Color?> {
   FormidableColorPicker({
     super.key,
@@ -71,7 +71,7 @@ class FormidableColorPicker extends FormidableFieldWidget<Color?, Color?> {
          builder: (context, control) => SwatchPicker(
            colors: colors,
            selected: control.value,
-           onSelected: (color) => control.didChange(color, touch: true),
+           onSelected: (color) => control.didChange(color, touched: true),
            errorText: control.errorText,
          ),
        );

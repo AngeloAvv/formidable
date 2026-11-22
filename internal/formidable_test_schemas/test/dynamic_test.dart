@@ -91,6 +91,20 @@ void main() {
       );
     });
 
+    test('the state reads valid, dirty and pending from what is registered', () {
+      final form = SurveyForm();
+      expect(form.answers.state.valid, isTrue);
+      expect(form.answers.state.dirty, isFalse);
+      expect(form.answers.state.pending, isFalse);
+
+      final age = form.answers.register<int>('age');
+      expect(form.answers.state.valid, isFalse);
+
+      age.setValue(7);
+      expect(form.answers.state.valid, isTrue);
+      expect(form.answers.state.dirty, isTrue);
+    });
+
     test('fails when nothing is registered under the key', () {
       final form = SurveyForm();
 

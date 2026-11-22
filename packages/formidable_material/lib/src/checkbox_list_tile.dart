@@ -73,7 +73,7 @@ class FormidableMaterialCheckboxListTile<T extends bool?>
                CheckboxListTile(
                  value: value,
                  onChanged: control.enabled
-                     ? (next) => control.didChange(next as T?, touch: true)
+                     ? (next) => control.didChange(next as T?, touched: true)
                      : null,
                  focusNode: control.focusNode,
                  mouseCursor: mouseCursor,

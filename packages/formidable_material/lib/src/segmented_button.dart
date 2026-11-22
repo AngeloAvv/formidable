@@ -61,11 +61,11 @@ class FormidableMaterialSegmentedButton<T> extends FormidableFieldWidget<T, T> {
              onSelectionChanged: control.enabled
                  ? (selection) {
                      if (selection.isNotEmpty) {
-                       control.didChange(selection.first.$1, touch: true);
+                       control.didChange(selection.first.$1, touched: true);
                      } else if (allowDeselect) {
                        // Deselecting is a choice: null when the Field admits
                        // it, Unset when it does not.
-                       control.didChange(null, touch: true);
+                       control.didChange(null, touched: true);
                      }
                    }
                  : null,

@@ -1,7 +1,8 @@
-import 'package:meta/meta.dart';
-import '../cross_field/rule.dart';
 import 'dart:async';
 
+import 'package:meta/meta.dart';
+
+import '../cross_field/rule.dart';
 import '../validation/async_form_validator.dart';
 import '../validation/async_validator.dart';
 import '../validation/form_validator.dart';

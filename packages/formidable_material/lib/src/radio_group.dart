@@ -123,11 +123,11 @@ class FormidableMaterialRadioGroup<T> extends FormidableFieldWidget<T, T> {
                onChanged: (choice) {
                  if (!control.enabled) return;
                  if (choice != null) {
-                   control.didChange(choice.$1, touch: true);
+                   control.didChange(choice.$1, touched: true);
                  } else if (toggleable) {
                    // Deselecting is a choice: null when the Field admits it,
                    // Unset when it does not.
-                   control.didChange(null, touch: true);
+                   control.didChange(null, touched: true);
                  }
                },
                child: Column(

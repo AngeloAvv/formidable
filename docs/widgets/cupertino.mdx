@@ -103,7 +103,7 @@ FormidableFieldWidget<bool?, bool?>(
   field: form.notifications,
   builder: (context, control) => CupertinoSwitch(
     value: control.value ?? false,
-    onChanged: (value) => control.didChange(value, touch: true),
+    onChanged: (value) => control.didChange(value, touched: true),
   ),
 )
 ```

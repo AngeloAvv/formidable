@@ -88,11 +88,11 @@ class FormidableTextFieldWidgetState<T>
   /// typed). It shows the Field again only when the Field changes from
   /// somewhere else: code, a reset, another widget.
   @override
-  void didChange(String? value, {bool touch = false}) {
+  void didChange(String? value, {bool touched = false}) {
     final text = value ?? '';
     _writing = true;
     try {
-      super.didChange(text, touch: touch);
+      super.didChange(text, touched: touched);
     } finally {
       _writing = false;
     }

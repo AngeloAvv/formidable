@@ -51,7 +51,7 @@ class FormidableCupertinoCheckbox<T extends bool?>
              onChanged: control.enabled
                  // Cycling to mixed is a choice: null when the Field admits it,
                  // Unset when it does not.
-                 ? (value) => control.didChange(value as T?, touch: true)
+                 ? (value) => control.didChange(value as T?, touched: true)
                  : null,
              mouseCursor: mouseCursor,
              activeColor: activeColor,

@@ -26,6 +26,8 @@ Every Field, Field Array and Form holds an immutable **state snapshot** and noti
 
 A Field Array has `form.phones.state.valid` too, true when the array and every item have no errors.
 
+A Dynamic Form state (`form.answers.state`) has `valid`, `dirty` and `pending`, derived from every Field and Nested Form registered in it.
+
 Flags are read from the state, never from the handle: `form.email.state.valid`, `form.state.meta.dirty`. A Field, a Field Array or a Form offers actions (`setValue`, `clear`, `touch`, `reset`, `commit`, `submit`...) plus `value` and `defined`, which stay on the handle because they are current even while [Form Effects](/form/effects) run, unlike `state`. See [ADR 0005](https://github.com/AngeloAvv/formidable/blob/main/docs/adr/0005-flags-are-read-from-the-state.md).
 
 ## Form state

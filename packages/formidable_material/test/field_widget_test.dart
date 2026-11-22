@@ -28,7 +28,7 @@ class _Swatches extends StatelessWidget {
         for (final color in colors)
           GestureDetector(
             key: ValueKey(color),
-            onTap: () => control.didChange(color, touch: true),
+            onTap: () => control.didChange(color, touched: true),
             child: SizedBox(
               width: 20,
               height: 20,
@@ -155,7 +155,7 @@ void main() {
     ) async {
       await mount(tester, color);
 
-      control.didChange(_red, touch: true);
+      control.didChange(_red, touched: true);
 
       expect(color.state.touched, isTrue);
     });
@@ -182,7 +182,7 @@ void main() {
     testWidgets('clear can touch the Field in the same call', (tester) async {
       await mount(tester, color);
 
-      control.clear(touch: true);
+      control.clear(touched: true);
 
       expect(color.state.touched, isTrue);
     });
@@ -737,8 +737,8 @@ class _CountingState extends FormidableFieldWidgetState<Color?, Color?> {
   int writes = 0;
 
   @override
-  void didChange(Color? value, {bool touch = false}) {
+  void didChange(Color? value, {bool touched = false}) {
     writes++;
-    super.didChange(value, touch: touch);
+    super.didChange(value, touched: touched);
   }
 }

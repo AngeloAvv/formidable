@@ -31,7 +31,9 @@ final class FormidableFormMeta<S> {
   final FormidableStatus status;
 
   /// Whether the Form, with every Field below it, has no errors. It is
-  /// derived from [status].
+  /// derived from [status], so it is true while the Form is [pending] (nothing
+  /// failed yet) and it does not look at whether the Form is [defined]. The
+  /// Schema [value] is built only when the Form is valid and not pending.
   bool get valid => status == FormidableStatus.valid;
 
   /// Whether any Field differs from its initial state.

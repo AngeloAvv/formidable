@@ -90,7 +90,7 @@ class FormidableMaterialDropdown<T> extends FormidableFieldWidget<T, T> {
                onChanged: control.enabled
                    ? (choice) {
                        if (choice != null) {
-                         control.didChange(choice.$1, touch: true);
+                         control.didChange(choice.$1, touched: true);
                        }
                      }
                    : null,

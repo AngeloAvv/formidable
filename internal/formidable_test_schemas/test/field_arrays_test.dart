@@ -155,6 +155,31 @@ void main() {
       expect(form.phones.state.errors, isEmpty);
     });
 
+    test('valid is true for an empty array with no array level errors', () {
+      final form = PersonForm();
+
+      expect(form.phones.state.items, isEmpty);
+      expect(form.phones.state.valid, isTrue);
+    });
+
+    test('valid is false for an empty array that has errors of its own', () {
+      final form = TeamForm();
+
+      expect(form.members.state.errors, isNotEmpty);
+      expect(form.members.state.valid, isFalse);
+    });
+
+    test('valid reads an item that is a Field', () {
+      final form = LabelsForm();
+      form.tags.add();
+
+      expect(form.tags.state.valid, isFalse);
+
+      form.tags.items.first.node.setValue('flutter');
+
+      expect(form.tags.state.valid, isTrue);
+    });
+
     test('a Form listener hears every item edit', () {
       final form = PersonForm();
       form.phones.add(const Telephone(number: '555'));

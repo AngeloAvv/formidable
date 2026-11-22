@@ -1,5 +1,6 @@
-import 'package:meta/meta.dart';
 import 'dart:async';
+
+import 'package:meta/meta.dart';
 
 import '../normalizers/normalizer.dart';
 import '../validation/async_validator.dart';

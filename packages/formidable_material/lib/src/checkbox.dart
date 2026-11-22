@@ -52,7 +52,7 @@ class FormidableMaterialCheckbox<T extends bool?>
                Checkbox(
                  value: value,
                  onChanged: control.enabled
-                     ? (next) => control.didChange(next as T?, touch: true)
+                     ? (next) => control.didChange(next as T?, touched: true)
                      : null,
                  focusNode: control.focusNode,
                  tristate: tristate,
