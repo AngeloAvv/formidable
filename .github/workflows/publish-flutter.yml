@@ -1,7 +1,9 @@
-name: Publish a Flutter package
+name: Publish a package
 
-# The reusable Dart publish workflow cannot install the Flutter version pinned
-# by .fvmrc, so the Flutter packages publish through this job instead.
+# Every package, the pure Dart ones included, publishes through this job: the
+# pub workspace also holds Flutter apps (the examples), so it only resolves
+# with the Flutter version pinned by .fvmrc, which the reusable Dart publish
+# workflow cannot install.
 # `flutter pub publish` authenticates with the OIDC token of the run, which is
 # why the job needs the `id-token` permission.
 
