@@ -296,6 +296,15 @@ final class FormidableField<T>
     _refresh();
   }
 
+  /// Forgets that the user interacted with the Field, so its Validation
+  /// Messages hide again under the default policy. The value, the presence and
+  /// the dirty flag do not change.
+  void untouch() {
+    if (!_touched) return;
+    _touched = false;
+    _refresh();
+  }
+
   /// Registers the widget that shows this Field, so that [focus] and [unfocus]
   /// reach it. When several are registered the last one wins. Returns a
   /// function that removes the registration.
@@ -379,6 +388,15 @@ final class FormidableField<T>
   }
 
   @override
+  @internal
+  void touchTree() => touch();
+
+  @override
+  @internal
+  void untouchTree() => untouch();
+
+  @override
+  @internal
   void markSubmitted() {
     if (_touched && _submitted) return;
     _touched = true;

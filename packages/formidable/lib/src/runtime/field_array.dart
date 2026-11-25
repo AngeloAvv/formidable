@@ -307,6 +307,10 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
     _refresh();
   }
 
+  /// Forgets that the array and every item below it was touched. Values and
+  /// dirty state do not change. The listeners of a Form hear about it once.
+  void untouch() => _quietly(untouchTree);
+
   // FormidableNode.
 
   @override
@@ -333,6 +337,7 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
   }
 
   @override
+  @internal
   void markSubmitted() {
     _touched = true;
     _submitted = true;
@@ -340,6 +345,35 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
       item.node.markSubmitted();
     }
     _refresh();
+  }
+
+  @override
+  @internal
+  void touchTree() {
+    _touched = true;
+    for (final item in _items) {
+      item.node.touchTree();
+    }
+    _refresh();
+  }
+
+  @override
+  @internal
+  void untouchTree() {
+    _touched = false;
+    for (final item in _items) {
+      item.node.untouchTree();
+    }
+    _refresh();
+  }
+
+  void _quietly(void Function() action) {
+    final pipeline = _pipeline;
+    if (pipeline == null) {
+      action();
+    } else {
+      pipeline.notifyOnce(action);
+    }
   }
 
   @override

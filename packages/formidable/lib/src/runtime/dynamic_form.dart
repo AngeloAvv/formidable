@@ -587,9 +587,43 @@ final class FormidableDynamicForm
   }
 
   @override
+  @internal
   void markSubmitted() {
     for (final node in children) {
       node.markSubmitted();
+    }
+  }
+
+  /// Touches every Field registered in the Dynamic Form, and the Nested Forms
+  /// and Field Arrays with them. The listeners of a Form hear about it once.
+  void touch() => _quietly(touchTree);
+
+  /// Clears touched on everything registered in the Dynamic Form. Values and
+  /// dirty state do not change. The listeners of a Form hear about it once.
+  void untouch() => _quietly(untouchTree);
+
+  @override
+  @internal
+  void touchTree() {
+    for (final node in children.toList()) {
+      node.touchTree();
+    }
+  }
+
+  @override
+  @internal
+  void untouchTree() {
+    for (final node in children.toList()) {
+      node.untouchTree();
+    }
+  }
+
+  void _quietly(void Function() action) {
+    final pipeline = _pipeline;
+    if (pipeline == null) {
+      action();
+    } else {
+      pipeline.notifyOnce(action);
     }
   }
 

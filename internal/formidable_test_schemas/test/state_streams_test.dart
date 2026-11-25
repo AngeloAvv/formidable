@@ -59,12 +59,12 @@ void main() {
       expect(changes.single.touched, isTrue);
     });
 
-    test('valueChanges ignores touched and submitted', () {
+    test('valueChanges ignores touched and submitted', () async {
       final form = itinerary();
       final values = collect(form.title.valueChanges);
 
       form.title.touch();
-      form.markSubmitted();
+      await form.submit();
 
       expect(values, isEmpty);
     });
@@ -299,24 +299,24 @@ void main() {
       expect(events.single.meta.value, isA<SignUp>());
     });
 
-    test('changes emits on any state change', () {
+    test('changes emits on any state change', () async {
       final form = itinerary();
       final changes = collect(form.changes);
 
       form.title.touch();
-      form.markSubmitted();
+      await form.submit();
       form.title.setValue('Oslo');
 
       expect(changes, hasLength(3));
     });
 
-    test('valueChanges ignores touched, submitted and focus', () {
+    test('valueChanges ignores touched, submitted and focus', () async {
       final form = itinerary();
       final values = collect(form.valueChanges);
 
       form.title.touch();
       form.footer.touch();
-      form.markSubmitted();
+      await form.submit();
 
       expect(values, isEmpty);
     });

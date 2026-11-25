@@ -905,6 +905,8 @@ class SignUp {
       'clear',
       'enable',
       'disable',
+      'touch',
+      'untouch',
       'batch',
       'value',
       'valueOrNull',
@@ -941,7 +943,7 @@ class SignUp {
             contains('"$name"'),
             contains('SignUp'),
             contains('Form'),
-            contains('Rename'),
+            contains('Rename the field'),
           ),
         );
       });

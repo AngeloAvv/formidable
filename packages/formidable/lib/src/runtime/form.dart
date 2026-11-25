@@ -231,6 +231,31 @@ abstract class FormidableForm<S>
     }
   });
 
+  /// Touches every Field below the Form, recursively: Nested Forms, Field
+  /// Arrays and Dynamic Forms included. An Unset optional Nested Form is left
+  /// alone, like `submit()` does. It notifies once and does not run the Form
+  /// Effects.
+  ///
+  /// Use it to show every Validation Message without submitting.
+  void touch() => notifyOnce(touchTree);
+
+  /// Forgets that every Field below the Form was touched, recursively. Values
+  /// and dirty state do not change. It notifies once.
+  void untouch() => notifyOnce(untouchTree);
+
+  @override
+  void notifyOnce(void Function() action) {
+    final parent = _parent;
+    if (parent != null) return parent.notifyOnce(action);
+    _holdTree(1);
+    try {
+      action();
+    } finally {
+      _holdTree(-1);
+    }
+    _flushTree();
+  }
+
   /// Makes every Field Unset, as one change. A Passthrough Field keeps its
   /// value because it can never be Unset. An optional Nested Form is Unset
   /// afterwards if it was Unset initially.
@@ -754,6 +779,7 @@ abstract class FormidableForm<S>
   /// Unset optional Nested Form is left alone, so it does not show errors for
   /// Fields the user never meant to fill in.
   @override
+  @internal
   void markSubmitted() {
     if (!defined) return;
     // Every Field changes, and the Form notifies once.
@@ -770,6 +796,23 @@ abstract class FormidableForm<S>
       _holdTree(-1);
     }
     _flushTree();
+  }
+
+  @override
+  @internal
+  void touchTree() {
+    if (!defined) return;
+    for (final node in _nodes) {
+      node.touchTree();
+    }
+  }
+
+  @override
+  @internal
+  void untouchTree() {
+    for (final node in _nodes) {
+      node.untouchTree();
+    }
   }
 
   /// Adds the errors of every Field and Field Array below this Form to [into].

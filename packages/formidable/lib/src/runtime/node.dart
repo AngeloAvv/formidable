@@ -32,7 +32,9 @@ abstract interface class FormidableNode {
   void collectErrors(Map<FormidableNode, List<FormidableValidationError>> into);
 
   /// Marks every Field at or below this node as touched and submitted. Called
-  /// by the Form when `submit()` starts.
+  /// by the Form when `submit()` starts; `submit()` is the only public way to
+  /// submit.
+  @internal
   void markSubmitted();
 
   /// Tells the node whether a container above it (a Form, a Nested Form, a
@@ -45,6 +47,16 @@ abstract interface class FormidableNode {
   /// notification.
   @internal
   void applyLock(bool locked);
+
+  /// Marks every Field at or below this node as touched. The public entry
+  /// point is `touch()` on the Form.
+  @internal
+  void touchTree();
+
+  /// Clears touched on every Field at or below this node. Values and dirty
+  /// state do not change. The public entry point is `untouch()`.
+  @internal
+  void untouchTree();
 
   /// Gives the node the pipeline of its Form. Writes to the node run through
   /// it. Called once by the Form.

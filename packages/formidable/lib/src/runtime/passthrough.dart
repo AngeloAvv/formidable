@@ -128,10 +128,19 @@ final class FormidablePassthrough<T>
   }
 
   @override
+  @internal
   void markSubmitted() {}
 
   @override
   void applyLock(bool locked) {}
+
+  @override
+  @internal
+  void touchTree() {}
+
+  @override
+  @internal
+  void untouchTree() {}
 
   @override
   void collectErrors(
