@@ -43,7 +43,8 @@ form.phones.insert(0, const Telephone(number: '111'));
 
 // add and insert return the new item: its Nested Form, or its Field.
 final phone = form.phones.add();
-phone.number.focus();
+// Its widget is not built yet: focus it after the next frame.
+WidgetsBinding.instance.addPostFrameCallback((_) => phone.number.focus());
 form.phones.move(0, 2);                         // keeps the item and its state
 form.phones.removeAt(1);
 form.phones.remove(form.phones.items.first);

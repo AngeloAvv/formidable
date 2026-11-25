@@ -58,6 +58,10 @@ abstract class FormidableForm<S>
   FormidablePipeline? _parent;
   bool _optional = false;
   bool _initiallyDefined = true;
+  // While `reset(to:)` writes the source: whether the source holds a value
+  // for this optional Nested Form (null: the source did not say).
+  bool? _sourcePresence;
+  bool _resetting = false;
   bool _enabled = true;
   bool _locked = false;
   List<FormidableValidationError> _formErrors = const [];
@@ -230,18 +234,42 @@ abstract class FormidableForm<S>
   void resetTo(void Function() writes) {
     final root = _rootForm;
     root.batch(() {
-      root._holdTree(1);
+      // The writes can replace the items of a Field Array: release exactly the
+      // Forms held here, not the ones that exist afterwards.
+      final held = root._treeForms.toList();
+      for (final form in held) {
+        form._held++;
+      }
       try {
-        writes();
-        // The new data may need the Effects, like at creation: none of its
-        // Fields counts as changed, so no Effect clears what the source holds.
-        root._runInitialEffects();
+        root._resetting = true;
+        try {
+          writes();
+          // The new data may need the Effects, like at creation: none of its
+          // Fields counts as changed, so no Effect clears what the source
+          // holds.
+          root._runInitialEffects();
+        } finally {
+          root._resetting = false;
+        }
         // Committing first makes the reset below restore exactly the new
         // values, while it clears touched and submitted.
         commit();
+        // An optional Nested Form is set or Unset as the source says, even
+        // when its Fields end up at their initial values or are all cleared.
+        for (final form in _treeForms) {
+          final presence = form._sourcePresence;
+          if (presence != null && form._optional) {
+            form._initiallyDefined = presence;
+          }
+        }
         reset();
       } finally {
-        root._holdTree(-1);
+        for (final form in root._treeForms) {
+          form._sourcePresence = null;
+        }
+        for (final form in held) {
+          form._held--;
+        }
       }
     });
   }
@@ -298,24 +326,30 @@ abstract class FormidableForm<S>
   /// Makes every Field Unset, as one change. A Passthrough Field keeps its
   /// value because it can never be Unset. An optional Nested Form is Unset
   /// afterwards if it was Unset initially.
-  void clear() => batch(() {
-    for (final node in _flatNodes) {
-      if (node is FormidableField<Object?>) {
-        node.clear();
-      } else if (node is FormidableForm<Object?>) {
-        node.clear();
-      } else if (node
-          is FormidableFieldArray<FormidableNode, Object?, Object?>) {
-        node.clear();
+  void clear() {
+    batch(() {
+      for (final node in _flatNodes) {
+        if (node is FormidableField<Object?>) {
+          node.clear();
+        } else if (node is FormidableForm<Object?>) {
+          node.clear();
+        } else if (node
+            is FormidableFieldArray<FormidableNode, Object?, Object?>) {
+          node.clear();
+        }
       }
-    }
-  });
+    });
+    // A source without a value for this optional Nested Form.
+    if (_optional && _rootForm._resetting) _sourcePresence = false;
+  }
 
   /// Runs [writes], which write Fields, as one change: the Form Effects run
   /// once after the last write and every listener is notified at most once.
   ///
   /// Generated `patch` and `replace` are built on it.
   void batch(void Function() writes) {
+    // A source that writes this optional Nested Form holds a value for it.
+    if (_optional && _rootForm._resetting) _sourcePresence = true;
     // A Nested Form writes as part of its parent's change.
     final parent = _parent;
     if (parent is FormidableForm<Object?>) return parent.batch(writes);
@@ -386,6 +420,14 @@ abstract class FormidableForm<S>
       } else {
         yield node;
       }
+    }
+  }
+
+  /// This Form and every Nested Form below it, at any depth.
+  Iterable<FormidableForm<Object?>> get _treeForms sync* {
+    yield this;
+    for (final form in _childForms) {
+      yield* form._treeForms;
     }
   }
 
@@ -491,6 +533,7 @@ abstract class FormidableForm<S>
   /// Forms, so the whole tree notifies once per settle.
   void _holdTree(int delta) {
     _held += delta;
+    assert(_held >= 0, 'A Form released a hold it never acquired.');
     for (final form in _childForms) {
       form._holdTree(delta);
     }

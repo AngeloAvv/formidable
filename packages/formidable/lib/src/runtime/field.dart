@@ -195,13 +195,18 @@ final class FormidableField<T>
   /// With [touched] the Field also becomes touched, as part of the same change:
   /// listeners are notified once. A widget that has no moment of "losing focus"
   /// passes it so that the first interaction counts.
-  void setValue(T value, {bool touched = false}) => _write(() {
-    final changed = _assign(_normalize(value));
-    if (!touched || _touched) return changed;
-    _touched = true;
-    _stale = true;
-    return true;
-  });
+  void setValue(T value, {bool touched = false}) {
+    var changed = false;
+    _write(() {
+      changed = _assign(_normalize(value));
+      // Touched rides along with a real change, so listeners hear it once.
+      if (changed && touched) _touched = true;
+      return changed;
+    });
+    // Same value: only touched changes, and the Form Effects must not see it
+    // as a change of the Field.
+    if (touched && !changed) touch();
+  }
 
   /// Makes the Field Unset.
   void clear() => _write(() => _assign(null));

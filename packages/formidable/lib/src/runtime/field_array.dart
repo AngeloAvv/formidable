@@ -177,12 +177,15 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
   /// returns the node of the new item: its Field, or its Nested Form.
   N insert(int index, [T? value]) {
     RangeError.checkValueInInterval(index, 0, _items.length, 'index');
+    // A listener notified by the write can move or remove items: return the
+    // node created here, not whatever stands at [index] afterwards.
+    final item = _make(value);
     _write(() {
-      _items.insert(index, _make(value));
-      _follow(_items[index].node);
+      _items.insert(index, item);
+      _follow(item.node);
       return true;
     });
-    return _items[index].node;
+    return item.node;
   }
 
   /// Removes the item at [index].

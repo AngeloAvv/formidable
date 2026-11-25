@@ -1,4 +1,5 @@
 import 'package:formidable/formidable.dart';
+import 'package:formidable_test_schemas/effects.dart' as fx;
 import 'package:formidable_test_schemas/field_arrays.dart';
 import 'package:formidable_test_schemas/mixed_containers.dart';
 import 'package:formidable_test_schemas/nested.dart';
@@ -267,4 +268,33 @@ void main() {
       expect(field.state.touched, isTrue);
     });
   });
+
+  group('setValue(touched:) and Form Effects', () {
+    test('a touch-only write does not count as a change for Effects', () {
+      final form = fx.AddressForm(revision: 0, country: 'IT', province: 'MI');
+      addTearDown(form.dispose);
+      var notifications = 0;
+      form.addListener(() => notifications++);
+
+      form.country.setValue('IT', touched: true);
+
+      expect(form.province.value, 'MI');
+      expect(form.country.state.touched, isTrue);
+      expect(notifications, 1);
+    });
+
+    test('a real change touches and runs the Effects once', () {
+      final form = fx.AddressForm(revision: 0, country: 'IT', province: 'MI');
+      addTearDown(form.dispose);
+      var notifications = 0;
+      form.addListener(() => notifications++);
+
+      form.country.setValue('FR', touched: true);
+
+      expect(form.province.defined, isFalse);
+      expect(form.country.state.touched, isTrue);
+      expect(notifications, 1);
+    });
+  });
 }
+

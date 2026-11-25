@@ -272,4 +272,57 @@ void main() {
       expect(form.place.zip.state.enabled, isTrue);
     });
   });
+
+  group('reset(to:) edge cases', () {
+    test('an optional Nested Form takes its presence from the source', () {
+      final form = DeliveryForm(
+        place: const Place(street: 'Main', zip: '00100'),
+        backup: const Place(street: 'Side', zip: '00200'),
+      );
+      addTearDown(form.dispose);
+      expect(form.backup.defined, isTrue);
+
+      form.reset(to: const Delivery(place: Place(street: 'New', zip: '1')));
+
+      expect(form.backup.defined, isFalse);
+      expect(form.value.backup, isNull);
+      expect(form.state.meta.dirty, isFalse);
+
+      form.reset(
+        to: const Delivery(
+          place: Place(street: 'New', zip: '1'),
+          backup: Place(),
+        ),
+      );
+
+      expect(form.backup.defined, isTrue);
+      expect(form.value.backup, isNotNull);
+      expect(form.state.meta.dirty, isFalse);
+    });
+
+    test('items created by the reset keep notifying afterwards', () {
+      final form = PersonForm(name: 'Ada');
+      addTearDown(form.dispose);
+
+      form.reset(
+        to: const Person(
+          name: 'Ada',
+          phones: [Telephone(number: '111'), Telephone(number: '222')],
+        ),
+      );
+      var notifications = 0;
+      form.addListener(() => notifications++);
+      final phone = form.phones.items.last.node;
+      var itemNotifications = 0;
+      phone.addListener(() => itemNotifications++);
+
+      phone.number.setValue('333');
+
+      expect(itemNotifications, 1);
+      expect(notifications, 1);
+      expect(phone.state.number.value, '333');
+      expect(form.state.phones.items.last.number.value, '333');
+    });
+  });
 }
+

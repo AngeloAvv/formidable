@@ -44,7 +44,7 @@ and takes what the user did:
 
 | Method | What it does |
 | --- | --- |
-| `didChange(value, {touched})` | Writes the value through the Codec and the Field pipeline (Normalizers, Validators). With `touched: true` it also marks the Field touched, as one change: the Field notifies once, like `field.setValue(value, touched: true)`. |
+| `didChange(value, {touched})` | Writes the value through the Codec and the Field pipeline (Normalizers, Validators). With `touched: true` it also marks the Field touched. When the value is accepted, that is one change and the Field notifies once, like `field.setValue(value, touched: true)`; when the value makes the Field Unset or the Codec rejects it, touching is a second notification. |
 | `clear({touched})` | Puts the Field back to Unset. |
 | `touch()` | Marks the Field touched, for an interaction that changed nothing, such as a cancelled dialog. |
 

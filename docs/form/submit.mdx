@@ -107,8 +107,11 @@ A disabled Field keeps its value and still contributes to the output, but its Va
 
 ```dart
 form.disable(); // every Field below is disabled, none of them is changed
-await api.signUp(signUp);
-form.enable();  // everything is as it was before
+try {
+  await api.signUp(signUp);
+} finally {
+  form.enable(); // everything is as it was before, even if the request failed
+}
 ```
 
 A container has its own `enabled` flag, a separate layer from the flags of the Fields. A Field is effectively enabled only when its own flag and the flag of every container above it are set, and `state.enabled` of a Field reports that. The Fields are never written, so `enable()` restores exactly the previous state: a Field that a Form Effect or your code had disabled stays disabled. An effectively disabled Field behaves like any disabled Field, with the rules above, so the widgets need no change. The lock reaches items added to a Field Array later and Fields registered in a Dynamic Form later.

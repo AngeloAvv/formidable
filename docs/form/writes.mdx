@@ -79,7 +79,7 @@ form.name.state.dirty; // FormidableFieldState
 ## reset and commit
 
 - `reset()` returns every Field to its initial value and presence, clears its errors and forgets that it was touched or submitted. The Form Effects do not run: the initial state is already consistent, so reset restores it exactly.
-- `reset(to: source)` replaces every value with a Schema instance and makes it the new initial state, so nothing is dirty, touched or submitted afterwards. It is what you write by hand as `replace` followed by `commit()` and `reset()`, in one change. The Form Effects run on the new values as they do when the Form is created: no Field counts as changed, so an Effect that clears the province when the country changes does not clear the province you load. An Effect that derives a Field recomputes it.
+- `reset(to: source)` replaces every value with a Schema instance and makes it the new initial state, so nothing is dirty, touched or submitted afterwards, and it is one change. It is not the same as `replace` followed by `commit()`: `replace` counts every Field it writes as changed, so its Effects run as for a user edit. An optional Nested Form is set or Unset as the source says. The Form Effects run on the new values as they do when the Form is created: no Field counts as changed, so an Effect that clears the province when the country changes does not clear the province you load. An Effect that derives a Field recomputes it.
 - `commit()` makes the current state the new initial state. Call it after a successful save so the Form is no longer dirty, and a later `reset()` returns to the saved values.
 
 All of them notify once, so a listener sees a single change.
