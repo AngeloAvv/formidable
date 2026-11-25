@@ -219,6 +219,45 @@ abstract class FormidableForm<S>
     }
   }
 
+  /// Runs [writes], which replace the values of the Fields (generated
+  /// `reset(to:)` passes `replace`), then runs the Form Effects like [attach]
+  /// does, makes the result the new initial state and forgets that anything
+  /// was touched or submitted. Everything is one change: listeners are
+  /// notified once. A Nested Form does it as part of its parent's change.
+  ///
+  /// A generated Form calls it from `reset(to:)`; an application does not.
+  @protected
+  void resetTo(void Function() writes) {
+    final root = _rootForm;
+    root.batch(() {
+      root._holdTree(1);
+      try {
+        writes();
+        // The new data may need the Effects, like at creation: none of its
+        // Fields counts as changed, so no Effect clears what the source holds.
+        root._runInitialEffects();
+        // Committing first makes the reset below restore exactly the new
+        // values, while it clears touched and submitted.
+        commit();
+        reset();
+      } finally {
+        root._holdTree(-1);
+      }
+    });
+  }
+
+  FormidableForm<Object?> get _rootForm {
+    final parent = _parent;
+    return parent is FormidableForm<Object?> ? parent._rootForm : this;
+  }
+
+  void _runInitialEffects() {
+    if (_running) return;
+    // The replaced Fields are not changes: forget them.
+    _pending.clear();
+    _run(initial: true);
+  }
+
   /// Makes the current state the new initial state, so the Form and its
   /// Fields are no longer dirty. It notifies once.
   @override
@@ -468,7 +507,8 @@ abstract class FormidableForm<S>
     } finally {
       _held--;
     }
-    _flush();
+    // Still held by an enclosing change: its own flush publishes the state.
+    if (_held == 0) _flush();
   }
 
   /// Runs the Form Validators of this Form and of its Nested Forms, after the

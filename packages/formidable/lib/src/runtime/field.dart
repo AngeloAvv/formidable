@@ -269,11 +269,13 @@ final class FormidableField<T>
   }
 
   /// Restores the initial value and presence, clears the errors and forgets
-  /// that the user touched the Field. Form Effects do not run.
+  /// that the user touched the Field and that it was submitted. Form Effects
+  /// do not run.
   @override
   void reset() {
     _assign(_initialDefined ? (value: _initialValue as T) : null);
     _touched = false;
+    _submitted = false;
     _stale = true;
     _settle();
   }
