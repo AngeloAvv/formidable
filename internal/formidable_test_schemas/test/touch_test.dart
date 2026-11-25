@@ -204,4 +204,67 @@ void main() {
       expect(form.username.state.touched, isTrue);
     });
   });
+
+  group('setValue(value, touched: true)', () {
+    test('writes and touches with one notification', () {
+      final form = itinerary();
+      final calls = count(form);
+
+      form.title.setValue('Oslo', touched: true);
+
+      expect(calls[0], 1);
+      expect(form.title.value, 'Oslo');
+      expect(form.title.state.touched, isTrue);
+    });
+
+    test('touches even when the value does not change', () {
+      final form = itinerary();
+      final calls = count(form);
+
+      form.title.setValue('Rome', touched: true);
+
+      expect(calls[0], 1);
+      expect(form.title.state.touched, isTrue);
+      expect(form.title.state.dirty, isFalse);
+    });
+
+    test('without touched it leaves touched alone', () {
+      final form = itinerary();
+
+      form.title.setValue('Oslo');
+
+      expect(form.title.state.touched, isFalse);
+    });
+
+    test('does not notify when nothing changes', () {
+      final form = itinerary();
+      form.title.touch();
+      final calls = count(form);
+
+      form.title.setValue('Rome', touched: true);
+
+      expect(calls[0], 0);
+    });
+
+    test('shows the error of the new value at once', () {
+      final form = itinerary();
+
+      form.title.setValue('a', touched: true);
+
+      expect(form.title.state.touched, isTrue);
+      expect(form.title.state.errors, isNotEmpty);
+    });
+
+    test('works on a standalone Field with one notification', () {
+      final field = FormidableField<String>();
+      addTearDown(field.dispose);
+      var calls = 0;
+      field.addListener(() => calls++);
+
+      field.setValue('x', touched: true);
+
+      expect(calls, 1);
+      expect(field.state.touched, isTrue);
+    });
+  });
 }
