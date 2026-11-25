@@ -315,6 +315,7 @@ final class FormidableDynamicForm
       required: required,
       defaultValue: defaultValue,
       initial: initial,
+      name: key,
     );
     _add(
       key,
@@ -334,7 +335,7 @@ final class FormidableDynamicForm
         output: () => field.output,
         read: (state) {
           final fieldState = state as FormidableFieldState<T>;
-          if (fieldState.defined) return fieldState.value as T;
+          if (fieldState.defined) return fieldState.value;
           if (defaultValue != null) return defaultValue;
           if (null is T) return null;
           throw StateError('A required Field is Unset and has no output.');
@@ -357,7 +358,7 @@ final class FormidableDynamicForm
         form,
         clear: form.clear,
         output: () => form.outputOrNull,
-        read: (state) => (state as FormidableFormState).meta.value,
+        read: (state) => (state as FormidableFormState).meta.valueOrNull,
         state: () => form.state,
       ),
     );

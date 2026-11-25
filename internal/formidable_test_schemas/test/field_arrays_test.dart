@@ -201,11 +201,11 @@ void main() {
 
       form.phones.add();
       expect(form.state.meta.status, FormidableStatus.invalid);
-      expect(form.value, isNull);
+      expect(form.valueOrNull, isNull);
 
       form.phones.removeAt(1);
       expect(form.state.meta.status, FormidableStatus.valid);
-      expect(form.value!.phones.single.number, '555');
+      expect(form.value.phones.single.number, '555');
     });
 
     test('item errors are addressed by item handle, in tree order', () async {

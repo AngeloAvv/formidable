@@ -16,7 +16,7 @@ void main() {
       expect(meta.pending, isFalse);
       expect(meta.defined, isTrue);
       expect(meta.errors, isEmpty);
-      expect(meta.value?.username, 'angelo');
+      expect(meta.valueOrNull?.username, 'angelo');
     });
 
     test('is also on the plain state, where the value is the Schema', () {
@@ -35,7 +35,7 @@ void main() {
       final form = SignUpForm(username: 'ab');
 
       expect(form.state.meta.status, FormidableStatus.invalid);
-      expect(form.state.meta.value, isNull);
+      expect(form.state.meta.valueOrNull, isNull);
     });
 
     test('is equal, with the same hash code, when nothing differs', () {
@@ -93,11 +93,11 @@ void main() {
 
     test('is built again for the next state, once', () {
       final form = CountedForm(name: 'ab');
-      expect(form.state.meta.value?.name, 'ab');
+      expect(form.state.meta.valueOrNull?.name, 'ab');
 
       form.name.setValue('abc');
-      expect(form.state.meta.value?.name, 'abc');
-      expect(form.value?.name, 'abc');
+      expect(form.state.meta.valueOrNull?.name, 'abc');
+      expect(form.valueOrNull?.name, 'abc');
 
       expect(countedBuilds, 2);
     });
@@ -105,8 +105,8 @@ void main() {
     test('is never built while the Form is invalid', () {
       final form = CountedForm(name: 'a');
 
-      expect(form.state.meta.value, isNull);
-      expect(form.value, isNull);
+      expect(form.state.meta.valueOrNull, isNull);
+      expect(form.valueOrNull, isNull);
       expect(countedBuilds, 0);
     });
 
@@ -117,8 +117,8 @@ void main() {
       form.name.setValue('abc');
 
       // The first read happens after the Form moved on.
-      expect(before.meta.value?.name, 'ab');
-      expect(form.state.meta.value?.name, 'abc');
+      expect(before.meta.valueOrNull?.name, 'ab');
+      expect(form.state.meta.valueOrNull?.name, 'abc');
     });
 
     test(
@@ -139,13 +139,13 @@ void main() {
         form.phones.add();
         form.phones.items.last.node.number.setValue('567');
 
-        final old = before.meta.value!;
+        final old = before.meta.value;
         expect(old.title, 'Trip');
         expect(old.contact.street, 'Main street');
         expect(old.phones.map((p) => p.number), ['123']);
         expect(old.extras, {'note': 'hello'});
 
-        final now = form.state.meta.value!;
+        final now = form.state.meta.value;
         expect(now.title, 'Other');
         expect(now.contact.street, 'Side street');
         expect(now.phones.map((p) => p.number), ['345', '567']);
@@ -160,7 +160,7 @@ void main() {
 
       expect(form.status.value, 'ok');
       expect(form.dirty.value, isTrue);
-      expect(form.errors.value, isNull);
+      expect(form.errors.valueOrNull, isNull);
     });
 
     test('and of the state, next to the metadata', () {
@@ -169,7 +169,7 @@ void main() {
       expect(form.state.status.value, 'ok');
       expect(form.state.dirty.value, isTrue);
       expect(form.state.pending, 3);
-      expect(form.state.errors.value, isNull);
+      expect(form.state.errors.valueOrNull, isNull);
       expect(form.state.meta.status, FormidableStatus.valid);
       expect(form.state.meta.dirty, isFalse);
     });
@@ -186,10 +186,10 @@ void main() {
       expect(seen.length, 3);
       expect(seen[1].errors.value, 'boom');
       expect(seen.last.meta.status, FormidableStatus.invalid);
-      expect(seen.last.meta.value, isNull);
-      expect(seen[1].meta.value?.errors, 'boom');
-      expect(seen[1].meta.value?.dirty, isTrue);
-      expect(seen[1].meta.value?.pending, 3);
+      expect(seen.last.meta.valueOrNull, isNull);
+      expect(seen[1].meta.valueOrNull?.errors, 'boom');
+      expect(seen[1].meta.valueOrNull?.dirty, isTrue);
+      expect(seen[1].meta.valueOrNull?.pending, 3);
     });
   });
 }

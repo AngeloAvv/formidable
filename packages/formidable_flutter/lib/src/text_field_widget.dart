@@ -98,7 +98,7 @@ class FormidableTextFieldWidgetState<T>
     }
     _typed = (
       defined: field.defined,
-      value: field.value,
+      value: field.valueOrNull,
       inputError: field.inputError,
     );
     if (_controller.text != text) {
@@ -175,7 +175,7 @@ class FormidableTextFieldWidgetState<T>
       // controller is the user's, not a stale copy of the Field.
       if (!force &&
           typed.defined == field.defined &&
-          typed.value == field.value &&
+          typed.value == field.valueOrNull &&
           typed.inputError == field.inputError) {
         return;
       }

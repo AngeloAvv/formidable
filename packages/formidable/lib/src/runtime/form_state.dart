@@ -15,7 +15,7 @@ final class FormidableFormMeta<S> {
   /// Creates the metadata of a Form.
   ///
   /// [buildValue] makes the Schema instance. It is called at most once, on the
-  /// first read of [value], and only when the Form is valid, not pending and
+  /// first read of [value] or [valueOrNull], and only when the Form is valid, not pending and
   /// set.
   FormidableFormMeta({
     required this.status,
@@ -56,13 +56,33 @@ final class FormidableFormMeta<S> {
   S? _value;
   bool _built = false;
 
+  /// The Schema instance, only while the Form is valid, not pending and set.
+  ///
+  /// Throws a [StateError] otherwise: an invalid Form has no value. Read
+  /// [valid] first, get the value from `submit()`, or read [valueOrNull].
+  S get value {
+    final value = valueOrNull;
+    if (value == null) {
+      throw StateError(
+        defined
+            ? 'The Form is not valid, so it has no value: check `valid` before '
+                  'reading `value`, take the value from `submit()`, or read '
+                  '`valueOrNull`.'
+            : 'The Form is an Unset optional Nested Form, so it has no value: '
+                  'check `defined` before reading `value`, or read '
+                  '`valueOrNull`.',
+      );
+    }
+    return value;
+  }
+
   /// The Schema instance while the Form is valid, not pending and set, null
   /// otherwise.
   ///
   /// It is lazy: the Schema constructor runs on the first read, never when the
   /// state is published, and the result is cached. It does not take part in
   /// equality, because a Schema is not required to define `==`.
-  S? get value {
+  S? get valueOrNull {
     if (!_built) {
       final build = _buildValue;
       _buildValue = null;
@@ -123,7 +143,7 @@ class FormidableFormState {
   /// The metadata of the Form: [FormidableFormMeta.status],
   /// [FormidableFormMeta.dirty], [FormidableFormMeta.pending],
   /// [FormidableFormMeta.defined], [FormidableFormMeta.errors] and
-  /// [FormidableFormMeta.value]. A generated state narrows it to the Schema.
+  /// [FormidableFormMeta.value] and [FormidableFormMeta.valueOrNull]. A generated state narrows it to the Schema.
   final FormidableFormMeta<Object?> meta;
 
   @override

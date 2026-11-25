@@ -905,6 +905,7 @@ class SignUp {
       'clear',
       'batch',
       'value',
+      'valueOrNull',
       'submit',
       'state',
       'applyErrors',

@@ -190,13 +190,14 @@ void main() {
         );
         form.username.setValue('alice');
         expect(form.state.meta.valid, isFalse);
-        expect(form.value, isNull);
+        expect(() => form.value, throwsStateError);
+        expect(form.valueOrNull, isNull);
         async.elapse(_debounce);
         names.answer('alice', taken: false);
         emails.answer('a@b.c', taken: false);
         async.flushMicrotasks();
         expect(form.state.meta.valid, isTrue);
-        expect(form.value?.username, 'alice');
+        expect(form.value.username, 'alice');
       });
     });
   });

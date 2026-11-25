@@ -24,7 +24,7 @@ void main() {
             form: form,
             builder: (context, state) {
               builds++;
-              return Text('u:${state.username.value}');
+              return Text('u:${state.username.valueOrNull}');
             },
           ),
         ),
@@ -46,7 +46,8 @@ void main() {
           app(
             FormidableTypedFormListener<SignUpForm, SignUpFormState>(
               form: form,
-              listener: (context, state) => seen.add(state.username.value),
+              listener: (context, state) =>
+                  seen.add(state.username.valueOrNull),
               child: const SizedBox(),
             ),
           ),
@@ -68,7 +69,7 @@ void main() {
         app(
           FormidableTypedFormSelector<SignUpForm, SignUpFormState, String?>(
             form: form,
-            selector: (state) => state.meta.value?.username,
+            selector: (state) => state.meta.valueOrNull?.username,
             builder: (context, username) {
               builds++;
               return Text('u:$username');
@@ -120,7 +121,7 @@ void main() {
             create: () => form = SignUpForm(username: 'angelo'),
             child: SignUpFormBuilder(
               builder: (context, SignUpFormState state) =>
-                  Text('u:${state.username.value}'),
+                  Text('u:${state.username.valueOrNull}'),
             ),
           ),
         ),
@@ -143,10 +144,10 @@ void main() {
           SignUpFormBuilder(
             form: form,
             buildWhen: (previous, next) =>
-                previous.username.value != next.username.value,
+                previous.username.valueOrNull != next.username.valueOrNull,
             builder: (context, state) {
               builds++;
-              return Text('u:${state.username.value}');
+              return Text('u:${state.username.valueOrNull}');
             },
           ),
         ),
@@ -173,7 +174,8 @@ void main() {
             child: SignUpFormListener(
               listenWhen: (previous, next) =>
                   previous.meta.dirty != next.meta.dirty,
-              listener: (context, state) => seen.add(state.username.value),
+              listener: (context, state) =>
+                  seen.add(state.username.valueOrNull),
               child: const SizedBox(),
             ),
           ),
@@ -198,7 +200,7 @@ void main() {
           SignUpFormScope(
             create: () => form = SignUpForm(),
             child: SignUpFormSelector<bool>(
-              selector: (state) => state.meta.value != null,
+              selector: (state) => state.meta.valueOrNull != null,
               builder: (context, canSubmit) {
                 builds++;
                 return Text('can:$canSubmit');
@@ -240,8 +242,8 @@ void main() {
             create: () => form = TripForm(),
             child: TripFormBuilder(
               builder: (context, TripFormState state) => Text(
-                'o:${state.origin.street.value} s:${state.stops.length} '
-                'n:${state.stops.items.map((s) => s.place.value).join(',')}',
+                'o:${state.origin.street.valueOrNull} s:${state.stops.length} '
+                'n:${state.stops.items.map((s) => s.place.valueOrNull).join(',')}',
               ),
             ),
           ),
@@ -268,10 +270,10 @@ void main() {
             create: () => form = SignUpForm(username: 'angelo'),
             builder: (context, form) => Column(
               children: [
-                Text('u:${form.username.value}'),
+                Text('u:${form.username.valueOrNull}'),
                 FormidableFieldBuilder<String>(
                   field: form.username,
-                  builder: (context, state) => Text('f:${state.value}'),
+                  builder: (context, state) => Text('f:${state.valueOrNull}'),
                 ),
                 // The context is below the scope.
                 Text('same:${identical(context.signUpForm, form)}'),
@@ -297,7 +299,7 @@ void main() {
         app(
           SignUpFormScope.value(
             form: form,
-            builder: (context, form) => Text('u:${form.username.value}'),
+            builder: (context, form) => Text('u:${form.username.valueOrNull}'),
           ),
         ),
       );
@@ -363,8 +365,9 @@ void main() {
         (form) => FormidableFieldArrayBuilder(
           array: form.stops,
           itemBuilder: (context, index, item) => const SizedBox(),
-          builder: (context, state, items) =>
-              Text('p:${state.items.map((s) => s.place.value).join(',')}'),
+          builder: (context, state, items) => Text(
+            'p:${state.items.map((s) => s.place.valueOrNull).join(',')}',
+          ),
         ),
       );
       form.stops.add(const Stop(place: 'Rome'));
@@ -410,8 +413,9 @@ void main() {
         tester,
         (form) => FormidableFieldArrayListener(
           array: form.stops,
-          listener: (context, state) =>
-              seen.add(state.items.map((s) => s.place.value ?? '-').join(',')),
+          listener: (context, state) => seen.add(
+            state.items.map((s) => s.place.valueOrNull ?? '-').join(','),
+          ),
           child: const SizedBox(),
         ),
       );
@@ -476,8 +480,10 @@ void main() {
         tester,
         (form) => FormidableFieldArraySelector(
           array: form.stops,
-          selector: (state) =>
-              state.items.map((s) => s.place.value).whereType<String>().length,
+          selector: (state) => state.items
+              .map((s) => s.place.valueOrNull)
+              .whereType<String>()
+              .length,
           buildWhen: (previous, next) => next > previous,
           builder: (context, filled) => Text('filled:$filled'),
         ),

@@ -118,7 +118,8 @@ Save is on only while the Form is valid *and* has changes, so the generated [For
 ```dart
 // example/lib/contact/contact_material.dart
 ContactFormSelector<bool>(
-  selector: (state) => state.meta.value != null && state.meta.dirty,
+  selector: (state) =>
+      state.meta.valueOrNull != null && state.meta.dirty,
   builder: (context, canSave) => FilledButton(
     onPressed: canSave ? () => _save(form) : null,
     child: const Text('Save'),
@@ -134,7 +135,7 @@ ContactFormSelector<bool>(
 
 ```dart
 // example/lib/contact/contact_material.dart
-widget.store.save(form.value!);
+widget.store.save(form.value);
 form.commit();
 setState(() => _saved = true);
 ```
@@ -154,7 +155,7 @@ Some errors only a server can find, such as an address that is already registere
 ```dart
 // example/lib/contact/contact_material.dart
 // The service has the last word on what no Validator can know.
-if (emailIsInUse(form.email.value)) {
+if (form.email.defined && emailIsInUse(form.email.value)) {
   form.applyErrors(
     fieldErrors: {
       form.email: [const EmailInUseError()],

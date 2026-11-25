@@ -61,7 +61,7 @@ class DynamicPasswordsMatch extends FormidableFormValidator<QuestionnaireForm> {
     }
     final password = answers.field<String>('password');
     final confirm = answers.field<String>('confirm');
-    return password.value != confirm.value
+    return password.valueOrNull != confirm.valueOrNull
         ? [FormidableFieldError(confirm, const PasswordMismatch())]
         : const [];
   }

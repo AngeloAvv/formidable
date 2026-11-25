@@ -57,7 +57,7 @@ void main() {
         async.flushMicrotasks();
 
         expect(form.state.meta.valid, isTrue);
-        expect(form.value!.answers, {'username': 'alice'});
+        expect(form.value.answers, {'username': 'alice'});
       });
     });
 

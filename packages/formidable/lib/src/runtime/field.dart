@@ -43,6 +43,7 @@ final class FormidableField<T>
   ///   starts with it and the output falls back to it while the Field is Unset.
   /// - [initial] is the starting value, which goes through the Normalizers. A
   ///   null record starts the Field Unset (or at its default).
+  /// - [name] is the name of the Schema field, used in error messages.
   FormidableField({
     List<FormidableNormalizer<T>> normalizers = const [],
     List<FormidableValidator<Object?>> validators = const [],
@@ -50,6 +51,7 @@ final class FormidableField<T>
     bool required = false,
     T? defaultValue,
     ({T value})? initial,
+    this.name,
   }) : _normalizers = normalizers,
        _validators = validators,
        _asyncValidators = asyncValidators,
@@ -65,6 +67,9 @@ final class FormidableField<T>
     _state = _stateFor();
     _notified = _state;
   }
+
+  /// The name of the Schema field, or null.
+  final String? name;
 
   final List<FormidableNormalizer<T>> _normalizers;
   final List<FormidableValidator<Object?>> _validators;
@@ -130,7 +135,7 @@ final class FormidableField<T>
   /// form.query.valueChanges.listen((query) => search(query));
   /// ```
   Stream<T?> get valueChanges => _hub.derive<({bool defined, T? value}), T?>(
-    () => (defined: _state.defined, value: _state.value),
+    () => (defined: _state.defined, value: _state.valueOrNull),
     (key) => key.value,
   );
 
@@ -149,11 +154,26 @@ final class FormidableField<T>
   Stream<R> select<R>(R Function(FormidableFieldState<T> state) selector) =>
       _hub.derive(() => selector(_state), (selection) => selection);
 
-  /// The current value, or null while the Field is Unset. Null is also a valid
-  /// chosen value for a nullable [T], so check [defined] to tell them apart.
+  /// The current value. It is null when null was chosen on a nullable [T].
   ///
-  /// It is current even while Form Effects run, unlike [state].
-  T? get value => _value;
+  /// Throws a [StateError] while the Field is Unset (ADR-0003). Check
+  /// [defined] first, or read [valueOrNull].
+  ///
+  /// It is current even while Form Effects run, unlike [state]. In a Form
+  /// Effect, which can run on an Unset Field, check `defined` and then read
+  /// `value`: [valueOrNull] cannot tell Unset from null on a nullable Field.
+  ///
+  /// ```dart
+  /// if (form.province.defined) form.city.setValue(form.province.value);
+  /// ```
+  T get value {
+    if (!_defined) throw unsetFieldError(name);
+    return _value as T;
+  }
+
+  /// The current value, or null while the Field is Unset. Null is also a valid
+  /// chosen value for a nullable [T], so only [defined] tells them apart.
+  T? get valueOrNull => _value;
 
   /// Whether the Field holds a value.
   bool get defined => _defined;
@@ -491,6 +511,7 @@ final class FormidableField<T>
     _readyForFormCheck = passes && !_asyncPending && _asyncErrors.isEmpty;
     return FormidableFieldState<T>(
       value: _value,
+      name: name,
       defined: _defined,
       touched: _touched,
       enabled: _enabled,

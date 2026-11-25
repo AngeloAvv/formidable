@@ -46,7 +46,8 @@ A [Form Selector](/form/state) reads the state of the Form after every change an
 ```dart
 // example/lib/contact/contact_material.dart
 ContactFormSelector<bool>(
-  selector: (state) => state.meta.value != null && state.meta.dirty,
+  selector: (state) =>
+      state.meta.valueOrNull != null && state.meta.dirty,
   builder: (context, canSave) => FilledButton(
     onPressed: canSave ? () => _save(form) : null,
     child: const Text('Save'),
@@ -60,7 +61,7 @@ The tap handler uses the value directly. The button is enabled only when `value`
 // example/lib/contact/contact_material.dart
 void _save(ContactForm form) {
   // The service has the last word on what no Validator can know.
-  if (emailIsInUse(form.email.value)) {
+  if (form.email.defined && emailIsInUse(form.email.value)) {
     form.applyErrors(
       fieldErrors: {
         form.email: [const EmailInUseError()],
@@ -70,7 +71,7 @@ void _save(ContactForm form) {
     form.email.touch();
     return;
   }
-  widget.store.save(form.value!);
+  widget.store.save(form.value);
   form.commit();
   setState(() => _saved = true);
 }

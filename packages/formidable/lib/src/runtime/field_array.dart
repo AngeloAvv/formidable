@@ -452,8 +452,8 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
 
   /// The value of an item if it has one right now.
   static Object? _peek(FormidableNode node) => switch (node) {
-    FormidableField<Object?>() => node.value,
-    FormidableForm<Object?>() => node.value,
+    FormidableField<Object?>() => node.valueOrNull,
+    FormidableForm<Object?>() => node.valueOrNull,
     _ => null,
   };
 }

@@ -20,7 +20,7 @@ void main() {
       form.name.setValue(' \t\n ');
 
       expect(form.name.defined, isFalse);
-      expect(form.name.value, isNull);
+      expect(form.name.valueOrNull, isNull);
       expect(form.name.state.errors, [isA<FormidableRequiredError>()]);
     });
 

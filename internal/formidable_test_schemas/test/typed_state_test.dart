@@ -34,11 +34,11 @@ void main() {
 
     test('holds the Schema value, null while the Form is invalid', () {
       final form = SignUpForm(username: 'ab');
-      expect(form.state.meta.value, isNull);
+      expect(form.state.meta.valueOrNull, isNull);
 
       form.username.setValue('angelo');
 
-      expect(form.state.meta.value?.username, 'angelo');
+      expect(form.state.meta.valueOrNull?.username, 'angelo');
       expect(form.state.meta.status, FormidableStatus.valid);
     });
 
@@ -194,8 +194,8 @@ void main() {
         billing: const Address(street: 'Via Po'),
       );
 
-      expect(form.state.meta.value?.home.street, 'Via Roma');
-      expect(form.state.home.meta.value?.street, 'Via Roma');
+      expect(form.state.meta.valueOrNull?.home.street, 'Via Roma');
+      expect(form.state.home.meta.valueOrNull?.street, 'Via Roma');
     });
   });
 

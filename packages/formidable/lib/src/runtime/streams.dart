@@ -143,7 +143,7 @@ void collectValueKey(FormidableNode node, List<Object?> into) {
     case FormidableField<Object?>():
       into
         ..add(node.state.defined)
-        ..add(node.state.value);
+        ..add(node.state.valueOrNull);
     case FormidablePassthrough<Object?>():
       into.add(node.value);
     case FormidableForm<Object?>():

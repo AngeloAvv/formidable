@@ -39,7 +39,7 @@ void main() {
       expect(form.username.state.errors, [const _Taken()]);
       expect(form.username.state.status, FormidableStatus.invalid);
       expect(form.state.meta.status, FormidableStatus.invalid);
-      expect(form.value, isNull);
+      expect(form.valueOrNull, isNull);
     });
 
     test('are added after the errors of the Validators', () {
@@ -154,7 +154,7 @@ void main() {
 
       expect(count, 1);
       expect(form.state.meta.status, FormidableStatus.invalid);
-      expect(form.value, isNull);
+      expect(form.valueOrNull, isNull);
     });
 
     test('Form errors clear when any Field changes', () {

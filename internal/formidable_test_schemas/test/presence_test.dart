@@ -57,7 +57,7 @@ void main() {
 
       expect(unset.nickname.defined, isFalse);
       expect(chosen.nickname.defined, isTrue);
-      expect(unset.nickname.value, chosen.nickname.value);
+      expect(unset.nickname.valueOrNull, chosen.nickname.valueOrNull);
       expect(unset.nickname.state, isNot(chosen.nickname.state));
     });
 

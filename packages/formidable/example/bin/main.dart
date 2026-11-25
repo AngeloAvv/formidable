@@ -7,7 +7,7 @@ Future<void> main() async {
   // The streams only emit changes, never the state the Form is in already.
   final subscriptions = [
     form.valueChanges.listen(
-      (state) => print('value changed: email=${state.email.value}'),
+      (state) => print('value changed: email=${state.email.valueOrNull}'),
     ),
     form.statusChanges.listen((status) => print('status: $status')),
     form

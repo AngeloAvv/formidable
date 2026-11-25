@@ -94,7 +94,7 @@ abstract class FormidableForm<S>
   ///
   /// Touching a Field, submitting, focus, errors and pending are not value
   /// changes, and neither is the Form becoming valid on its own: it is not tied
-  /// to [value], which is null until the Form is valid. The event is the state,
+  /// to [value], which has no value until the Form is valid. The event is the state,
   /// so the listener reads the Fields it cares about (`state.email.value`), or
   /// `state.meta.value` for the Schema instance when the Form is valid. A
   /// generated Form types it after its state.
@@ -125,11 +125,19 @@ abstract class FormidableForm<S>
   Stream<R> select<R>(R Function(FormidableFormState state) selector) =>
       _hub.derive(() => selector(state), (selection) => selection);
 
-  /// The Schema instance while the Form is valid and not pending, null
-  /// otherwise (and while an optional Nested Form is Unset). It is the
+  /// The Schema instance of the Form.
+  ///
+  /// Throws a [StateError] unless the Form is valid, not pending and set: an
+  /// invalid Form has no value. Check `state.meta.valid` first, take the value
+  /// from [submit], or read [valueOrNull]. It is the
   /// [FormidableFormMeta.value] of the current [state], so the Schema
   /// constructor runs on the first read after a change, not on every change.
-  S? get value => (state.meta as FormidableFormMeta<S>).value;
+  S get value => (state.meta as FormidableFormMeta<S>).value;
+
+  /// The Schema instance while the Form is valid and not pending, null
+  /// otherwise (and while an optional Nested Form is Unset). It is the
+  /// [FormidableFormMeta.valueOrNull] of the current [state].
+  S? get valueOrNull => (state.meta as FormidableFormMeta<S>).valueOrNull;
 
   /// Whether the Form holds a value, as opposed to being an Unset optional
   /// Nested Form. It is always true for a Form that is not an optional Nested
@@ -508,7 +516,7 @@ abstract class FormidableForm<S>
         run.cancel();
         continue;
       }
-      final input = [for (final field in dependencies) field.value];
+      final input = [for (final field in dependencies) field.valueOrNull];
       if (run.input != null && _sameValues(run.input!, input)) continue;
       run.cancel();
       run.input = input;

@@ -18,7 +18,7 @@ void main() {
         app(
           FormidableFieldBuilder<String>(
             field: form.username,
-            builder: (context, state) => Text('v:${state.value}'),
+            builder: (context, state) => Text('v:${state.valueOrNull}'),
           ),
         ),
       );
@@ -32,7 +32,7 @@ void main() {
         app(
           FormidableFieldBuilder<String>(
             field: form.username,
-            builder: (context, state) => Text('v:${state.value}'),
+            builder: (context, state) => Text('v:${state.valueOrNull}'),
           ),
         ),
       );
@@ -54,7 +54,7 @@ void main() {
                 previous.touched != current.touched,
             builder: (context, state) {
               builds++;
-              return Text('v:${state.value}');
+              return Text('v:${state.valueOrNull}');
             },
           ),
         ),
@@ -80,7 +80,7 @@ void main() {
       Widget build(SignUpForm form) => app(
         FormidableFieldBuilder<String>(
           field: form.username,
-          builder: (context, state) => Text('v:${state.value}'),
+          builder: (context, state) => Text('v:${state.valueOrNull}'),
         ),
       );
       await tester.pumpWidget(build(first));
@@ -105,7 +105,7 @@ void main() {
         app(
           FormidableFieldListener<String>(
             field: form.username,
-            listener: (context, state) => seen.add(state.value),
+            listener: (context, state) => seen.add(state.valueOrNull),
             child: const SizedBox(),
           ),
         ),
@@ -151,7 +151,7 @@ void main() {
           FormidableFieldListener<String>(
             field: form.username,
             listenWhen: (previous, current) => previous.dirty != current.dirty,
-            listener: (context, state) => seen.add(state.value),
+            listener: (context, state) => seen.add(state.valueOrNull),
             child: const SizedBox(),
           ),
         ),
@@ -219,7 +219,7 @@ void main() {
         app(
           FormidableFieldSelector<String, String?>(
             field: form.username,
-            selector: (state) => state.value,
+            selector: (state) => state.valueOrNull,
             buildWhen: (previous, current) => (current ?? '').length > 5,
             builder: (context, value) => Text('v:$value'),
           ),
@@ -357,7 +357,7 @@ void main() {
         app(
           FormidableFormSelector<SignUpForm, String?>(
             form: form,
-            selector: (state) => (state.meta.value as SignUp?)?.username,
+            selector: (state) => (state.meta.valueOrNull as SignUp?)?.username,
             builder: (context, username) {
               builds++;
               return Text('u:$username');
@@ -387,7 +387,7 @@ void main() {
         app(
           FormidableFormSelector<SignUpForm, bool>(
             form: form,
-            selector: (state) => state.meta.value != null,
+            selector: (state) => state.meta.valueOrNull != null,
             builder: (context, canSubmit) {
               builds++;
               return Text('can:$canSubmit');
@@ -461,7 +461,7 @@ void main() {
             form: form,
             child: Builder(
               builder: (context) =>
-                  Text('u:${context.signUpForm.username.value}'),
+                  Text('u:${context.signUpForm.username.valueOrNull}'),
             ),
           ),
         ),
@@ -472,7 +472,7 @@ void main() {
 
       expect(form.isDisposed, isFalse);
       form.username.setValue('still works');
-      expect(form.username.value, 'still works');
+      expect(form.username.valueOrNull, 'still works');
     });
 
     testWidgets('the owning scope disposes its Form', (tester) async {
@@ -500,7 +500,7 @@ void main() {
         SignUpFormScope.value(
           form: form,
           child: SignUpFormSelector<String?>(
-            selector: (state) => state.username.value,
+            selector: (state) => state.username.valueOrNull,
             builder: (context, name) => Text('u:$name'),
           ),
         ),
@@ -539,7 +539,7 @@ void main() {
         app(
           ValueListenableBuilder<FormidableFieldState<String>>(
             valueListenable: form.username.asValueListenable(),
-            builder: (context, state, _) => Text('v:${state.value}'),
+            builder: (context, state, _) => Text('v:${state.valueOrNull}'),
           ),
         ),
       );
