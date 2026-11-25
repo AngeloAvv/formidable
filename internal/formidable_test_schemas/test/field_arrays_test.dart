@@ -33,6 +33,45 @@ void main() {
     });
   });
 
+  group('add and insert return the item', () {
+    test('a Nested Form item is returned and is the one in the array', () {
+      final form = PersonForm();
+
+      final first = form.phones.add(const Telephone(number: '555'));
+      final inserted = form.phones.insert(0);
+
+      expect(first, isA<TelephoneForm>());
+      expect(first.number.value, '555');
+      expect(form.phones.items[1].node, same(first));
+      expect(form.phones.items[0].node, same(inserted));
+    });
+
+    test('a Field item is returned and writes through to the array', () {
+      final form = LabelsForm();
+
+      final tag = form.tags.add();
+      tag.setValue('flutter');
+
+      expect(form.tags.items.single.node, same(tag));
+      expect(form.tags.state.valid, isTrue);
+    });
+
+    test('an item added while the container is disabled is locked', () {
+      final form = PersonForm();
+      addTearDown(form.dispose);
+      form.phones.disable();
+
+      final added = form.phones.add(const Telephone(number: '555'));
+      final inserted = form.phones.insert(0);
+
+      expect(added.number.state.enabled, isFalse);
+      expect(inserted.number.state.enabled, isFalse);
+
+      form.phones.enable();
+      expect(added.number.state.enabled, isTrue);
+    });
+  });
+
   group('identity', () {
     test('every item has a stable identifier, kept by a move', () {
       final form = PersonForm();

@@ -168,17 +168,21 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
   /// The item at [index].
   FormidableFieldArrayItem<N> operator [](int index) => _items[index];
 
-  /// Adds an item at the end, empty or from [value].
-  void add([T? value]) => insert(_items.length, value);
+  /// Adds an item at the end, empty or from [value], and returns the node of
+  /// the new item: its Field, or its Nested Form. Use it to focus or touch the
+  /// new item right away.
+  N add([T? value]) => insert(_items.length, value);
 
-  /// Adds an item at [index] (0 to [length]), empty or from [value].
-  void insert(int index, [T? value]) {
+  /// Adds an item at [index] (0 to [length]), empty or from [value], and
+  /// returns the node of the new item: its Field, or its Nested Form.
+  N insert(int index, [T? value]) {
     RangeError.checkValueInInterval(index, 0, _items.length, 'index');
     _write(() {
       _items.insert(index, _make(value));
       _follow(_items[index].node);
       return true;
     });
+    return _items[index].node;
   }
 
   /// Removes the item at [index].
