@@ -46,11 +46,19 @@ final class FormidableFieldState<T> {
   /// check are not in [errors] yet.
   final bool pending;
 
-  /// Whether the Field has no errors. It is derived from [errors].
-  bool get valid => errors.isEmpty;
+  /// Whether the Field can be submitted now: it has no errors and no check is
+  /// running. It is `status == FormidableStatus.valid`, so it is false while
+  /// the Field is [pending].
+  bool get valid => status == FormidableStatus.valid;
 
-  FormidableStatus get status =>
-      errors.isEmpty ? FormidableStatus.valid : FormidableStatus.invalid;
+  /// [FormidableStatus.invalid] when the Field has errors, even if a check is
+  /// still running; [FormidableStatus.pending] when it has none but a check is
+  /// running; [FormidableStatus.valid] otherwise.
+  FormidableStatus get status => errors.isNotEmpty
+      ? FormidableStatus.invalid
+      : pending
+      ? FormidableStatus.pending
+      : FormidableStatus.valid;
 
   @override
   bool operator ==(Object other) =>

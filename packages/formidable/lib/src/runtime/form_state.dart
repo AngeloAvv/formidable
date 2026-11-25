@@ -27,13 +27,16 @@ final class FormidableFormMeta<S> {
   }) : errors = List.unmodifiable(errors),
        _buildValue = buildValue;
 
-  /// Whether the Form, with every Field below it, has errors.
+  /// [FormidableStatus.invalid] when the Form or any Field below it has
+  /// errors, even if other checks are still running; [FormidableStatus.pending]
+  /// when there are none but a check is running; [FormidableStatus.valid]
+  /// otherwise.
   final FormidableStatus status;
 
-  /// Whether the Form, with every Field below it, has no errors. It is
-  /// derived from [status], so it is true while the Form is [pending] (nothing
-  /// failed yet) and it does not look at whether the Form is [defined]. The
-  /// Schema [value] is built only when the Form is valid and not pending.
+  /// Whether the Form can be submitted now: no errors below it and no check
+  /// running. It is `status == FormidableStatus.valid`, so it is false while
+  /// the Form is [pending], and it does not look at whether the Form is
+  /// [defined]. The Schema [value] is built only when the Form is valid.
   bool get valid => status == FormidableStatus.valid;
 
   /// Whether any Field differs from its initial state.

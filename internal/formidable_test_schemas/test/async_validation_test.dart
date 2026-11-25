@@ -360,7 +360,7 @@ void main() {
           email: 'a@b.c',
         );
 
-        expect(form.state.meta.status, FormidableStatus.valid);
+        expect(form.state.meta.status, FormidableStatus.pending);
         expect(form.value, isNull);
 
         async.elapse(_debounce);

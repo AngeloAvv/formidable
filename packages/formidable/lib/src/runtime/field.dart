@@ -134,7 +134,8 @@ final class FormidableField<T>
     (key) => key.value,
   );
 
-  /// The status of the Field, each time it changes between valid and invalid.
+  /// The status of the Field, each time it changes between valid, invalid and
+  /// pending.
   Stream<FormidableStatus> get statusChanges =>
       _hub.derive(() => _state.status, (status) => status);
 
@@ -157,7 +158,7 @@ final class FormidableField<T>
   /// Whether the Field holds a value.
   bool get defined => _defined;
 
-  /// Whether the Field has no errors.
+  /// Whether the Field has no errors. A running check does not count.
   @override
   @internal
   bool get isValid => _state.errors.isEmpty;

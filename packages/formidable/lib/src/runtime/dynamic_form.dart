@@ -65,15 +65,28 @@ final class FormidableDynamicFormState {
   /// for a Nested Form.
   final Map<String, Object> states;
 
-  /// Whether every registered Field and Nested Form is valid, which is true
-  /// while nothing is registered. It is derived from [states].
-  bool get valid => states.values.every(
-    (state) => switch (state) {
-      FormidableFieldState<Object?>(:final valid) => valid,
-      FormidableFormState(:final meta) => meta.valid,
-      _ => true,
-    },
-  );
+  /// [FormidableStatus.invalid] when any registered Field or Nested Form has
+  /// errors, even if a check is still running; [FormidableStatus.pending] when
+  /// there are none but a check is running; [FormidableStatus.valid]
+  /// otherwise, which includes nothing being registered. It is derived from
+  /// [states].
+  FormidableStatus get status {
+    final failed = states.values.any(
+      (state) => switch (state) {
+        FormidableFieldState<Object?>(:final errors) => errors.isNotEmpty,
+        FormidableFormState(:final meta) =>
+          meta.status == FormidableStatus.invalid,
+        _ => false,
+      },
+    );
+    if (failed) return FormidableStatus.invalid;
+    return pending ? FormidableStatus.pending : FormidableStatus.valid;
+  }
+
+  /// Whether the Dynamic Form can be submitted now: nothing registered has
+  /// errors and no check is running. It is `status == FormidableStatus.valid`,
+  /// so it is false while the Dynamic Form is [pending].
+  bool get valid => status == FormidableStatus.valid;
 
   /// Whether any registered Field or Nested Form differs from its initial
   /// state. It is derived from [states].
@@ -223,12 +236,11 @@ final class FormidableDynamicForm
         same: sameValueKey,
       );
 
-  /// The status of the Dynamic Form, each time it changes between valid and
-  /// invalid. It is invalid when anything registered in it is.
-  Stream<FormidableStatus> get statusChanges => _hub.derive(
-    () => isValid ? FormidableStatus.valid : FormidableStatus.invalid,
-    (status) => status,
-  );
+  /// The status of the Dynamic Form, each time it changes between valid,
+  /// invalid and pending. It is invalid when anything registered in it is, and
+  /// pending when there are no errors but a check is running.
+  Stream<FormidableStatus> get statusChanges =>
+      _hub.derive(() => _state.status, (status) => status);
 
   /// What [selector] returns for the state of the Dynamic Form, each time it
   /// differs (by `==`) from what it returned before. The first selection is

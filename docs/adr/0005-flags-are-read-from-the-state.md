@@ -8,7 +8,7 @@ The metadata of a Form lives under `meta` (`state.meta`), a `FormidableFormMeta`
 
 `isSet` became `defined`. `set` reads as a verb and collides with `Set`, while `defined` says that the Field holds a value, null included, and keeps the distinction of ADR 0003: an Unset Field is one that is not `defined`. `markAsTouched()` became `touch()`, in line with the other actions.
 
-Each State also has a derived `valid` getter (`FormidableFieldState.valid`, `FormidableFormMeta.valid`, `FormidableFieldArrayState.valid`, `FormidableDynamicFormState.valid`). They do not add stored fields, so equality and hash codes are unchanged.
+Each State also has a derived `valid` getter (`FormidableFieldState.valid`, `FormidableFormMeta.valid`, `FormidableFieldArrayState.valid`, `FormidableDynamicFormState.valid`). `valid` means "can be submitted now": it is `status == FormidableStatus.valid`, so it is false while a check is running (`FormidableStatus.pending`, which is neither valid nor invalid). A running check never makes a node invalid and never shows a Validation Message. They do not add stored fields, so equality and hash codes are unchanged.
 
 ## Considered options
 

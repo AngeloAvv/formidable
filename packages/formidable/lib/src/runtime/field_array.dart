@@ -139,12 +139,11 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
         same: sameValueKey,
       );
 
-  /// The status of the array, each time it changes between valid and invalid.
-  /// The array is invalid when it has errors of its own or any item has.
-  Stream<FormidableStatus> get statusChanges => _hub.derive(
-    () => isValid ? FormidableStatus.valid : FormidableStatus.invalid,
-    (status) => status,
-  );
+  /// The status of the array, each time it changes between valid, invalid and
+  /// pending. The array is invalid when it has errors of its own or any item
+  /// has, and pending when it has none but a check is running.
+  Stream<FormidableStatus> get statusChanges =>
+      _hub.derive(() => _state.status, (status) => status);
 
   /// What [selector] returns for the state of the array, each time it differs
   /// (by `==`) from what it returned before. The first selection is computed

@@ -109,7 +109,8 @@ abstract class FormidableForm<S>
         same: sameValueKey,
       );
 
-  /// The status of the Form, each time it changes between valid and invalid.
+  /// The status of the Form, each time it changes between valid, invalid and
+  /// pending.
   Stream<FormidableStatus> get statusChanges =>
       _hub.derive(() => state.meta.status, (status) => status);
 
@@ -778,7 +779,11 @@ abstract class FormidableForm<S>
   }
 
   FormidableFormState _computeState() => buildState(
-    status: isValid ? FormidableStatus.valid : FormidableStatus.invalid,
+    status: !isValid
+        ? FormidableStatus.invalid
+        : isPending
+        ? FormidableStatus.pending
+        : FormidableStatus.valid,
     dirty: isDirty,
     pending: isPending,
     defined: defined,
