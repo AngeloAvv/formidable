@@ -53,7 +53,7 @@ final class FormidableField<T>
     ({T value})? initial,
     this.name,
   }) : _normalizers = normalizers,
-       _validators = validators,
+       _annotationValidators = validators,
        _asyncValidators = asyncValidators,
        _required = required,
        _defaultValue = defaultValue {
@@ -72,7 +72,8 @@ final class FormidableField<T>
   final String? name;
 
   final List<FormidableNormalizer<T>> _normalizers;
-  final List<FormidableValidator<Object?>> _validators;
+  final List<FormidableValidator<Object?>> _annotationValidators;
+  final List<FormidableValidator<Object?>> _addedValidators = [];
   final List<FormidableAsyncValidator<Object?>> _asyncValidators;
   List<FormidableValidationError> _formErrors = const [];
   final bool _required;
@@ -203,6 +204,58 @@ final class FormidableField<T>
 
   /// Makes the Field Unset.
   void clear() => _write(() => _assign(null));
+
+  /// The Validators that judge this Field, in the order they run: the ones
+  /// declared on the Schema first, then the ones added with [addValidator].
+  /// The list is unmodifiable and a new snapshot on every read.
+  ///
+  /// A widget can read the constraints of the Schema from it instead of
+  /// repeating them, for example to show a character counter:
+  ///
+  /// ```dart
+  /// final max = form.name.validators
+  ///     .whereType<MaxLength>()
+  ///     .map((validator) => validator.maxLength)
+  ///     .firstOrNull;
+  /// ```
+  List<FormidableValidator<Object?>> get validators => List.unmodifiable([
+    ..._annotationValidators,
+    ..._addedValidators,
+  ]);
+
+  /// Adds [validator] after the ones the Field already has and validates the
+  /// Field right away, with a single notification.
+  ///
+  /// There is no equivalent for Async Validators: a running check is tied to
+  /// the value it started on and to the debounce of the validators that
+  /// started it, so changing the set mid-flight would need a restart rule that
+  /// nothing asks for. Constraints that widgets read are synchronous.
+  ///
+  /// Throws an [ArgumentError] when [validator] cannot judge a value of this
+  /// Field's type.
+  void addValidator(FormidableValidator<Object?> validator) {
+    if (!validator.fitsValueType<T>()) {
+      throw ArgumentError.value(
+        validator,
+        'validator',
+        'cannot be used on a Field of type $T',
+      );
+    }
+    _addedValidators.add(validator);
+    _stale = true;
+    _settle();
+  }
+
+  /// Removes [validator], compared by `==`, from the ones added with
+  /// [addValidator] and validates the Field right away, with a single
+  /// notification. Returns whether it was there. The Validators declared on
+  /// the Schema cannot be removed.
+  bool removeValidator(FormidableValidator<Object?> validator) {
+    if (!_addedValidators.remove(validator)) return false;
+    _stale = true;
+    _settle();
+    return true;
+  }
 
   /// Makes the Field take part in the Form again, and validates it. It stays
   /// out of the Form while a container above it (a Form, a Nested Form or a
@@ -673,7 +726,7 @@ final class FormidableField<T>
   }
 
   List<FormidableValidationError> _validate(T? value) => [
-    for (final validator in _validators)
+    for (final validator in [..._annotationValidators, ..._addedValidators])
       if (value != null || validator.acceptsNull) ...validator.validate(value),
   ];
 }
