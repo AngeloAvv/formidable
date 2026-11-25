@@ -540,6 +540,9 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
           ? const [FormidableRequiredError()]
           : const [];
     }
+    // A disabled array, like a disabled Field, keeps only its presence errors:
+    // the rules that judge its items are dropped.
+    if (!_containerEnabled) return const [];
     final values = [for (final item in _items) _peek(item.node)];
     return [for (final validator in _validators) ...validator.validate(values)];
   }

@@ -296,5 +296,24 @@ void main() {
       expect(notifications, 1);
     });
   });
-}
 
+  group('setValue(touched:) in a batch', () {
+    test('touch-only writes publish once, when the batch ends', () {
+      final form = fx.AddressForm(revision: 0, country: 'IT', province: 'MI');
+      addTearDown(form.dispose);
+      var notifications = 0;
+      form.addListener(() => notifications++);
+
+      form.batch(() {
+        form.country.setValue('IT', touched: true);
+        form.province.setValue('MI', touched: true);
+        expect(notifications, 0);
+      });
+
+      expect(notifications, 1);
+      expect(form.country.state.touched, isTrue);
+      expect(form.province.state.touched, isTrue);
+      expect(form.province.value, 'MI');
+    });
+  });
+}

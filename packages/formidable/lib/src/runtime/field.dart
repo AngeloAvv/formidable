@@ -204,8 +204,13 @@ final class FormidableField<T>
       return changed;
     });
     // Same value: only touched changes, and the Form Effects must not see it
-    // as a change of the Field.
-    if (touched && !changed) touch();
+    // as a change of the Field. Settling through the Form lets a batch
+    // publish it once, at its end.
+    if (touched && !changed && !_touched) {
+      _touched = true;
+      _stale = true;
+      _settle();
+    }
   }
 
   /// Makes the Field Unset.

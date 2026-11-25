@@ -240,6 +240,13 @@ abstract class FormidableForm<S>
       for (final form in held) {
         form._held++;
       }
+      // Changes made earlier in an enclosing batch, outside what this reset
+      // rewrites: the Effects must still see them when the batch ends.
+      final owned = _ownedNodes;
+      final earlier = [
+        for (final node in root._pending)
+          if (!owned.contains(node)) node,
+      ];
       try {
         root._resetting = true;
         try {
@@ -251,6 +258,7 @@ abstract class FormidableForm<S>
         } finally {
           root._resetting = false;
         }
+        root._pending.addAll(earlier);
         // Committing first makes the reset below restore exactly the new
         // values, while it clears touched and submitted.
         commit();
@@ -422,6 +430,19 @@ abstract class FormidableForm<S>
       }
     }
   }
+
+  /// Every node below this Form, at any depth: Fields, Field Arrays and their
+  /// items, Dynamic Forms and what is registered in them, Nested Forms.
+  Set<FormidableNode> get _ownedNodes => {
+    for (final form in _treeForms) ...[
+      form,
+      ...form._nodes,
+      ...form._flatNodes,
+      for (final node in form._flatNodes)
+        if (node is FormidableFieldArray<FormidableNode, Object?, Object?>)
+          for (final item in node.items) item.node,
+    ],
+  };
 
   /// This Form and every Nested Form below it, at any depth.
   Iterable<FormidableForm<Object?>> get _treeForms sync* {

@@ -1,4 +1,5 @@
 import 'package:formidable/formidable.dart';
+import 'package:formidable_test_schemas/field_arrays.dart';
 import 'package:formidable_test_schemas/mixed_containers.dart';
 import 'package:formidable_test_schemas/submit_flow.dart';
 import 'package:test/test.dart';
@@ -301,6 +302,28 @@ void main() {
       form.enable();
 
       expect(form.title.state.errors, isNotEmpty);
+    });
+  });
+
+  group('a Field Array in a disabled Form', () {
+    test('drops the rules that judge its items', () {
+      final form = LabelsForm();
+      addTearDown(form.dispose);
+      for (final tag in ['aa', 'bb', 'cc', 'dd']) {
+        form.tags.add(tag);
+      }
+      expect(form.tags.state.errors, isNotEmpty);
+      expect(form.state.meta.valid, isFalse);
+
+      form.disable();
+
+      expect(form.tags.state.errors, isEmpty);
+      expect(form.state.meta.valid, isTrue);
+
+      form.enable();
+
+      expect(form.tags.state.errors, isNotEmpty);
+      expect(form.state.meta.valid, isFalse);
     });
   });
 }

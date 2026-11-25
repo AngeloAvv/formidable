@@ -324,5 +324,26 @@ void main() {
       expect(form.state.phones.items.last.number.value, '333');
     });
   });
-}
 
+  group('reset(to:) inside a batch', () {
+    test('the Effects still see the changes made earlier in the batch', () {
+      final form = DeliveryForm(
+        place: const Place(street: 'Main', zip: '00100'),
+        backup: const Place(street: 'Side', zip: '00200'),
+      );
+      addTearDown(form.dispose);
+
+      form.batch(() {
+        form.place.street.setValue('Other');
+        form.backup.reset(to: const Place(street: 'New', zip: '00300'));
+      });
+
+      // ClearZipOnStreetChange ran for the edit made before the reset...
+      expect(form.place.zip.defined, isFalse);
+      // ...and not for the Fields the reset wrote.
+      expect(form.backup.street.value, 'New');
+      expect(form.backup.zip.value, '00300');
+      expect(form.backup.state.meta.dirty, isFalse);
+    });
+  });
+}
