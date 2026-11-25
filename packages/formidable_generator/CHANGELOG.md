@@ -1,3 +1,13 @@
+## 0.3.0
+
+- **Breaking changes**
+  - The names `enable`, `disable`, `touch`, `untouch`, `valueOrNull` and `resetTo` are reserved among the Schema field names, because the generated Form and its state have members with these names. A Schema field called one of them is a build error that names the field and asks for a rename. Regenerate with `dart run build_runner build`.
+- The generated Form has `reset({Schema? to})`: without `to` it is the usual `reset()`, with it every value is replaced, committed as the new initial state and the Form Effects run, in one change.
+- The generated Form gives each Field its `name`, so the error of a read on an Unset Field names it.
+- The generated state has `enabled` on its metadata.
+- The generated code reads `valueOrNull` where a value can be absent.
+- Requires `formidable` 0.3.0.
+
 ## 0.2.0
 
 - **Breaking changes**
