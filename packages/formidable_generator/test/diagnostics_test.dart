@@ -903,6 +903,8 @@ class SignUp {
       'reset',
       'commit',
       'clear',
+      'enable',
+      'disable',
       'batch',
       'value',
       'valueOrNull',
@@ -935,7 +937,12 @@ class SignUp {
         expect(result.succeeded, isFalse);
         expect(
           result.errors.join('\n'),
-          allOf(contains('"$name"'), contains('SignUp'), contains('Form')),
+          allOf(
+            contains('"$name"'),
+            contains('SignUp'),
+            contains('Form'),
+            contains('Rename'),
+          ),
         );
       });
     }

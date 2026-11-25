@@ -105,6 +105,8 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
   int _nextId = 0;
   bool _touched = false;
   bool _submitted = false;
+  bool _enabled = true;
+  bool _locked = false;
   bool _stale = false;
   late FormidableFieldArrayState<S> _state;
   late FormidableFieldArrayState<S> _notified;
@@ -249,6 +251,55 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
     return fallback == null ? null : List.of(fallback);
   }
 
+  /// Makes the array take part again: its items go back to what their own
+  /// flags say, so an item Field that was disabled on its own stays disabled.
+  /// It notifies once.
+  void enable() => _setEnabled(true);
+
+  /// Disables every item of the array, exactly like a Field disabled on its
+  /// own, without changing the flags of the items. It affects the items added
+  /// later too. `state.enabled` reports the effective value (the array's own
+  /// flag and every container above it). It notifies once.
+  void disable() => _setEnabled(false);
+
+  void _setEnabled(bool enabled) {
+    if (_enabled == enabled) return;
+    _enabled = enabled;
+    _lockChanged();
+  }
+
+  @override
+  void applyLock(bool locked) {
+    if (_locked == locked) return;
+    _locked = locked;
+    _pushLock();
+    _stale = true;
+  }
+
+  bool get _containerEnabled => _enabled && !_locked;
+
+  /// Gives the lock of the array to every item it holds or keeps aside.
+  void _pushLock() {
+    for (final item in {..._items, ..._initialItems}) {
+      item.node.applyLock(!_containerEnabled);
+    }
+  }
+
+  void _lockChanged() {
+    final pipeline = _pipeline;
+    _pushLock();
+    _stale = true;
+    if (pipeline == null) {
+      for (final item in _items) {
+        item.node.revalidate();
+      }
+      _refresh();
+    } else {
+      pipeline.settle();
+      pipeline.focusLayoutChanged();
+    }
+  }
+
   /// Records that the user interacted with the array.
   void touch() {
     if (_touched) return;
@@ -360,6 +411,7 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
     final item = FormidableFieldArrayItem<N>(_nextId++, _create(value));
     final pipeline = _pipeline;
     if (pipeline != null) item.node.bindPipeline(pipeline);
+    item.node.applyLock(!_containerEnabled);
     return item;
   }
 
@@ -430,6 +482,7 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
       errors: _errors(),
       touched: _touched,
       submitted: _submitted,
+      enabled: _containerEnabled,
       dirty: isDirty,
       outputOrNull: () => states.isNotEmpty
           ? <T>[for (final state in states) _readState(state)]

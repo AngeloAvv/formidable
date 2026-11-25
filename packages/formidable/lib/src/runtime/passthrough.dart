@@ -131,6 +131,9 @@ final class FormidablePassthrough<T>
   void markSubmitted() {}
 
   @override
+  void applyLock(bool locked) {}
+
+  @override
   void collectErrors(
     Map<FormidableNode, List<FormidableValidationError>> into,
   ) {}

@@ -177,6 +177,7 @@ String emitForm(SchemaModel schema) {
   out.writeln('    required bool dirty,');
   out.writeln('    required bool pending,');
   out.writeln('    required bool defined,');
+  out.writeln('    required bool enabled,');
   out.writeln('    required List<FormidableValidationError> errors,');
   out.writeln('  }) {');
   for (final f in fields) {
@@ -189,6 +190,7 @@ String emitForm(SchemaModel schema) {
   out.writeln('        dirty: dirty,');
   out.writeln('        pending: pending,');
   out.writeln('        defined: defined,');
+  out.writeln('        enabled: enabled,');
   out.writeln('        errors: errors,');
   out.writeln('        // Built from the child states, on the first read.');
   out.writeln('        buildValue: () => ${_constructFromStates(schema)},');

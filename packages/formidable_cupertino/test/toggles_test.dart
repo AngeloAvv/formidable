@@ -39,6 +39,35 @@ void main() {
       );
     });
 
+    testWidgets('becomes non-interactive when the Form is disabled', (
+      tester,
+    ) async {
+      await pump(
+        tester,
+        (form) => FormidableCupertinoSwitch(field: form.terms),
+      );
+      expect(
+        tester.widget<CupertinoSwitch>(find.byType(CupertinoSwitch)).onChanged,
+        isNotNull,
+      );
+
+      form.disable();
+      await tester.pump();
+
+      expect(
+        tester.widget<CupertinoSwitch>(find.byType(CupertinoSwitch)).onChanged,
+        isNull,
+      );
+
+      form.enable();
+      await tester.pump();
+
+      expect(
+        tester.widget<CupertinoSwitch>(find.byType(CupertinoSwitch)).onChanged,
+        isNotNull,
+      );
+    });
+
     testWidgets('a tap sets the Field and touches it', (tester) async {
       await pump(
         tester,

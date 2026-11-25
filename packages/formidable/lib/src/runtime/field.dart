@@ -82,6 +82,7 @@ final class FormidableField<T>
   bool _defined = false;
   bool _touched = false;
   bool _enabled = true;
+  bool _locked = false;
   bool _submitted = false;
   final List<FormidableFocusTarget> _focusTargets = [];
   final List<void Function()> _focusLayoutListeners = [];
@@ -193,7 +194,10 @@ final class FormidableField<T>
   /// Makes the Field Unset.
   void clear() => _write(() => _assign(null));
 
-  /// Makes the Field take part in the Form again, and validates it.
+  /// Makes the Field take part in the Form again, and validates it. It stays
+  /// out of the Form while a container above it (a Form, a Nested Form or a
+  /// Field Array) is disabled: [FormidableFieldState.enabled] reports the
+  /// effective value.
   void enable() => _setEnabled(true);
 
   /// Takes the Field out of validation: its Validators, the Form Validators and
@@ -201,6 +205,9 @@ final class FormidableField<T>
   /// it, and applied errors are hidden. It keeps its value and still
   /// contributes to the output. An Unset Field that is required still blocks
   /// submit, because no valid output exists without it.
+  ///
+  /// Disabling a Form (or a Nested Form or a Field Array) has the same effect
+  /// on the Fields below it, without touching this flag.
   void disable() => _setEnabled(false);
 
   /// Shows [errors] on the Field, after the errors of its Validators, and makes
@@ -217,8 +224,13 @@ final class FormidableField<T>
 
   void _setEnabled(bool enabled) {
     if (_enabled == enabled) return;
+    final before = _effectivelyEnabled;
     _enabled = enabled;
     _stale = true;
+    if (before == _effectivelyEnabled) {
+      _refresh();
+      return;
+    }
     // Through the Form: the rules that read this Field, and the asynchronous
     // Form Validators that wait for it, have to run again.
     _settle();
@@ -343,7 +355,7 @@ final class FormidableField<T>
 
   /// Whether [focus] can do something: the Field is enabled and a widget is
   /// registered for it.
-  bool get canFocus => _enabled && _focusTargets.isNotEmpty;
+  bool get canFocus => _effectivelyEnabled && _focusTargets.isNotEmpty;
 
   /// Moves the input focus to the widget of the Field. It does nothing when
   /// the Field is disabled or no widget shows it.
@@ -354,6 +366,16 @@ final class FormidableField<T>
   /// Takes the input focus away from the widget of the Field.
   void unfocus() {
     if (_focusTargets.isNotEmpty) _focusTargets.last.unfocus();
+  }
+
+  /// Whether the Field itself is enabled and no container above it is disabled.
+  bool get _effectivelyEnabled => _enabled && !_locked;
+
+  @override
+  void applyLock(bool locked) {
+    if (_locked == locked) return;
+    _locked = locked;
+    _stale = true;
   }
 
   @override
@@ -501,12 +523,13 @@ final class FormidableField<T>
   }
 
   FormidableFieldState<T> _stateFor() {
+    final enabled = _effectivelyEnabled;
     final own = _defined
-        ? (_enabled ? _validate(_value) : const <FormidableValidationError>[])
+        ? (enabled ? _validate(_value) : const <FormidableValidationError>[])
         : _inputError != null
         ? [_inputError!]
         : _presenceErrors();
-    final passes = _defined && _enabled && own.isEmpty && _formErrors.isEmpty;
+    final passes = _defined && enabled && own.isEmpty && _formErrors.isEmpty;
     _driveAsync(wanted: passes);
     _readyForFormCheck = passes && !_asyncPending && _asyncErrors.isEmpty;
     return FormidableFieldState<T>(
@@ -514,20 +537,20 @@ final class FormidableField<T>
       name: name,
       defined: _defined,
       touched: _touched,
-      enabled: _enabled,
+      enabled: enabled,
       submitted: _submitted,
       dirty:
           _defined != _initialDefined || (_defined && _value != _initialValue),
-      pending: _asyncPending || (_enabled && _asyncFormPending),
+      pending: _asyncPending || (enabled && _asyncFormPending),
       errors: [
         ...own,
         // A disabled Field takes no part in validation: only its presence
         // errors (in `own`) remain, so every rule that judges its value or
         // spans several Fields is dropped.
-        if (_enabled) ..._formErrors,
+        if (enabled) ..._formErrors,
         ..._asyncErrors,
-        if (_enabled) ..._asyncFormErrors,
-        if (_enabled) ..._applied,
+        if (enabled) ..._asyncFormErrors,
+        if (enabled) ..._applied,
       ],
     );
   }

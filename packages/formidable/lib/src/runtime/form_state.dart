@@ -22,6 +22,7 @@ final class FormidableFormMeta<S> {
     this.dirty = false,
     this.pending = false,
     this.defined = true,
+    this.enabled = true,
     List<FormidableValidationError> errors = const [],
     S? Function()? buildValue,
   }) : errors = List.unmodifiable(errors),
@@ -48,6 +49,11 @@ final class FormidableFormMeta<S> {
   /// Whether the Form holds a value. It is false only for an optional Nested
   /// Form that is Unset.
   final bool defined;
+
+  /// Whether the Form takes part in its parent: its own flag (`enable()` and
+  /// `disable()`) and every Form or Field Array above it. While it is false,
+  /// every Field below it is disabled as well, whatever its own flag says.
+  final bool enabled;
 
   /// Errors that belong to the Form as a whole, not to a Field.
   final List<FormidableValidationError> errors;
@@ -104,16 +110,23 @@ final class FormidableFormMeta<S> {
       other.dirty == dirty &&
       other.pending == pending &&
       other.defined == defined &&
+      other.enabled == enabled &&
       _sameErrors(other.errors, errors);
 
   @override
-  int get hashCode =>
-      Object.hash(status, dirty, pending, defined, Object.hashAll(errors));
+  int get hashCode => Object.hash(
+    status,
+    dirty,
+    pending,
+    defined,
+    enabled,
+    Object.hashAll(errors),
+  );
 
   @override
   String toString() =>
       'FormidableFormMeta(status: $status, dirty: $dirty, '
-      'pending: $pending, defined: $defined, errors: $errors)';
+      'pending: $pending, defined: $defined, enabled: $enabled, errors: $errors)';
 
   static bool _sameErrors(
     List<FormidableValidationError> a,

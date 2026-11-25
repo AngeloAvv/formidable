@@ -44,6 +44,7 @@ final class FormidableDynamicTypeError extends StateError {
 final class FormidableDynamicFormState {
   FormidableDynamicFormState(
     Map<String, Object> states, {
+    this.enabled = true,
     Map<String, Object? Function(Object state)> readers = const {},
   }) : states = Map.unmodifiable(states),
        _readers = readers;
@@ -59,6 +60,11 @@ final class FormidableDynamicFormState {
     for (final entry in states.entries)
       entry.key: _readers[entry.key]!(entry.value),
   };
+
+  /// Whether the Dynamic Form takes part in the Form: its own flag (`enable()`
+  /// and `disable()`) and every container above it. While it is false, every
+  /// Field and Nested Form registered in it is disabled as well.
+  final bool enabled;
 
   /// The state of every registered node, by key, in registration order: a
   /// [FormidableFieldState] for a Field, the generated state of a Nested Form
@@ -149,15 +155,18 @@ final class FormidableDynamicFormState {
 
   @override
   bool operator ==(Object other) =>
-      other is FormidableDynamicFormState && _same(other.states, states);
+      other is FormidableDynamicFormState &&
+      other.enabled == enabled &&
+      _same(other.states, states);
 
   @override
   int get hashCode => Object.hashAll([
+    enabled,
     for (final entry in states.entries) Object.hash(entry.key, entry.value),
   ]);
 
   @override
-  String toString() => 'FormidableDynamicFormState($states)';
+  String toString() => 'FormidableDynamicFormState($states, enabled: $enabled)';
 
   static bool _same(Map<String, Object> a, Map<String, Object> b) {
     if (a.length != b.length) return false;
@@ -204,6 +213,8 @@ final class FormidableDynamicForm
   final Map<String, _Entry> _entries = {};
   final Map<String, Object?> _offers;
   FormidablePipeline? _pipeline;
+  bool _enabled = true;
+  bool _locked = false;
   FormidableDynamicFormState _state = FormidableDynamicFormState(const {});
   FormidableDynamicFormState _notified = FormidableDynamicFormState(const {});
 
@@ -247,6 +258,45 @@ final class FormidableDynamicForm
   /// computed when you listen, so the first event is a real change.
   Stream<R> select<R>(R Function(FormidableDynamicFormState state) selector) =>
       _hub.derive(() => selector(_state), (selection) => selection);
+
+  /// Makes the Dynamic Form take part again: what is registered in it goes back
+  /// to what its own flags say, so a Field that was disabled on its own stays
+  /// disabled. It notifies once.
+  void enable() => _setEnabled(true);
+
+  /// Disables every Field and Nested Form registered in it, and the ones
+  /// registered later, exactly like a Field disabled on its own and without
+  /// changing their flags. `state.enabled` reports the effective value (its own
+  /// flag and every container above it). It notifies once.
+  void disable() => _setEnabled(false);
+
+  void _setEnabled(bool enabled) {
+    if (_enabled == enabled) return;
+    _enabled = enabled;
+    _pushLock();
+    final pipeline = _pipeline;
+    if (pipeline == null) {
+      revalidate();
+    } else {
+      pipeline.settle();
+      pipeline.focusLayoutChanged();
+    }
+  }
+
+  bool get _containerEnabled => _enabled && !_locked;
+
+  void _pushLock() {
+    for (final node in children) {
+      node.applyLock(!_containerEnabled);
+    }
+  }
+
+  @override
+  void applyLock(bool locked) {
+    if (_locked == locked) return;
+    _locked = locked;
+    _pushLock();
+  }
 
   /// The registered keys, in registration order.
   List<String> get keys => _entries.keys.toList(growable: false);
@@ -468,6 +518,7 @@ final class FormidableDynamicForm
     _entries[key] = entry;
     final pipeline = _pipeline;
     if (pipeline != null) entry.node.bindPipeline(pipeline);
+    entry.node.applyLock(!_containerEnabled);
     _follow(entry.node);
     _structureChanged(entry.node);
   }
@@ -499,6 +550,7 @@ final class FormidableDynamicForm
   void _publish() {
     _state = FormidableDynamicFormState(
       {for (final entry in _entries.entries) entry.key: entry.value.state()},
+      enabled: _containerEnabled,
       readers: {
         for (final entry in _entries.entries) entry.key: entry.value.read,
       },
@@ -569,6 +621,8 @@ final class FormidableDynamicForm
     for (final node in children.toList()) {
       node.revalidate();
     }
+    _publish();
+    _notifyIfChanged();
   }
 
   @override

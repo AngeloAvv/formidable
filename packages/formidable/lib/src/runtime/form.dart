@@ -58,6 +58,8 @@ abstract class FormidableForm<S>
   FormidablePipeline? _parent;
   bool _optional = false;
   bool _initiallyDefined = true;
+  bool _enabled = true;
+  bool _locked = false;
   List<FormidableValidationError> _formErrors = const [];
 
   /// The children of the Form, in Schema declaration order.
@@ -178,6 +180,45 @@ abstract class FormidableForm<S>
     }
   });
 
+  /// Whether this Form and every container above it are enabled.
+  bool get _containerEnabled => _enabled && !_locked;
+
+  /// Makes the Form take part again: every Field below it goes back to what
+  /// its own flag says, so a Field that was disabled on its own (by the app or
+  /// by a Form Effect) stays disabled. It notifies once.
+  void enable() => _setEnabled(true);
+
+  /// Disables the Form: every Field below it, in Nested Forms, Field Arrays
+  /// and Dynamic Forms too, is disabled exactly like a Field disabled on its
+  /// own, without changing the flags of those Fields. `meta.enabled` and the
+  /// `enabled` of each Field report the effective value (their own flag and
+  /// every container above). It notifies once.
+  void disable() => _setEnabled(false);
+
+  void _setEnabled(bool enabled) {
+    if (_enabled == enabled) return;
+    batch(() {
+      _enabled = enabled;
+      _pushLock();
+      settle();
+      focusLayoutChanged();
+    });
+  }
+
+  @override
+  void applyLock(bool locked) {
+    if (_locked == locked) return;
+    _locked = locked;
+    _pushLock();
+  }
+
+  /// Hands the lock of this Form to its children.
+  void _pushLock() {
+    for (final node in _nodes) {
+      node.applyLock(!_containerEnabled);
+    }
+  }
+
   /// Makes the current state the new initial state, so the Form and its
   /// Fields are no longer dirty. It notifies once.
   @override
@@ -260,6 +301,7 @@ abstract class FormidableForm<S>
     for (final node in _nodes) {
       node.bindPipeline(this);
     }
+    _pushLock();
     _run(initial: true);
     // The initial state is what exists once the creation-time Effects ran.
     commit();
@@ -795,6 +837,7 @@ abstract class FormidableForm<S>
     dirty: isDirty,
     pending: isPending,
     defined: defined,
+    enabled: _containerEnabled,
     errors: _formErrors,
   );
 
@@ -815,6 +858,7 @@ abstract class FormidableForm<S>
     required bool dirty,
     required bool pending,
     required bool defined,
+    required bool enabled,
     required List<FormidableValidationError> errors,
   }) => FormidableFormState(
     meta: FormidableFormMeta<S>(
@@ -822,6 +866,7 @@ abstract class FormidableForm<S>
       dirty: dirty,
       pending: pending,
       defined: defined,
+      enabled: enabled,
       errors: errors,
       buildValue: buildOutput,
     ),

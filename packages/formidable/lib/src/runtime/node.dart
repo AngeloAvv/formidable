@@ -35,6 +35,17 @@ abstract interface class FormidableNode {
   /// by the Form when `submit()` starts.
   void markSubmitted();
 
+  /// Tells the node whether a container above it (a Form, a Nested Form, a
+  /// Field Array or a Dynamic Form) is disabled. A locked node takes no part
+  /// in validation, exactly like a node disabled on its own, but its own
+  /// enabled flag is left alone, so lifting the lock restores what it was.
+  ///
+  /// It only records the lock and marks the node stale: the container that
+  /// pushes it settles the Form once afterwards, so the whole change is one
+  /// notification.
+  @internal
+  void applyLock(bool locked);
+
   /// Gives the node the pipeline of its Form. Writes to the node run through
   /// it. Called once by the Form.
   void bindPipeline(FormidablePipeline pipeline);
