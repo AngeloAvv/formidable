@@ -88,6 +88,7 @@ final class FormidableField<T>
   final List<FormidableFocusTarget> _focusTargets = [];
   final List<void Function()> _focusLayoutListeners = [];
   List<FormidableValidationError> _applied = const [];
+  final List<_ClearOnWatch> _clearOn = [];
   bool _stale = false;
   FormidableValidationError? _inputError;
   Timer? _asyncTimer;
@@ -278,9 +279,59 @@ final class FormidableField<T>
   /// replace the errors applied before and go away on the next change of the
   /// Field's value or presence. An empty list removes them right away.
   ///
+  /// With [clearOn], the errors also go away on the next change of the value
+  /// or presence of any listed node: a Field, a Nested Form or a Field Array
+  /// (a change anywhere below a Nested Form or a Field Array counts). Use it
+  /// when the error depends on other values, such as a server that rejects a
+  /// password for a given username:
+  ///
+  /// ```dart
+  /// form.password.applyErrors(
+  ///   const [RejectedByServerError()],
+  ///   clearOn: [form.url, form.username],
+  /// );
+  /// ```
+  ///
+  /// Touching, focusing or changing the errors of a listed node is not a
+  /// change. The nodes are meant to belong to the same Form as this Field; a
+  /// node of another Form works too, because the Field only listens to it. The
+  /// listeners are released as soon as the errors go away or are replaced by a
+  /// later call (which may list other nodes), and when the Field is disposed,
+  /// which the Form does when it is disposed.
+  ///
   /// A disabled Field shows no applied errors.
-  void applyErrors(List<FormidableValidationError> errors) {
+  void applyErrors(
+    List<FormidableValidationError> errors, {
+    List<FormidableNode> clearOn = const [],
+  }) {
+    _releaseClearOn();
     _applied = List.unmodifiable(errors);
+    if (_applied.isNotEmpty) {
+      for (final node in clearOn) {
+        if (identical(node, this)) continue;
+        _clearOn.add(_ClearOnWatch(node, _clearAppliedErrors));
+      }
+    }
+    _stale = true;
+    _settle();
+  }
+
+  /// The number of nodes the applied errors wait on. Zero when there are no
+  /// applied errors or none was given a `clearOn`.
+  @visibleForTesting
+  int get clearOnCount => _clearOn.length;
+
+  void _releaseClearOn() {
+    for (final watch in _clearOn) {
+      watch.release();
+    }
+    _clearOn.clear();
+  }
+
+  void _clearAppliedErrors() {
+    _releaseClearOn();
+    if (_applied.isEmpty) return;
+    _applied = const [];
     _stale = true;
     _settle();
   }
@@ -327,6 +378,9 @@ final class FormidableField<T>
   @override
   void reset() {
     _assign(_initialDefined ? (value: _initialValue as T) : null);
+    // Applied errors go even when the value did not change.
+    _applied = const [];
+    _releaseClearOn();
     _touched = false;
     _submitted = false;
     _stale = true;
@@ -511,6 +565,7 @@ final class FormidableField<T>
 
   @override
   void dispose() {
+    _releaseClearOn();
     _cancelAsync();
     _streamHub?.close();
     super.dispose();
@@ -570,6 +625,7 @@ final class FormidableField<T>
     _defined = defined;
     _value = value;
     _applied = const [];
+    _releaseClearOn();
     _stale = true;
     return true;
   }
@@ -581,6 +637,7 @@ final class FormidableField<T>
     _value = null;
     _inputError = error;
     _applied = const [];
+    _releaseClearOn();
     _stale = true;
     return true;
   }
@@ -729,4 +786,25 @@ final class FormidableField<T>
     for (final validator in [..._annotationValidators, ..._addedValidators])
       if (value != null || validator.acceptsNull) ...validator.validate(value),
   ];
+}
+
+/// A Field's subscription to a node whose next value change clears its applied
+/// errors.
+final class _ClearOnWatch {
+  _ClearOnWatch(this._node, void Function() onChange)
+    : _key = valueKeyOf(_node) {
+    _listener = () {
+      final next = valueKeyOf(_node);
+      if (sameValueKey(_key, next)) return;
+      _key = next;
+      onChange();
+    };
+    _node.addListener(_listener);
+  }
+
+  final FormidableNode _node;
+  List<Object?> _key;
+  late final void Function() _listener;
+
+  void release() => _node.removeListener(_listener);
 }
