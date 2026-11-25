@@ -13,22 +13,25 @@ Every Field, Field Array and Form holds an immutable **state snapshot** and noti
 
 | Member | Meaning |
 | --- | --- |
-| `value` | The chosen value, or null while the Field is Unset |
+| `value` | The chosen value, typed `T`. It throws a `StateError` while the Field is Unset, so check `defined` first |
+| `valueOrNull` | The chosen value, or null while the Field is Unset. On a nullable Field it cannot tell Unset from a chosen null, `defined` does |
 | `defined` | Whether the Field holds a value. Tells Unset apart from a chosen null |
-| `valid` | Whether the Field has no errors |
-| `status` | `valid` or `invalid` |
+| `valid` | Whether the Field can be submitted now: no errors and no check running. It is `status == valid` |
+| `status` | `invalid` while there are errors, else `pending` while a check runs, else `valid` |
 | `errors` | Every Validation Error of the Field |
 | `touched` | The user interacted with the Field and left it |
 | `dirty` | The value or presence differs from the initial state. Going back to the initial state makes the Field clean again |
-| `enabled` | Whether the Field takes part in the Form |
+| `enabled` | Whether the Field takes part in the Form. It is false when the Field was disabled, and also while a Form, Nested Form, Field Array or Dynamic Form above it is disabled, see [the container lock](/form/submit#disabled-fields) |
 | `submitted` | The Form was submitted since the Field was created |
 | `pending` | An [Async Validator](/validation/async) is still checking the value |
 
-A Field Array has `form.phones.state.valid` too, true when the array and every item have no errors.
+A Field Array state (`form.phones.state`) has `status`, `valid`, `dirty`, `pending` and `enabled`. It is `valid` when the array and every item have no errors and no check is running, and `enabled` is the flag of the array, false while the array or a container above it is disabled.
 
-A Dynamic Form state (`form.answers.state`) has `valid`, `dirty` and `pending`, derived from every Field and Nested Form registered in it.
+A Dynamic Form state (`form.answers.state`) has `status`, `valid`, `dirty`, `pending` and `enabled`, derived from every Field and Nested Form registered in it.
 
-Flags are read from the state, never from the handle: `form.email.state.valid`, `form.state.meta.dirty`. A Field, a Field Array or a Form offers actions (`setValue`, `clear`, `touch`, `reset`, `commit`, `submit`...) plus `value` and `defined`, which stay on the handle because they are current even while [Form Effects](/form/effects) run, unlike `state`. See [ADR 0005](https://github.com/AngeloAvv/formidable/blob/main/docs/adr/0005-flags-are-read-from-the-state.md).
+`pending` is a status of its own. A node with no errors and a check still running is neither `valid` nor `invalid`: it cannot be submitted yet, and it has no error to show. See [ADR 0006](https://github.com/AngeloAvv/formidable/blob/main/docs/adr/0006-form-lock-valid-means-submittable-and-value-throws.md).
+
+Flags are read from the state, never from the handle: `form.email.state.valid`, `form.state.meta.dirty`. A Field, a Field Array or a Form offers actions (`setValue`, `clear`, `touch`, `untouch`, `enable`, `disable`, `reset`, `commit`, `submit`...) plus `value`, `valueOrNull` and `defined`, which stay on the handle because they are current even while [Form Effects](/form/effects) run, unlike `state`. See [ADR 0005](https://github.com/AngeloAvv/formidable/blob/main/docs/adr/0005-flags-are-read-from-the-state.md).
 
 ## Form state
 
@@ -38,13 +41,15 @@ The metadata of the Form is under `state.meta`, a `FormidableFormMeta<SignUp>`. 
 
 | Member of `state.meta` | Meaning |
 | --- | --- |
-| `valid` | Whether no Field has errors. It is `status == valid` |
-| `status` | `invalid` while any Field has errors |
+| `valid` | Whether the Form can be submitted now: no Field has errors and no check is running. It is `status == valid` |
+| `status` | `invalid` while any Field has errors, else `pending` while any check runs, else `valid` |
 | `dirty` | Any Field is dirty |
 | `pending` | Any Field is still waiting for the result of an [Async Validator](/validation/async) |
+| `enabled` | False while the Form is disabled, or while a Form above it is. The Fields have their own `enabled`, see [the container lock](/form/submit#disabled-fields) |
 | `errors` | Errors of the Form as a whole, not tied to a Field |
 | `defined` | False only for an optional [Nested Form](/schema/nested-forms) that is Unset |
-| `value` | The Schema instance while the Form is valid, not pending and set, null otherwise (typed as `SignUp?` in the generated state). It is lazy, see below |
+| `value` | The Schema instance, typed `SignUp`. It throws a `StateError` unless the Form is valid and set, so it is never null. It is lazy, see below |
+| `valueOrNull` | The Schema instance while the Form is valid and set, null otherwise |
 
 And, on the generated state, one member per child, with the name of the Schema field (the name `meta` is the only one a Schema field cannot use):
 
@@ -58,23 +63,23 @@ And, on the generated state, one member per child, with the name of the Schema f
 
 ```dart
 final state = form.state; // SignUpFormState
-state.username.value;     // String?
-state.address.street;     // FormidableFieldState<String>, in a Nested Form
-state.phones.items.first; // PhoneFormState, in a Field Array
-state.meta.status;        // FormidableStatus
-state.meta.value;         // SignUp?
+state.username.valueOrNull; // String?
+state.address.street;       // FormidableFieldState<String>, in a Nested Form
+state.phones.items.first;   // PhoneFormState, in a Field Array
+state.meta.status;          // FormidableStatus: valid, invalid or pending
+state.meta.valueOrNull;     // SignUp?
 ```
 
-Equality is deep. Editing an item of a Field Array, adding, removing or moving one, or changing a Field of a Nested Form gives a state that is `!=` to the previous one. `state.meta.value` does not take part in equality: it is derived from the states of the children, and a Schema is not required to define `==`.
+Equality is deep. Editing an item of a Field Array, adding, removing or moving one, or changing a Field of a Nested Form gives a state that is `!=` to the previous one. `state.meta.valueOrNull` does not take part in equality: it is derived from the states of the children, and a Schema is not required to define `==`.
 
 ### The value is lazy
 
-The Schema constructor does not run when a state is published, so typing in a Field does not build a Schema nobody reads. `state.meta.value` builds it from the states of the children on the first read, caches it, and gives the same instance on every later read of that state. Because it is built from the state and not from the live Form, a state you kept still gives the value it had, even after the Form moved on.
+The Schema constructor does not run when a state is published, so typing in a Field does not build a Schema nobody reads. `state.meta.value` (and `valueOrNull`) builds it from the states of the children on the first read, caches it, and gives the same instance on every later read of that state. Because it is built from the state and not from the live Form, a state you kept still gives the value it had, even after the Form moved on.
 
-`form.value` is the `state.meta.value` of the current state:
+`form.value` is the `state.meta.value` of the current state, and `form.valueOrNull` its `valueOrNull`. `value` throws unless the Form is valid, and that includes while it is pending, so read it only where the Form is known to be valid, for example in the handler of a button that follows `state.meta.valid`. Everywhere else, read `valueOrNull`:
 
 ```dart
-final signUp = form.value;
+final signUp = form.valueOrNull;
 if (signUp != null) save(signUp);
 ```
 
@@ -85,7 +90,7 @@ A Field, a Field Array or a Form calls its listeners synchronously and only when
 ```dart
 ValueListenableBuilder(
   valueListenable: form.username.asValueListenable(),
-  builder: (context, state, _) => Text('${state.value}'),
+  builder: (context, state, _) => Text('${state.valueOrNull}'),
 )
 ```
 
@@ -97,7 +102,7 @@ ValueListenableBuilder(
 | --- | --- |
 | `changes` | The full state, on every state change. The stream form of `addListener` |
 | `valueChanges` | Only when the value changes, see the table below |
-| `statusChanges` | A `FormidableStatus`, only when it changes between `valid` and `invalid` |
+| `statusChanges` | A `FormidableStatus`, only when it changes between `valid`, `invalid` and `pending` |
 | `select<R>(selector)` | What `selector` picks from the state, only when it changes (`==`) |
 
 What `valueChanges` means and what it emits depends on the node:
@@ -109,7 +114,7 @@ What `valueChanges` means and what it emits depends on the node:
 | Field Array | an item is added, removed, moved or edited | `FormidableFieldArrayState<S>` |
 | Dynamic Form | a Field is registered or removed, or the value or presence of one changes | `FormidableDynamicFormState` |
 
-Touching a Field, submitting, focus, errors and `pending` are state changes, not value changes: they reach `changes` and `select`, never `valueChanges`. The event of a Form is its state and not the Schema instance on purpose. `state.meta.value` is null until the Form is valid, and a Form that becomes valid because a server error went away or an async check finished has no new value, so `valueChanges` does not follow `form.value`. Read `state.meta.value` in the listener when you want the Schema instance.
+Touching a Field, submitting, focus, errors and `pending` are state changes, not value changes: they reach `changes` and `select`, never `valueChanges`. The event of a Form is its state and not the Schema instance on purpose. The Form has no value until it is valid, and a Form that becomes valid because a server error went away or an async check finished has no new value, so `valueChanges` does not follow `form.value`. Read `state.meta.valueOrNull` in the listener when you want the Schema instance.
 
 For a Field the event is `null` both when the Field becomes Unset and when null is chosen on a nullable Field, so going from one to the other emits `null` again. Read `field.defined` in the listener to tell them apart, see [Unset is not null](/schema/presence#unset-is-not-null).
 
@@ -117,7 +122,8 @@ For a Field the event is `null` both when the Field becomes Unset and when null 
 
 ```dart
 // Plan the route again only when the stops change, not when the Form is touched.
-final subscription = form.select((state) => (state.from.value, state.to.value))
+final subscription = form
+    .select((state) => (state.from.valueOrNull, state.to.valueOrNull))
     .listen((stops) => planRoute(stops.$1, stops.$2));
 ```
 
@@ -199,7 +205,8 @@ The generator writes three typed widgets next to the Form Scope, in `*.formidabl
 
 ```dart
 SignUpFormBuilder(
-  builder: (context, SignUpFormState state) => Text(state.username.value ?? ''),
+  builder: (context, SignUpFormState state) =>
+      Text(state.username.valueOrNull ?? ''),
 )
 
 SignUpFormListener(
@@ -209,15 +216,15 @@ SignUpFormListener(
 )
 
 SignUpFormSelector<bool>(
-  selector: (state) => state.meta.value != null,
+  selector: (state) => state.meta.valid,
   builder: (context, canSubmit) => FilledButton(
-    onPressed: canSubmit ? () => save(context.signUpForm.value!) : null,
+    onPressed: canSubmit ? () => save(context.signUpForm.value) : null,
     child: const Text('Sign up'),
   ),
 )
 ```
 
-Each takes an optional `form`. Without one it looks up the closest `SignUpFormScope`, and throws an error that names the missing scope when there is none. `SignUpFormSelector` rebuilds only when the selected value changes, so a selector on `state.meta.value != null` enables a button when the Form is valid and does not rebuild while the user types.
+Each takes an optional `form`. Without one it looks up the closest `SignUpFormScope`, and throws an error that names the missing scope when there is none. `SignUpFormSelector` rebuilds only when the selected value changes, so a selector on `state.meta.valid` enables a button when the Form can be submitted and does not rebuild while the user types. The button is off while an asynchronous check runs, because a pending Form is not `valid`: select `state.meta.pending` too to show progress, see [Submit patterns](/guides/submit-patterns#show-progress-while-a-check-runs).
 
 For code that does not use the generator, `FormidableFormBuilder<SignUpForm>`, `FormidableFormListener<SignUpForm>` and `FormidableFormSelector<SignUpForm, R>` do the same with the state typed as `FormidableFormState`, so you read `state.meta.status` there too. `FormidableTypedFormBuilder<SignUpForm, SignUpFormState>` and its Listener and Selector are what the generated widgets extend; use them to get the typed state without the generated widgets.
 

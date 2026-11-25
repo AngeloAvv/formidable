@@ -123,7 +123,7 @@ Every row reaches the Fields of its item through `item.node`, a generated `StopF
 
 ## 3. Add, remove and reorder
 
-The array has the methods you would expect. `move` keeps the item and everything the user typed in it. `add()` creates an empty item; `add(const Stop(place: 'Rome'))` creates a prefilled one.
+The array has the methods you would expect. `move` keeps the item and everything the user typed in it. `add()` creates an empty item; `add(const Stop(place: 'Rome'))` creates a prefilled one. Both return the new item (here a `StopForm`), so `form.stops.add().place.focus()` puts the cursor in the new row. `insert(index, ...)` returns it too.
 
 ```dart
 // example/lib/trip/trip_material.dart

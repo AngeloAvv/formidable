@@ -39,9 +39,9 @@ FilledButton(
 
 **Use it when** the user must be told what to fix. Pressing the button is what reveals the errors.
 
-## Declarative: a Form Selector over `state.meta.value` drives the button
+## Declarative: a Form Selector drives the button
 
-A [Form Selector](/form/state) reads the state of the Form after every change and rebuilds only when what it selects changes. `state.meta.value` is the Schema instance while the Form is valid and null otherwise, so the selector can answer "can this be sent?":
+A [Form Selector](/form/state) reads the state of the Form after every change and rebuilds only when what it selects changes. `state.meta.valid` is true only when the Form can be submitted now: no Field has errors and no check is running. `state.meta.valueOrNull` is the Schema instance in the same case and null otherwise, so either can answer "can this be sent?". The example selects the value and the dirty flag together, because Save also wants a change to save:
 
 ```dart
 // example/lib/contact/contact_material.dart
@@ -55,7 +55,7 @@ ContactFormSelector<bool>(
 ),
 ```
 
-The tap handler uses the value directly. The button is enabled only when `value` is not null, so the `!` is safe. The first lines apply an error only the service can know, which the [edit guide](/guides/edit-form#errors-from-the-service) explains:
+The tap handler reads `form.value` directly. The button is enabled only while the Form is valid, and `value` throws only when it is not, so the read is safe. The first lines apply an error only the service can know, which the [edit guide](/guides/edit-form#errors-from-the-service) explains:
 
 ```dart
 // example/lib/contact/contact_material.dart
@@ -79,6 +79,29 @@ void _save(ContactForm form) {
 
 **Use it when** the screen should only offer what can be done now, for example a Save button that stays off until there is something valid to save.
 
+## Show progress while a check runs
+
+A Form with an [Async Validator](/validation/async) running is `pending`: it has no errors, and it cannot be submitted yet. `state.meta.valid` is false then, so the button above stays off with no extra code. To tell the user that something is happening, select the status and show a spinner on `pending`:
+
+```dart
+SignUpFormSelector<FormidableStatus>(
+  selector: (state) => state.meta.status,
+  builder: (context, status) => FilledButton(
+    onPressed: status == FormidableStatus.valid ? () => _submit(form) : null,
+    child: status == FormidableStatus.pending
+        ? const SizedBox.square(
+            dimension: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : const Text('Sign up'),
+  ),
+),
+```
+
+The Selector rebuilds only when the status changes. A pending Field shows no Validation Message, because no error exists yet: the message appears only if the check fails. To show progress next to one Field instead, select its `state.pending`.
+
+If you disable the whole Form while your own request runs, call `form.disable()` and `form.enable()` afterwards, see [disabling a whole Form](/form/submit#disabling-a-whole-form).
+
 ## A disabled button hides the reasons
 
 A button that is off tells the user nothing about *why*. With the default error display, a Field shows its errors only once the user has touched it, so a user who has not touched a Field sees a disabled button and no message. Two ways to deal with it:
@@ -92,14 +115,14 @@ A button that is off tells the user nothing about *why*. With the default error 
 const Text('Save is on while the form is valid and has changes.'),
 ```
 
-`form.state.meta.errors`, `form.value` and `submit()` always see every error, whatever the [error display policy](/form/submit#when-errors-are-shown) decides to show.
+`form.state.meta.errors`, `form.valueOrNull` and `submit()` always see every error, whatever the [error display policy](/form/submit#when-errors-are-shown) decides to show.
 
 ## Which pattern, in short
 
 | | Imperative | Declarative |
 | --- | --- | --- |
-| Button | Always enabled | Enabled when `form.value != null` |
+| Button | Always enabled | Enabled while `state.meta.valid` |
 | Errors | All shown on press | Shown as the user touches Fields |
-| Code | `switch (await form.submit())` | `ContactFormSelector` and `form.value!` |
-| Async checks | `submit()` waits | `value` is null while pending, so the button stays off |
+| Code | `switch (await form.submit())` | `ContactFormSelector` and `form.value` |
+| Async checks | `submit()` waits | `valid` is false while pending, so the button stays off |
 | Good for | Sign-up, checkout, anything with a long form | Edit screens, save-when-ready toolbars |

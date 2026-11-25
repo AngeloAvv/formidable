@@ -178,7 +178,7 @@ This is the **imperative pattern**. [Submit patterns](/guides/submit-patterns) c
 
 ## 5. Show that a check is running
 
-`pending` is part of the Field state, so a Field Builder can show progress while the service answers. `submit()` waits for it, so the user never submits an unchecked value.
+`pending` is part of the Field state, so a Field Builder can show progress while the service answers. A pending Field has no error, so it shows no Validation Message, and the Form is not `valid` until the check passes. `submit()` waits for it, so the user never submits an unchecked value.
 
 ```dart
 // example/lib/sign_up/sign_up_material.dart
@@ -217,7 +217,7 @@ class PasswordWithoutUsername extends FormidableFormValidator<SignUpForm> {
 }
 ```
 
-A [Form Effect](/form/effects) changes Fields when others change. Here the VAT number is available only to companies; a disabled Field takes no input and is not validated.
+A [Form Effect](/form/effects) changes Fields when others change. Here the VAT number is available only to companies; a disabled Field takes no input and is not validated. If you later disable the whole Form with `form.disable()` and enable it again, `vat` is back to what this Effect decided, because the Form lock never writes to the Fields, see [disabling a whole Form](/form/submit#disabling-a-whole-form).
 
 ```dart
 // example/lib/sign_up/sign_up.dart

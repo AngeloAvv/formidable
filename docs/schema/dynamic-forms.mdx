@@ -73,7 +73,8 @@ form.answers.field<String>('age');
 
 A dynamic Field is a node of the Form like a declared one:
 
-- **Validation and submit.** Its errors make the Form invalid, `submit()` marks it touched and lists it in `FormidableSubmitInvalid`, and `applyErrors` accepts it.
+- **Validation and submit.** Its errors make the Form invalid, `submit()` marks it touched and lists it in `FormidableSubmitInvalid`, and `applyErrors` accepts it, with the same `clearOn` as any Field. A Field with a check running makes the Dynamic Form `pending`, and so the Form.
+- **Enable, disable, touch and untouch.** A Dynamic Form is a container: `form.answers.disable()` disables every Field and Nested Form registered in it without changing their own flags, and the lock reaches Fields registered later, see [disabling a whole Form](/form/submit#disabling-a-whole-form). `touch()` and `untouch()` reach every registered Field, and `form.touch()` does too. Its state (`form.answers.state`) has `status`, `valid`, `pending`, `dirty` and `enabled`.
 - **Form Effects.** An Effect can read and write dynamic Fields (`form.answers.field<String>('country')`) and react to them with `context.changed(...)`. Registering or removing a Field counts as a change: the Effects run once, then every Field is validated again.
 - **Form Validators.** A Form Validator can address a dynamic Field in its errors.
 - **Dirty, reset and commit.** A dynamic Field that differs from its initial state makes the Form dirty. `reset()` and `commit()` reach every registered Field. Registering or removing a Field is structure, not user input: it does not make the Form dirty, and neither `reset()` nor `commit()` registers or removes anything.
@@ -84,7 +85,7 @@ A dynamic Field is a node of the Form like a declared one:
 
 `SurveyForm.from(survey)` and `SurveyForm(answers: {...})` take values for keys that are not registered yet. A Field registered under one of those keys starts with that value, which must have the registered type (otherwise registration throws a `FormidableDynamicTypeError`). The Field starts clean.
 
-`form.patch(answers: {...})` writes the registered Fields whose key is in the map. `form.replace(survey)` also makes every registered Field that is not in the map Unset. A value for a key that is not registered waits for its Field. A value of the wrong type throws a `FormidableDynamicTypeError`. Nested Forms are not written through the map: use their own `replace` or `patch`.
+`form.patch(answers: {...})` writes the registered Fields whose key is in the map. `form.replace(survey)` also makes every registered Field that is not in the map Unset. A value for a key that is not registered waits for its Field. A value of the wrong type throws a `FormidableDynamicTypeError`. Nested Forms are not written through the map: use their own `replace` or `patch`. A Dynamic Form has no `reset(to:)` of its own, because it has no Form Effects: `form.reset(to: survey)` on the Form that holds it resets the registered Fields, and values for keys that are not registered wait for their Field.
 
 ## Diagnostics
 

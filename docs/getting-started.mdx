@@ -214,7 +214,7 @@ SignUpFormSelector<bool>(
 
 Put it where the comment is in step 5.
 
-- `selector` picks one value from the typed `SignUpFormState`. `state.meta.valid` is true when no Field has an error. It also stays true while an asynchronous check is still running, because nothing has failed yet, so read `state.meta.pending` as well if the button must wait for it.
+- `selector` picks one value from the typed `SignUpFormState`. `state.meta.valid` is true when the form can be submitted now: no Field has an error and no asynchronous check is still running. While a check runs the form is `pending`, which is neither valid nor invalid, so the button stays off and no error shows. To show a spinner meanwhile, see [Submit patterns](/guides/submit-patterns#show-progress-while-a-check-runs).
 - The Selector rebuilds its `builder` only when the picked value changes. Typing a character that keeps the form invalid does not rebuild the button, and the one keystroke that makes the form valid enables it.
 - A button with `onPressed: null` is disabled, so the callback never has to ask whether the form is valid.
 

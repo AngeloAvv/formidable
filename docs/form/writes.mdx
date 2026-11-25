@@ -1,6 +1,6 @@
 ---
 title: Writing, dirty and leaving the screen
-description: Patch, replace, reset and commit a Form, and warn before leaving with unsaved changes
+description: Patch, replace, reset and commit a Form, touch and untouch it, and warn before leaving with unsaved changes
 ---
 
 # Writing, dirty and leaving the screen
@@ -40,6 +40,31 @@ Use it when a change mixes nulls with other values and must not show an intermed
 form.replace(const Contact(id: 2, name: 'Marco'));
 ```
 
+`replace` leaves what the user did to the Form as it is: the Fields that were touched stay touched, and the new values are dirty against the old initial state. To load data as the new starting point, use [`reset(to:)`](#reset-and-commit).
+
+## setValue and touched
+
+`setValue` writes one Field. Pass `touched: true` to make the Field touched in the same change, so a widget without a moment of "losing focus" (a switch, a slider, a picker) can show its errors after the first interaction:
+
+```dart
+form.accepted.setValue(true, touched: true);
+```
+
+It is one notification, and it touches the Field even when the value did not change. A write without `touched` never touches the Field.
+
+## touch and untouch
+
+`touch()` marks a Field as touched. On a Form it touches every Field below it, Nested Forms, Field Arrays and Dynamic Forms included, with one notification, and skips an Unset optional Nested Form, as `submit()` does. Use it to show every error without submitting.
+
+`untouch()` is the opposite, on a Field, a Field Array, a Dynamic Form and a Form: it clears touched and nothing else. Values, dirty and submitted stay as they are. On a Field Array, `touch()` touches only the array itself (a minimum number of items, say) and `untouch()` goes through every item.
+
+```dart
+form.touch();   // every error is visible
+form.untouch(); // none of them is, the values are untouched
+```
+
+There is no public way to mark a Form as submitted: `submit()` is the only one.
+
 ## Dirty
 
 A Field is dirty when its value or presence differs from its initial state, and so is the Form when any Field is. Changing a value and changing it back makes it clean again.
@@ -53,10 +78,18 @@ form.name.state.dirty; // FormidableFieldState
 
 ## reset and commit
 
-- `reset()` returns every Field to its initial value and presence, clears its errors and forgets that it was touched. The Form Effects do not run: the initial state is already consistent, so reset restores it exactly.
+- `reset()` returns every Field to its initial value and presence, clears its errors and forgets that it was touched or submitted. The Form Effects do not run: the initial state is already consistent, so reset restores it exactly.
+- `reset(to: source)` replaces every value with a Schema instance and makes it the new initial state, so nothing is dirty, touched or submitted afterwards. It is what you write by hand as `replace` followed by `commit()` and `reset()`, in one change. The Form Effects run on the new values as they do when the Form is created: no Field counts as changed, so an Effect that clears the province when the country changes does not clear the province you load. An Effect that derives a Field recomputes it.
 - `commit()` makes the current state the new initial state. Call it after a successful save so the Form is no longer dirty, and a later `reset()` returns to the saved values.
 
-Both notify once.
+All of them notify once, so a listener sees a single change.
+
+```dart
+// A fresh record arrived: show it as the new starting point.
+form.reset(to: Contact(id: 2, name: 'Marco'));
+```
+
+`reset(to:)` also works on a Nested Form (`form.home.reset(to: address)`), which joins the change of its parent. It does not change whether a Form, a Nested Form or a Field Array is enabled. A Dynamic Form has no `reset(to:)` of its own, because it has no Effects: the `reset(to:)` of the Form that holds it resets its entries.
 
 ## FormidablePopScope
 

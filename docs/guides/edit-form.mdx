@@ -113,7 +113,7 @@ FormidableMaterialSegmentedButton<String>(
 ),
 ```
 
-Save is on only while the Form is valid *and* has changes, so the generated [Form Selector](/form/state) reads `value` and `dirty` from the state (the **declarative pattern**):
+Save is on only while the Form is valid *and* has changes, so the generated [Form Selector](/form/state) reads `valueOrNull` and `dirty` from the state (the **declarative pattern**). `valueOrNull` is null until the Form is valid, and a Form with a check still running is not valid yet, so Save also waits for it:
 
 ```dart
 // example/lib/contact/contact_material.dart
@@ -138,6 +138,12 @@ ContactFormSelector<bool>(
 widget.store.save(form.value);
 form.commit();
 setState(() => _saved = true);
+```
+
+To load a fresh record, for example after a refresh from the server, use `reset(to:)` instead of writing `replace` and `commit()` by hand. It replaces every value, makes the record the new initial state and forgets what the user touched, as one change:
+
+```dart
+form.reset(to: store.load(contact.id));
 ```
 
 `reset()` is the "discard changes" button, and `patch` writes only the Fields you pass, as one change, with the Form Effects and Validators applied:
@@ -168,6 +174,17 @@ if (form.email.defined && emailIsInUse(form.email.value)) {
 ```
 
 `touch()` makes the error show even if the user never left the Field; the message comes from `FormidableConfig.messages`, as in the [sign-up guide](/guides/sign-up).
+
+When a server rejects a combination of values, put the error on one Field and tell it what else can clear it. A server that rejects credentials marks the password, but changing the URL or the username must clear the error too:
+
+```dart
+form.password.applyErrors(
+  const [RejectedByServerError()],
+  clearOn: [form.url, form.username],
+);
+```
+
+The error goes away on the next change of the password, the URL or the username. Touching or focusing one of them does not clear it. See [applying errors](/form/submit#errors-that-depend-on-other-fields).
 
 ## 6. Warn before leaving
 

@@ -45,7 +45,18 @@ form.nickname.clear();
 form.nickname.defined;  // false again
 ```
 
-`value` is `null` in both cases, so read `defined` to tell them apart. The Field state snapshot (`form.nickname.state`) also carries `defined`.
+`valueOrNull` is `null` in both cases, so read `defined` to tell them apart. The Field state snapshot (`form.nickname.state`) also carries `defined`.
+
+`value` is the strict reading. It returns `T` and **throws a `StateError` while the Field is Unset**, with a message that names the Field and gives both ways out. On a nullable Field it returns `null` once null was chosen, and throws only when the Field is Unset:
+
+```dart
+form.nickname.value;        // throws: Unset
+form.nickname.setValue(null);
+form.nickname.value;        // null: chosen
+form.nickname.valueOrNull;  // null, Unset or chosen: use `defined` to tell
+```
+
+Check `defined` before reading `value` in code that can run on an Unset Field, such as a Form Effect or a widget, and read `valueOrNull` where Unset and null mean the same to you. The reasoning is in [ADR 0006](https://github.com/AngeloAvv/formidable/blob/main/docs/adr/0006-form-lock-valid-means-submittable-and-value-throws.md).
 
 `setValue` takes exactly the Field's type: the compiler rejects `null` for a non-nullable Field.
 
@@ -80,7 +91,7 @@ class EditUser {
 }
 
 final form = EditUserForm(id: 7); // `id` is a required parameter
-form.id.value;                    // 7, never null for a non-nullable type
+form.id.value;                    // 7, a Passthrough Field is never Unset
 form.id.setValue(8);              // can be written
 form.id.addListener(() {});       // and observed
 ```
