@@ -107,7 +107,7 @@ class _EditBodyState extends State<_EditBody> {
 
   void _save(ContactForm form) {
     // The service has the last word on what no Validator can know.
-    if (emailIsInUse(form.email.value)) {
+    if (form.email.defined && emailIsInUse(form.email.value)) {
       form.applyErrors(
         fieldErrors: {
           form.email: [const EmailInUseError()],
@@ -117,7 +117,7 @@ class _EditBodyState extends State<_EditBody> {
       form.email.touch();
       return;
     }
-    widget.store.save(form.value!);
+    widget.store.save(form.value);
     form.commit();
     setState(() => _saved = true);
   }
@@ -162,7 +162,8 @@ class _EditBodyState extends State<_EditBody> {
           spacing: 12,
           children: [
             ContactFormSelector<bool>(
-              selector: (state) => state.meta.value != null && state.meta.dirty,
+              selector: (state) =>
+                  state.meta.valueOrNull != null && state.meta.dirty,
               builder: (context, canSave) => CupertinoButton.filled(
                 onPressed: canSave ? () => _save(form) : null,
                 child: const Text('Save'),

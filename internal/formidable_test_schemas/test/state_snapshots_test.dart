@@ -146,30 +146,30 @@ void main() {
     test('is null while the Form is invalid', () {
       final form = SignUpForm(username: 'ab');
 
-      expect(form.value, isNull);
+      expect(form.valueOrNull, isNull);
     });
 
     test('is the Schema instance while the Form is valid', () {
       final form = SignUpForm(username: 'angelo');
 
-      expect(form.value?.username, 'angelo');
+      expect(form.valueOrNull?.username, 'angelo');
     });
 
     test('follows the Fields', () {
       final form = SignUpForm();
-      expect(form.value, isNull);
+      expect(form.valueOrNull, isNull);
 
       form.username.setValue('angelo');
-      expect(form.value?.username, 'angelo');
+      expect(form.valueOrNull?.username, 'angelo');
 
       form.username.setValue('x');
-      expect(form.value, isNull);
+      expect(form.valueOrNull, isNull);
     });
 
     test('uses defaults and null for Unset optional Fields', () {
       final form = ProfileForm(email: 'a@b.c');
 
-      final value = form.value!;
+      final value = form.value;
 
       expect(value.bio, '');
       expect(value.nickname, isNull);

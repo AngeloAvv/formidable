@@ -26,13 +26,13 @@ switch (result) {
 Before it decides, `submit()`:
 
 1. clears the errors applied to the Form as a whole;
-2. marks **every** Field as touched and submitted, so every error can show;
+2. marks **every** Field as touched and submitted, so every error can show. Nothing else can mark a Form as submitted, because the method that does it is internal;
 3. waits for every pending [Async Validator](/validation/async), so it never decides on an unchecked value;
 4. when the Form is invalid, focuses the **first invalid Field in Schema declaration order**. Fields that are disabled or not shown by any widget are skipped.
 
-Formidable does not track your own side effects, so there is no "submitting" state.
+Formidable does not track your own side effects, so there is no "submitting" state. The `pending` status is about checks that run on the Fields, not about your request.
 
-The declarative pattern drives a button from a Form Selector over `state.meta.value` and uses `form.value` in the tap handler. A disabled button hides the reasons for invalidity until the user touches the Fields, so prefer an enabled button plus `submit()` when the user needs to see what to fix.
+The declarative pattern drives a button from a Form Selector over `state.meta.valid` and uses `form.value` in the tap handler: `valid` is false while a check runs, so the button waits for it. A disabled button hides the reasons for invalidity until the user touches the Fields, so prefer an enabled button plus `submit()` when the user needs to see what to fix.
 
 ## When errors are shown
 
@@ -77,6 +77,19 @@ form.applyErrors(
 - Form errors belong to the Form as a whole. They show in `form.state.meta.errors`, make the Form invalid, and clear on the next change to any Field and when `submit()` starts.
 - Show them like any error: register messages for your own error classes in `FormidableConfig.messages`.
 
+### Errors that depend on other Fields
+
+A server can reject a combination of values and not one of them. When it rejects the credentials, the error belongs on the password, but the user can fix it by changing the URL or the username instead, and the error must not stay on a password that was never wrong. `Field.applyErrors` takes a `clearOn` list for it:
+
+```dart
+form.password.applyErrors(
+  const [RejectedByServerError()],
+  clearOn: [form.url, form.username],
+);
+```
+
+The errors go away on the next change of the value or presence of the Field itself, as before, and also on the next change of any listed node: a Field, a Nested Form or a Field Array of the same Form (a change anywhere below a Nested Form or a Field Array counts). Touching or focusing a listed node does not clear them. Applying errors again replaces the previous list and its `clearOn`, and the Form releases what it listens to when the errors go away and when it is disposed. A Field that lists itself is ignored. The map shape `form.applyErrors(fieldErrors: ...)` has no `clearOn`: call `applyErrors` on the Field when you need it.
+
 ## Disabled Fields
 
 ```dart
@@ -87,3 +100,22 @@ form.discount.enable();
 A disabled Field keeps its value and still contributes to the output, but its Validators and applied errors are skipped, and the widget does not accept input. It still follows the presence rules: a required Field that is Unset blocks submit even when disabled, because no valid output would exist.
 
 `state.enabled` tells you the current state, and `field.focus()` does nothing while a Field is disabled.
+
+### Disabling a whole Form
+
+`disable()` and `enable()` exist on a Form, a Nested Form, a Field Array and a Dynamic Form too. Use them while a request is in flight, or for a read-only view:
+
+```dart
+form.disable(); // every Field below is disabled, none of them is changed
+try {
+  await api.signUp(signUp);
+} finally {
+  form.enable(); // undoes the disable() above, even if the request failed
+}
+```
+
+The example assumes that the Form was enabled before the request: `enable()` does not remember an earlier `disable()` of the same Form, so a read-only Form should not go through it.
+
+A container has its own `enabled` flag, a separate layer from the flags of the Fields. A Field is effectively enabled only when its own flag and the flag of every container above it are set, and `state.enabled` of a Field reports that. The Fields are never written, so `enable()` restores exactly the previous state: a Field that a Form Effect or your code had disabled stays disabled. An effectively disabled Field behaves like any disabled Field, with the rules above, so the widgets need no change. The lock reaches items added to a Field Array later and Fields registered in a Dynamic Form later.
+
+Read the flag of a container from its state: `form.state.meta.enabled` for a Form or a Nested Form, `form.phones.state.enabled` for a Field Array. A Nested Form or a Field Array inside a disabled Form reports false too. One call is one notification, and a call that changes nothing notifies nothing.

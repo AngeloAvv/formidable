@@ -105,6 +105,8 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
   int _nextId = 0;
   bool _touched = false;
   bool _submitted = false;
+  bool _enabled = true;
+  bool _locked = false;
   bool _stale = false;
   late FormidableFieldArrayState<S> _state;
   late FormidableFieldArrayState<S> _notified;
@@ -139,12 +141,11 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
         same: sameValueKey,
       );
 
-  /// The status of the array, each time it changes between valid and invalid.
-  /// The array is invalid when it has errors of its own or any item has.
-  Stream<FormidableStatus> get statusChanges => _hub.derive(
-    () => isValid ? FormidableStatus.valid : FormidableStatus.invalid,
-    (status) => status,
-  );
+  /// The status of the array, each time it changes between valid, invalid and
+  /// pending. The array is invalid when it has errors of its own or any item
+  /// has, and pending when it has none but a check is running.
+  Stream<FormidableStatus> get statusChanges =>
+      _hub.derive(() => _state.status, (status) => status);
 
   /// What [selector] returns for the state of the array, each time it differs
   /// (by `==`) from what it returned before. The first selection is computed
@@ -167,17 +168,24 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
   /// The item at [index].
   FormidableFieldArrayItem<N> operator [](int index) => _items[index];
 
-  /// Adds an item at the end, empty or from [value].
-  void add([T? value]) => insert(_items.length, value);
+  /// Adds an item at the end, empty or from [value], and returns the node of
+  /// the new item: its Field, or its Nested Form. Use it to focus or touch the
+  /// new item right away.
+  N add([T? value]) => insert(_items.length, value);
 
-  /// Adds an item at [index] (0 to [length]), empty or from [value].
-  void insert(int index, [T? value]) {
+  /// Adds an item at [index] (0 to [length]), empty or from [value], and
+  /// returns the node of the new item: its Field, or its Nested Form.
+  N insert(int index, [T? value]) {
     RangeError.checkValueInInterval(index, 0, _items.length, 'index');
+    // A listener notified by the write can move or remove items: return the
+    // node created here, not whatever stands at [index] afterwards.
+    final item = _make(value);
     _write(() {
-      _items.insert(index, _make(value));
-      _follow(_items[index].node);
+      _items.insert(index, item);
+      _follow(item.node);
       return true;
     });
+    return item.node;
   }
 
   /// Removes the item at [index].
@@ -250,12 +258,65 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
     return fallback == null ? null : List.of(fallback);
   }
 
+  /// Makes the array take part again: its items go back to what their own
+  /// flags say, so an item Field that was disabled on its own stays disabled.
+  /// It notifies once.
+  void enable() => _setEnabled(true);
+
+  /// Disables every item of the array, exactly like a Field disabled on its
+  /// own, without changing the flags of the items. It affects the items added
+  /// later too. `state.enabled` reports the effective value (the array's own
+  /// flag and every container above it). It notifies once.
+  void disable() => _setEnabled(false);
+
+  void _setEnabled(bool enabled) {
+    if (_enabled == enabled) return;
+    _enabled = enabled;
+    _lockChanged();
+  }
+
+  @override
+  void applyLock(bool locked) {
+    if (_locked == locked) return;
+    _locked = locked;
+    _pushLock();
+    _stale = true;
+  }
+
+  bool get _containerEnabled => _enabled && !_locked;
+
+  /// Gives the lock of the array to every item it holds or keeps aside.
+  void _pushLock() {
+    for (final item in {..._items, ..._initialItems}) {
+      item.node.applyLock(!_containerEnabled);
+    }
+  }
+
+  void _lockChanged() {
+    final pipeline = _pipeline;
+    _pushLock();
+    _stale = true;
+    if (pipeline == null) {
+      for (final item in _items) {
+        item.node.revalidate();
+      }
+      _refresh();
+    } else {
+      pipeline.settle();
+      pipeline.focusLayoutChanged();
+    }
+  }
+
   /// Records that the user interacted with the array.
   void touch() {
     if (_touched) return;
     _touched = true;
     _refresh();
   }
+
+  /// Forgets that the array and every item below it was touched. Values and
+  /// dirty state do not change. The listeners of a Form hear about it once.
+  void untouch() => _quietly(untouchTree);
 
   // FormidableNode.
 
@@ -283,6 +344,7 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
   }
 
   @override
+  @internal
   void markSubmitted() {
     _touched = true;
     _submitted = true;
@@ -290,6 +352,35 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
       item.node.markSubmitted();
     }
     _refresh();
+  }
+
+  @override
+  @internal
+  void touchTree() {
+    _touched = true;
+    for (final item in _items) {
+      item.node.touchTree();
+    }
+    _refresh();
+  }
+
+  @override
+  @internal
+  void untouchTree() {
+    _touched = false;
+    for (final item in _items) {
+      item.node.untouchTree();
+    }
+    _refresh();
+  }
+
+  void _quietly(void Function() action) {
+    final pipeline = _pipeline;
+    if (pipeline == null) {
+      action();
+    } else {
+      pipeline.notifyOnce(action);
+    }
   }
 
   @override
@@ -361,6 +452,7 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
     final item = FormidableFieldArrayItem<N>(_nextId++, _create(value));
     final pipeline = _pipeline;
     if (pipeline != null) item.node.bindPipeline(pipeline);
+    item.node.applyLock(!_containerEnabled);
     return item;
   }
 
@@ -431,6 +523,7 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
       errors: _errors(),
       touched: _touched,
       submitted: _submitted,
+      enabled: _containerEnabled,
       dirty: isDirty,
       outputOrNull: () => states.isNotEmpty
           ? <T>[for (final state in states) _readState(state)]
@@ -447,14 +540,17 @@ final class FormidableFieldArray<N extends FormidableNode, T, S>
           ? const [FormidableRequiredError()]
           : const [];
     }
+    // A disabled array, like a disabled Field, keeps only its presence errors:
+    // the rules that judge its items are dropped.
+    if (!_containerEnabled) return const [];
     final values = [for (final item in _items) _peek(item.node)];
     return [for (final validator in _validators) ...validator.validate(values)];
   }
 
   /// The value of an item if it has one right now.
   static Object? _peek(FormidableNode node) => switch (node) {
-    FormidableField<Object?>() => node.value,
-    FormidableForm<Object?>() => node.value,
+    FormidableField<Object?>() => node.valueOrNull,
+    FormidableForm<Object?>() => node.valueOrNull,
     _ => null,
   };
 }

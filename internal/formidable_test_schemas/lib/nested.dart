@@ -115,7 +115,7 @@ class PasswordsMatchInCredentials
 
   @override
   List<FormidableFieldError> validate(CredentialsForm form) =>
-      form.password.value != form.confirmation.value
+      form.password.valueOrNull != form.confirmation.valueOrNull
       ? [FormidableFieldError(form.confirmation, const PasswordMismatch())]
       : const [];
 }

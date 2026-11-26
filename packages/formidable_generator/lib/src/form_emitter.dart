@@ -144,6 +144,25 @@ String emitForm(SchemaModel schema) {
   }
   out.writeln('  });');
   out.writeln();
+  out.writeln(
+    '  /// Restores every Field to its initial state, like the base `reset()`.',
+  );
+  out.writeln(
+    '  /// With [to], it instead replaces every value with [to] and makes it the',
+  );
+  out.writeln(
+    '  /// new initial state: nothing is dirty, touched or submitted afterwards,',
+  );
+  out.writeln(
+    '  /// and the Form Effects run on the new values, as they do when the Form is',
+  );
+  out.writeln('  /// created. It is one change for listeners.');
+  out.writeln('  @override');
+  out.writeln(
+    '  void reset({${schema.name}? to}) =>\n'
+    '      to == null ? super.reset() : resetTo(() => replace(to));',
+  );
+  out.writeln();
   out.writeln('  @override');
   out.writeln('  ${schema.name} buildOutput() => ${_construct(schema)};');
   out.writeln();
@@ -177,6 +196,7 @@ String emitForm(SchemaModel schema) {
   out.writeln('    required bool dirty,');
   out.writeln('    required bool pending,');
   out.writeln('    required bool defined,');
+  out.writeln('    required bool enabled,');
   out.writeln('    required List<FormidableValidationError> errors,');
   out.writeln('  }) {');
   for (final f in fields) {
@@ -189,6 +209,7 @@ String emitForm(SchemaModel schema) {
   out.writeln('        dirty: dirty,');
   out.writeln('        pending: pending,');
   out.writeln('        defined: defined,');
+  out.writeln('        enabled: enabled,');
   out.writeln('        errors: errors,');
   out.writeln('        // Built from the child states, on the first read.');
   out.writeln('        buildValue: () => ${_constructFromStates(schema)},');
@@ -368,7 +389,7 @@ String _array(FieldModel f) {
     create =
         'initial == null ? $form($injected) : $form.from(initial$fromInjected)';
     read = 'item.buildOutput()';
-    readState = 'state.meta.value!';
+    readState = 'state.meta.valueOrNull!';
   } else {
     final source = array.fieldArraySource!;
     final itemArguments = [
@@ -381,8 +402,8 @@ String _array(FieldModel f) {
     create = 'FormidableField<$element>(${itemArguments.join(', ')})';
     read = 'item.output';
     readState = element.endsWith('?')
-        ? 'state.value'
-        : 'state.value as $element';
+        ? 'state.valueOrNull'
+        : 'state.valueOrNull as $element';
   }
   final arguments = [
     'create: (initial) => $create',
@@ -416,6 +437,7 @@ String _field(FieldModel f) {
       'asyncValidators: [${f.asyncValidators.map((p) => p.name).join(', ')}]',
     if (f.isRequired) 'required: true',
     if (f.defaultSource != null) 'defaultValue: ${f.defaultSource}',
+    "name: '${f.name}'",
     'initial: ${f.name}',
   ];
   return 'FormidableField<${f.typeSource}>(${arguments.join(', ')})';
@@ -446,13 +468,15 @@ String _fromState(FieldModel f) {
         : '$state.outputOrNull as $list';
   }
   if (f.isNested) {
-    return _isOptionalNested(f) ? '$state.meta.value' : '$state.meta.value!';
+    return _isOptionalNested(f)
+        ? '$state.meta.valueOrNull'
+        : '$state.meta.valueOrNull!';
   }
   if (f.isPassthrough) return state;
   // The state holds `T?`, which is `T` already when the Field is nullable.
   final value = f.isNullable
-      ? '$state.value'
-      : '$state.value as ${f.typeSource}';
+      ? '$state.valueOrNull'
+      : '$state.valueOrNull as ${f.typeSource}';
   return f.defaultSource == null
       ? value
       : '$state.defined ? $value : ${f.defaultSource}';

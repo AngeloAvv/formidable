@@ -1,24 +1,49 @@
 import '../validation/validation_error.dart';
 import 'status.dart';
 
+/// The error thrown when the `value` of an Unset Field is read.
+StateError unsetFieldError(String? name) => StateError(
+  '${name == null ? 'The Field' : 'Field `$name`'} is Unset: check `defined` '
+  'before reading `value`, or read `valueOrNull`.',
+);
+
 /// An immutable snapshot of a Field.
 ///
-/// [value] is null both when the Field is Unset and when null was chosen, so
-/// read [defined] to tell them apart.
+/// [value] throws while the Field is Unset, so read [defined] first. [valueOrNull]
+/// is null both when the Field is Unset and when null was chosen, so only
+/// [defined] tells them apart.
 final class FormidableFieldState<T> {
   FormidableFieldState({
-    required this.value,
+    required T? value,
     required this.defined,
+    this.name,
     required List<FormidableValidationError> errors,
     required this.touched,
     this.dirty = false,
     this.enabled = true,
     this.submitted = false,
     this.pending = false,
-  }) : errors = List.unmodifiable(errors);
+  }) : _value = value,
+       errors = List.unmodifiable(errors);
 
-  /// The chosen value, or null while the Field is Unset.
-  final T? value;
+  final T? _value;
+
+  /// The name of the Field in its Schema, used in error messages. Null for a
+  /// Field that has none, such as an item of a Field Array.
+  final String? name;
+
+  /// The chosen value. It is null when null was chosen on a nullable Field.
+  ///
+  /// Throws a [StateError] while the Field is Unset (ADR-0003): check
+  /// [defined] first, or read [valueOrNull].
+  T get value {
+    if (!defined) throw unsetFieldError(name);
+    return _value as T;
+  }
+
+  /// The chosen value, or null while the Field is Unset. On a nullable Field
+  /// it cannot tell Unset from a chosen null: read [defined] for that.
+  T? get valueOrNull => _value;
 
   /// Whether the Field holds a value. An Unset Field is not set.
   final bool defined;
@@ -46,16 +71,24 @@ final class FormidableFieldState<T> {
   /// check are not in [errors] yet.
   final bool pending;
 
-  /// Whether the Field has no errors. It is derived from [errors].
-  bool get valid => errors.isEmpty;
+  /// Whether the Field can be submitted now: it has no errors and no check is
+  /// running. It is `status == FormidableStatus.valid`, so it is false while
+  /// the Field is [pending].
+  bool get valid => status == FormidableStatus.valid;
 
-  FormidableStatus get status =>
-      errors.isEmpty ? FormidableStatus.valid : FormidableStatus.invalid;
+  /// [FormidableStatus.invalid] when the Field has errors, even if a check is
+  /// still running; [FormidableStatus.pending] when it has none but a check is
+  /// running; [FormidableStatus.valid] otherwise.
+  FormidableStatus get status => errors.isNotEmpty
+      ? FormidableStatus.invalid
+      : pending
+      ? FormidableStatus.pending
+      : FormidableStatus.valid;
 
   @override
   bool operator ==(Object other) =>
       other is FormidableFieldState<T> &&
-      other.value == value &&
+      other._value == _value &&
       other.defined == defined &&
       other.touched == touched &&
       other.dirty == dirty &&
@@ -66,7 +99,7 @@ final class FormidableFieldState<T> {
 
   @override
   int get hashCode => Object.hash(
-    value,
+    _value,
     defined,
     touched,
     dirty,
@@ -78,7 +111,7 @@ final class FormidableFieldState<T> {
 
   @override
   String toString() =>
-      'FormidableFieldState(value: $value, defined: $defined, '
+      'FormidableFieldState(value: $_value, defined: $defined, '
       'touched: $touched, dirty: $dirty, enabled: $enabled, '
       'submitted: $submitted, pending: $pending, errors: $errors)';
 

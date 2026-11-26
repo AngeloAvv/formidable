@@ -13,7 +13,7 @@ class PasswordWithoutUsername extends FormidableFormValidator<SignUpForm> {
   List<FormidableFieldError> validate(SignUpForm form) =>
       form.username.defined &&
           form.password.defined &&
-          form.password.value!.contains(form.username.value!)
+          form.password.value.contains(form.username.value)
       ? [FormidableFieldError(form.password, const PasswordHasUsernameError())]
       : const [];
 }
@@ -25,7 +25,7 @@ class VatOnlyForCompanies extends FormidableEffect<SignUpForm> {
 
   @override
   void apply(SignUpForm form, FormidableEffectContext context) {
-    if (form.type.value == AccountType.company) {
+    if (form.type.defined && form.type.value == AccountType.company) {
       form.vat.enable();
     } else {
       form.vat.disable();

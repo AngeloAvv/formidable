@@ -1,0 +1,8 @@
+  /// Restores every Field to its initial state, like the base `reset()`.
+  /// With [to], it instead replaces every value with [to] and makes it the
+  /// new initial state: nothing is dirty, touched or submitted afterwards,
+  /// and the Form Effects run on the new values, as they do when the Form is
+  /// created. It is one change for listeners.
+  @override
+  void reset({Person? to}) =>
+      to == null ? super.reset() : resetTo(() => replace(to));

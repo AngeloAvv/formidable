@@ -287,7 +287,7 @@ void _crossFieldRules() {
   group('an invalid rule blocks the output', () {
     test('value is null and submit is invalid', () async {
       final form = CredentialsForm(oldPassword: 'a', newPassword: 'a');
-      expect(form.value, isNull);
+      expect(form.valueOrNull, isNull);
       expect(await form.submit(), isA<FormidableSubmitInvalid<Credentials>>());
     });
   });

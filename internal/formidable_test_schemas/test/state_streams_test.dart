@@ -59,12 +59,12 @@ void main() {
       expect(changes.single.touched, isTrue);
     });
 
-    test('valueChanges ignores touched and submitted', () {
+    test('valueChanges ignores touched and submitted', () async {
       final form = itinerary();
       final values = collect(form.title.valueChanges);
 
       form.title.touch();
-      form.markSubmitted();
+      await form.submit();
 
       expect(values, isEmpty);
     });
@@ -117,7 +117,7 @@ void main() {
 
     test('select emits the selection only when it changes', () {
       final form = itinerary();
-      final lengths = collect(form.title.select((s) => s.value?.length));
+      final lengths = collect(form.title.select((s) => s.valueOrNull?.length));
 
       form.title.setValue('Oslo'); // length 4, like Rome
       form.title.touch();
@@ -131,7 +131,7 @@ void main() {
       final form = itinerary();
       form.title.setValue('Paris');
 
-      final lengths = collect(form.title.select((s) => s.value?.length));
+      final lengths = collect(form.title.select((s) => s.valueOrNull?.length));
       form.title.setValue('Milan'); // same length as at subscribe time
       form.title.setValue('Oslo');
 
@@ -192,7 +192,7 @@ void main() {
       subscription.cancel();
       expect(field.hasListeners, isFalse);
 
-      final selected = field.select((s) => s.value).listen((_) {});
+      final selected = field.select((s) => s.valueOrNull).listen((_) {});
       expect(field.hasListeners, isTrue);
       selected.cancel();
       expect(field.hasListeners, isFalse);
@@ -299,24 +299,24 @@ void main() {
       expect(events.single.meta.value, isA<SignUp>());
     });
 
-    test('changes emits on any state change', () {
+    test('changes emits on any state change', () async {
       final form = itinerary();
       final changes = collect(form.changes);
 
       form.title.touch();
-      form.markSubmitted();
+      await form.submit();
       form.title.setValue('Oslo');
 
       expect(changes, hasLength(3));
     });
 
-    test('valueChanges ignores touched, submitted and focus', () {
+    test('valueChanges ignores touched, submitted and focus', () async {
       final form = itinerary();
       final values = collect(form.valueChanges);
 
       form.title.touch();
       form.footer.touch();
-      form.markSubmitted();
+      await form.submit();
 
       expect(values, isEmpty);
     });
@@ -329,7 +329,7 @@ void main() {
       form.footer.setValue('bye');
       form.footer.setValue('bye');
 
-      expect(values.map((s) => (s.title.value, s.footer.value)), [
+      expect(values.map((s) => (s.title.valueOrNull, s.footer.valueOrNull)), [
         ('Oslo', null),
         ('Oslo', 'bye'),
       ]);
@@ -415,12 +415,12 @@ void main() {
       final form = SignUpForm(username: 'ab');
       addTearDown(form.dispose);
       final values = collect(form.valueChanges);
-      expect(form.value, isNull);
+      expect(form.valueOrNull, isNull);
 
       form.username.setValue('angelo');
 
       expect(values, hasLength(1));
-      expect(values.single.meta.value?.username, 'angelo');
+      expect(values.single.meta.valueOrNull?.username, 'angelo');
     });
 
     test('valueChanges emits once for a batch', () {
@@ -557,7 +557,7 @@ void main() {
       final footers = <String?>[];
       form.valueChanges.listen((state) {
         titles.add(state.title.value);
-        footers.add(state.footer.value);
+        footers.add(state.footer.valueOrNull);
         if (state.title.value == 'Oslo') form.footer.setValue('bye');
       });
 

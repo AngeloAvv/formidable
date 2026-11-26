@@ -44,6 +44,7 @@ final class FormidableDynamicTypeError extends StateError {
 final class FormidableDynamicFormState {
   FormidableDynamicFormState(
     Map<String, Object> states, {
+    this.enabled = true,
     Map<String, Object? Function(Object state)> readers = const {},
   }) : states = Map.unmodifiable(states),
        _readers = readers;
@@ -60,20 +61,38 @@ final class FormidableDynamicFormState {
       entry.key: _readers[entry.key]!(entry.value),
   };
 
+  /// Whether the Dynamic Form takes part in the Form: its own flag (`enable()`
+  /// and `disable()`) and every container above it. While it is false, every
+  /// Field and Nested Form registered in it is disabled as well.
+  final bool enabled;
+
   /// The state of every registered node, by key, in registration order: a
   /// [FormidableFieldState] for a Field, the generated state of a Nested Form
   /// for a Nested Form.
   final Map<String, Object> states;
 
-  /// Whether every registered Field and Nested Form is valid, which is true
-  /// while nothing is registered. It is derived from [states].
-  bool get valid => states.values.every(
-    (state) => switch (state) {
-      FormidableFieldState<Object?>(:final valid) => valid,
-      FormidableFormState(:final meta) => meta.valid,
-      _ => true,
-    },
-  );
+  /// [FormidableStatus.invalid] when any registered Field or Nested Form has
+  /// errors, even if a check is still running; [FormidableStatus.pending] when
+  /// there are none but a check is running; [FormidableStatus.valid]
+  /// otherwise, which includes nothing being registered. It is derived from
+  /// [states].
+  FormidableStatus get status {
+    final failed = states.values.any(
+      (state) => switch (state) {
+        FormidableFieldState<Object?>(:final errors) => errors.isNotEmpty,
+        FormidableFormState(:final meta) =>
+          meta.status == FormidableStatus.invalid,
+        _ => false,
+      },
+    );
+    if (failed) return FormidableStatus.invalid;
+    return pending ? FormidableStatus.pending : FormidableStatus.valid;
+  }
+
+  /// Whether the Dynamic Form can be submitted now: nothing registered has
+  /// errors and no check is running. It is `status == FormidableStatus.valid`,
+  /// so it is false while the Dynamic Form is [pending].
+  bool get valid => status == FormidableStatus.valid;
 
   /// Whether any registered Field or Nested Form differs from its initial
   /// state. It is derived from [states].
@@ -136,15 +155,18 @@ final class FormidableDynamicFormState {
 
   @override
   bool operator ==(Object other) =>
-      other is FormidableDynamicFormState && _same(other.states, states);
+      other is FormidableDynamicFormState &&
+      other.enabled == enabled &&
+      _same(other.states, states);
 
   @override
   int get hashCode => Object.hashAll([
+    enabled,
     for (final entry in states.entries) Object.hash(entry.key, entry.value),
   ]);
 
   @override
-  String toString() => 'FormidableDynamicFormState($states)';
+  String toString() => 'FormidableDynamicFormState($states, enabled: $enabled)';
 
   static bool _same(Map<String, Object> a, Map<String, Object> b) {
     if (a.length != b.length) return false;
@@ -191,6 +213,8 @@ final class FormidableDynamicForm
   final Map<String, _Entry> _entries = {};
   final Map<String, Object?> _offers;
   FormidablePipeline? _pipeline;
+  bool _enabled = true;
+  bool _locked = false;
   FormidableDynamicFormState _state = FormidableDynamicFormState(const {});
   FormidableDynamicFormState _notified = FormidableDynamicFormState(const {});
 
@@ -223,18 +247,56 @@ final class FormidableDynamicForm
         same: sameValueKey,
       );
 
-  /// The status of the Dynamic Form, each time it changes between valid and
-  /// invalid. It is invalid when anything registered in it is.
-  Stream<FormidableStatus> get statusChanges => _hub.derive(
-    () => isValid ? FormidableStatus.valid : FormidableStatus.invalid,
-    (status) => status,
-  );
+  /// The status of the Dynamic Form, each time it changes between valid,
+  /// invalid and pending. It is invalid when anything registered in it is, and
+  /// pending when there are no errors but a check is running.
+  Stream<FormidableStatus> get statusChanges =>
+      _hub.derive(() => _state.status, (status) => status);
 
   /// What [selector] returns for the state of the Dynamic Form, each time it
   /// differs (by `==`) from what it returned before. The first selection is
   /// computed when you listen, so the first event is a real change.
   Stream<R> select<R>(R Function(FormidableDynamicFormState state) selector) =>
       _hub.derive(() => selector(_state), (selection) => selection);
+
+  /// Makes the Dynamic Form take part again: what is registered in it goes back
+  /// to what its own flags say, so a Field that was disabled on its own stays
+  /// disabled. It notifies once.
+  void enable() => _setEnabled(true);
+
+  /// Disables every Field and Nested Form registered in it, and the ones
+  /// registered later, exactly like a Field disabled on its own and without
+  /// changing their flags. `state.enabled` reports the effective value (its own
+  /// flag and every container above it). It notifies once.
+  void disable() => _setEnabled(false);
+
+  void _setEnabled(bool enabled) {
+    if (_enabled == enabled) return;
+    _enabled = enabled;
+    _pushLock();
+    final pipeline = _pipeline;
+    if (pipeline == null) {
+      revalidate();
+    } else {
+      pipeline.settle();
+      pipeline.focusLayoutChanged();
+    }
+  }
+
+  bool get _containerEnabled => _enabled && !_locked;
+
+  void _pushLock() {
+    for (final node in children) {
+      node.applyLock(!_containerEnabled);
+    }
+  }
+
+  @override
+  void applyLock(bool locked) {
+    if (_locked == locked) return;
+    _locked = locked;
+    _pushLock();
+  }
 
   /// The registered keys, in registration order.
   List<String> get keys => _entries.keys.toList(growable: false);
@@ -303,6 +365,7 @@ final class FormidableDynamicForm
       required: required,
       defaultValue: defaultValue,
       initial: initial,
+      name: key,
     );
     _add(
       key,
@@ -322,7 +385,7 @@ final class FormidableDynamicForm
         output: () => field.output,
         read: (state) {
           final fieldState = state as FormidableFieldState<T>;
-          if (fieldState.defined) return fieldState.value as T;
+          if (fieldState.defined) return fieldState.value;
           if (defaultValue != null) return defaultValue;
           if (null is T) return null;
           throw StateError('A required Field is Unset and has no output.');
@@ -345,7 +408,7 @@ final class FormidableDynamicForm
         form,
         clear: form.clear,
         output: () => form.outputOrNull,
-        read: (state) => (state as FormidableFormState).meta.value,
+        read: (state) => (state as FormidableFormState).meta.valueOrNull,
         state: () => form.state,
       ),
     );
@@ -455,6 +518,7 @@ final class FormidableDynamicForm
     _entries[key] = entry;
     final pipeline = _pipeline;
     if (pipeline != null) entry.node.bindPipeline(pipeline);
+    entry.node.applyLock(!_containerEnabled);
     _follow(entry.node);
     _structureChanged(entry.node);
   }
@@ -486,6 +550,7 @@ final class FormidableDynamicForm
   void _publish() {
     _state = FormidableDynamicFormState(
       {for (final entry in _entries.entries) entry.key: entry.value.state()},
+      enabled: _containerEnabled,
       readers: {
         for (final entry in _entries.entries) entry.key: entry.value.read,
       },
@@ -522,9 +587,43 @@ final class FormidableDynamicForm
   }
 
   @override
+  @internal
   void markSubmitted() {
     for (final node in children) {
       node.markSubmitted();
+    }
+  }
+
+  /// Touches every Field registered in the Dynamic Form, and the Nested Forms
+  /// and Field Arrays with them. The listeners of a Form hear about it once.
+  void touch() => _quietly(touchTree);
+
+  /// Clears touched on everything registered in the Dynamic Form. Values and
+  /// dirty state do not change. The listeners of a Form hear about it once.
+  void untouch() => _quietly(untouchTree);
+
+  @override
+  @internal
+  void touchTree() {
+    for (final node in children.toList()) {
+      node.touchTree();
+    }
+  }
+
+  @override
+  @internal
+  void untouchTree() {
+    for (final node in children.toList()) {
+      node.untouchTree();
+    }
+  }
+
+  void _quietly(void Function() action) {
+    final pipeline = _pipeline;
+    if (pipeline == null) {
+      action();
+    } else {
+      pipeline.notifyOnce(action);
     }
   }
 
@@ -556,6 +655,8 @@ final class FormidableDynamicForm
     for (final node in children.toList()) {
       node.revalidate();
     }
+    _publish();
+    _notifyIfChanged();
   }
 
   @override

@@ -43,6 +43,7 @@ final class FormidableField<T>
   ///   starts with it and the output falls back to it while the Field is Unset.
   /// - [initial] is the starting value, which goes through the Normalizers. A
   ///   null record starts the Field Unset (or at its default).
+  /// - [name] is the name of the Schema field, used in error messages.
   FormidableField({
     List<FormidableNormalizer<T>> normalizers = const [],
     List<FormidableValidator<Object?>> validators = const [],
@@ -50,8 +51,9 @@ final class FormidableField<T>
     bool required = false,
     T? defaultValue,
     ({T value})? initial,
+    this.name,
   }) : _normalizers = normalizers,
-       _validators = validators,
+       _annotationValidators = validators,
        _asyncValidators = asyncValidators,
        _required = required,
        _defaultValue = defaultValue {
@@ -66,8 +68,12 @@ final class FormidableField<T>
     _notified = _state;
   }
 
+  /// The name of the Schema field, or null.
+  final String? name;
+
   final List<FormidableNormalizer<T>> _normalizers;
-  final List<FormidableValidator<Object?>> _validators;
+  final List<FormidableValidator<Object?>> _annotationValidators;
+  final List<FormidableValidator<Object?>> _addedValidators = [];
   final List<FormidableAsyncValidator<Object?>> _asyncValidators;
   List<FormidableValidationError> _formErrors = const [];
   final bool _required;
@@ -77,10 +83,12 @@ final class FormidableField<T>
   bool _defined = false;
   bool _touched = false;
   bool _enabled = true;
+  bool _locked = false;
   bool _submitted = false;
   final List<FormidableFocusTarget> _focusTargets = [];
   final List<void Function()> _focusLayoutListeners = [];
   List<FormidableValidationError> _applied = const [];
+  final List<_ClearOnWatch> _clearOn = [];
   bool _stale = false;
   FormidableValidationError? _inputError;
   Timer? _asyncTimer;
@@ -130,11 +138,12 @@ final class FormidableField<T>
   /// form.query.valueChanges.listen((query) => search(query));
   /// ```
   Stream<T?> get valueChanges => _hub.derive<({bool defined, T? value}), T?>(
-    () => (defined: _state.defined, value: _state.value),
+    () => (defined: _state.defined, value: _state.valueOrNull),
     (key) => key.value,
   );
 
-  /// The status of the Field, each time it changes between valid and invalid.
+  /// The status of the Field, each time it changes between valid, invalid and
+  /// pending.
   Stream<FormidableStatus> get statusChanges =>
       _hub.derive(() => _state.status, (status) => status);
 
@@ -148,16 +157,31 @@ final class FormidableField<T>
   Stream<R> select<R>(R Function(FormidableFieldState<T> state) selector) =>
       _hub.derive(() => selector(_state), (selection) => selection);
 
-  /// The current value, or null while the Field is Unset. Null is also a valid
-  /// chosen value for a nullable [T], so check [defined] to tell them apart.
+  /// The current value. It is null when null was chosen on a nullable [T].
   ///
-  /// It is current even while Form Effects run, unlike [state].
-  T? get value => _value;
+  /// Throws a [StateError] while the Field is Unset (ADR-0003). Check
+  /// [defined] first, or read [valueOrNull].
+  ///
+  /// It is current even while Form Effects run, unlike [state]. In a Form
+  /// Effect, which can run on an Unset Field, check `defined` and then read
+  /// `value`: [valueOrNull] cannot tell Unset from null on a nullable Field.
+  ///
+  /// ```dart
+  /// if (form.province.defined) form.city.setValue(form.province.value);
+  /// ```
+  T get value {
+    if (!_defined) throw unsetFieldError(name);
+    return _value as T;
+  }
+
+  /// The current value, or null while the Field is Unset. Null is also a valid
+  /// chosen value for a nullable [T], so only [defined] tells them apart.
+  T? get valueOrNull => _value;
 
   /// Whether the Field holds a value.
   bool get defined => _defined;
 
-  /// Whether the Field has no errors.
+  /// Whether the Field has no errors. A running check does not count.
   @override
   @internal
   bool get isValid => _state.errors.isEmpty;
@@ -167,12 +191,87 @@ final class FormidableField<T>
   ///
   /// The value goes through the Normalizers, then the Form Effects, then the
   /// Validators. A Normalizer can make the Field Unset instead.
-  void setValue(T value) => _write(() => _assign(_normalize(value)));
+  ///
+  /// With [touched] the Field also becomes touched, as part of the same change:
+  /// listeners are notified once. A widget that has no moment of "losing focus"
+  /// passes it so that the first interaction counts.
+  void setValue(T value, {bool touched = false}) {
+    var changed = false;
+    _write(() {
+      changed = _assign(_normalize(value));
+      // Touched rides along with a real change, so listeners hear it once.
+      if (changed && touched) _touched = true;
+      return changed;
+    });
+    // Same value: only touched changes, and the Form Effects must not see it
+    // as a change of the Field. Settling through the Form lets a batch
+    // publish it once, at its end.
+    if (touched && !changed && !_touched) {
+      _touched = true;
+      _stale = true;
+      _settle();
+    }
+  }
 
   /// Makes the Field Unset.
   void clear() => _write(() => _assign(null));
 
-  /// Makes the Field take part in the Form again, and validates it.
+  /// The Validators that judge this Field, in the order they run: the ones
+  /// declared on the Schema first, then the ones added with [addValidator].
+  /// The list is unmodifiable and a new snapshot on every read.
+  ///
+  /// A widget can read the constraints of the Schema from it instead of
+  /// repeating them, for example to show a character counter:
+  ///
+  /// ```dart
+  /// final max = form.name.validators
+  ///     .whereType<MaxLength>()
+  ///     .map((validator) => validator.maxLength)
+  ///     .firstOrNull;
+  /// ```
+  List<FormidableValidator<Object?>> get validators => List.unmodifiable([
+    ..._annotationValidators,
+    ..._addedValidators,
+  ]);
+
+  /// Adds [validator] after the ones the Field already has and validates the
+  /// Field right away, with a single notification.
+  ///
+  /// There is no equivalent for Async Validators: a running check is tied to
+  /// the value it started on and to the debounce of the validators that
+  /// started it, so changing the set mid-flight would need a restart rule that
+  /// nothing asks for. Constraints that widgets read are synchronous.
+  ///
+  /// Throws an [ArgumentError] when [validator] cannot judge a value of this
+  /// Field's type.
+  void addValidator(FormidableValidator<Object?> validator) {
+    if (!validator.fitsValueType<T>()) {
+      throw ArgumentError.value(
+        validator,
+        'validator',
+        'cannot be used on a Field of type $T',
+      );
+    }
+    _addedValidators.add(validator);
+    _stale = true;
+    _settle();
+  }
+
+  /// Removes [validator], compared by `==`, from the ones added with
+  /// [addValidator] and validates the Field right away, with a single
+  /// notification. Returns whether it was there. The Validators declared on
+  /// the Schema cannot be removed.
+  bool removeValidator(FormidableValidator<Object?> validator) {
+    if (!_addedValidators.remove(validator)) return false;
+    _stale = true;
+    _settle();
+    return true;
+  }
+
+  /// Makes the Field take part in the Form again, and validates it. It stays
+  /// out of the Form while a container above it (a Form, a Nested Form or a
+  /// Field Array) is disabled: [FormidableFieldState.enabled] reports the
+  /// effective value.
   void enable() => _setEnabled(true);
 
   /// Takes the Field out of validation: its Validators, the Form Validators and
@@ -180,6 +279,9 @@ final class FormidableField<T>
   /// it, and applied errors are hidden. It keeps its value and still
   /// contributes to the output. An Unset Field that is required still blocks
   /// submit, because no valid output exists without it.
+  ///
+  /// Disabling a Form (or a Nested Form or a Field Array) has the same effect
+  /// on the Fields below it, without touching this flag.
   void disable() => _setEnabled(false);
 
   /// Shows [errors] on the Field, after the errors of its Validators, and makes
@@ -187,17 +289,72 @@ final class FormidableField<T>
   /// replace the errors applied before and go away on the next change of the
   /// Field's value or presence. An empty list removes them right away.
   ///
+  /// With [clearOn], the errors also go away on the next change of the value
+  /// or presence of any listed node: a Field, a Nested Form or a Field Array
+  /// (a change anywhere below a Nested Form or a Field Array counts). Use it
+  /// when the error depends on other values, such as a server that rejects a
+  /// password for a given username:
+  ///
+  /// ```dart
+  /// form.password.applyErrors(
+  ///   const [RejectedByServerError()],
+  ///   clearOn: [form.url, form.username],
+  /// );
+  /// ```
+  ///
+  /// Touching, focusing or changing the errors of a listed node is not a
+  /// change. The nodes are meant to belong to the same Form as this Field; a
+  /// node of another Form works too, because the Field only listens to it. The
+  /// listeners are released as soon as the errors go away or are replaced by a
+  /// later call (which may list other nodes), and when the Field is disposed,
+  /// which the Form does when it is disposed.
+  ///
   /// A disabled Field shows no applied errors.
-  void applyErrors(List<FormidableValidationError> errors) {
+  void applyErrors(
+    List<FormidableValidationError> errors, {
+    List<FormidableNode> clearOn = const [],
+  }) {
+    _releaseClearOn();
     _applied = List.unmodifiable(errors);
+    if (_applied.isNotEmpty) {
+      for (final node in clearOn) {
+        if (identical(node, this)) continue;
+        _clearOn.add(_ClearOnWatch(node, _clearAppliedErrors));
+      }
+    }
+    _stale = true;
+    _settle();
+  }
+
+  /// The number of nodes the applied errors wait on. Zero when there are no
+  /// applied errors or none was given a `clearOn`.
+  @visibleForTesting
+  int get clearOnCount => _clearOn.length;
+
+  void _releaseClearOn() {
+    for (final watch in _clearOn) {
+      watch.release();
+    }
+    _clearOn.clear();
+  }
+
+  void _clearAppliedErrors() {
+    _releaseClearOn();
+    if (_applied.isEmpty) return;
+    _applied = const [];
     _stale = true;
     _settle();
   }
 
   void _setEnabled(bool enabled) {
     if (_enabled == enabled) return;
+    final before = _effectivelyEnabled;
     _enabled = enabled;
     _stale = true;
+    if (before == _effectivelyEnabled) {
+      _refresh();
+      return;
+    }
     // Through the Form: the rules that read this Field, and the asynchronous
     // Form Validators that wait for it, have to run again.
     _settle();
@@ -226,11 +383,16 @@ final class FormidableField<T>
   }
 
   /// Restores the initial value and presence, clears the errors and forgets
-  /// that the user touched the Field. Form Effects do not run.
+  /// that the user touched the Field and that it was submitted. Form Effects
+  /// do not run.
   @override
   void reset() {
     _assign(_initialDefined ? (value: _initialValue as T) : null);
+    // Applied errors go even when the value did not change.
+    _applied = const [];
+    _releaseClearOn();
     _touched = false;
+    _submitted = false;
     _stale = true;
     _settle();
   }
@@ -260,6 +422,15 @@ final class FormidableField<T>
   void touch() {
     if (_touched) return;
     _touched = true;
+    _refresh();
+  }
+
+  /// Forgets that the user interacted with the Field, so its Validation
+  /// Messages hide again under the default policy. The value, the presence and
+  /// the dirty flag do not change.
+  void untouch() {
+    if (!_touched) return;
+    _touched = false;
     _refresh();
   }
 
@@ -322,7 +493,7 @@ final class FormidableField<T>
 
   /// Whether [focus] can do something: the Field is enabled and a widget is
   /// registered for it.
-  bool get canFocus => _enabled && _focusTargets.isNotEmpty;
+  bool get canFocus => _effectivelyEnabled && _focusTargets.isNotEmpty;
 
   /// Moves the input focus to the widget of the Field. It does nothing when
   /// the Field is disabled or no widget shows it.
@@ -335,7 +506,26 @@ final class FormidableField<T>
     if (_focusTargets.isNotEmpty) _focusTargets.last.unfocus();
   }
 
+  /// Whether the Field itself is enabled and no container above it is disabled.
+  bool get _effectivelyEnabled => _enabled && !_locked;
+
   @override
+  void applyLock(bool locked) {
+    if (_locked == locked) return;
+    _locked = locked;
+    _stale = true;
+  }
+
+  @override
+  @internal
+  void touchTree() => touch();
+
+  @override
+  @internal
+  void untouchTree() => untouch();
+
+  @override
+  @internal
   void markSubmitted() {
     if (_touched && _submitted) return;
     _touched = true;
@@ -385,6 +575,7 @@ final class FormidableField<T>
 
   @override
   void dispose() {
+    _releaseClearOn();
     _cancelAsync();
     _streamHub?.close();
     super.dispose();
@@ -444,6 +635,7 @@ final class FormidableField<T>
     _defined = defined;
     _value = value;
     _applied = const [];
+    _releaseClearOn();
     _stale = true;
     return true;
   }
@@ -455,6 +647,7 @@ final class FormidableField<T>
     _value = null;
     _inputError = error;
     _applied = const [];
+    _releaseClearOn();
     _stale = true;
     return true;
   }
@@ -480,32 +673,34 @@ final class FormidableField<T>
   }
 
   FormidableFieldState<T> _stateFor() {
+    final enabled = _effectivelyEnabled;
     final own = _defined
-        ? (_enabled ? _validate(_value) : const <FormidableValidationError>[])
+        ? (enabled ? _validate(_value) : const <FormidableValidationError>[])
         : _inputError != null
         ? [_inputError!]
         : _presenceErrors();
-    final passes = _defined && _enabled && own.isEmpty && _formErrors.isEmpty;
+    final passes = _defined && enabled && own.isEmpty && _formErrors.isEmpty;
     _driveAsync(wanted: passes);
     _readyForFormCheck = passes && !_asyncPending && _asyncErrors.isEmpty;
     return FormidableFieldState<T>(
       value: _value,
+      name: name,
       defined: _defined,
       touched: _touched,
-      enabled: _enabled,
+      enabled: enabled,
       submitted: _submitted,
       dirty:
           _defined != _initialDefined || (_defined && _value != _initialValue),
-      pending: _asyncPending || (_enabled && _asyncFormPending),
+      pending: _asyncPending || (enabled && _asyncFormPending),
       errors: [
         ...own,
         // A disabled Field takes no part in validation: only its presence
         // errors (in `own`) remain, so every rule that judges its value or
         // spans several Fields is dropped.
-        if (_enabled) ..._formErrors,
+        if (enabled) ..._formErrors,
         ..._asyncErrors,
-        if (_enabled) ..._asyncFormErrors,
-        if (_enabled) ..._applied,
+        if (enabled) ..._asyncFormErrors,
+        if (enabled) ..._applied,
       ],
     );
   }
@@ -598,7 +793,28 @@ final class FormidableField<T>
   }
 
   List<FormidableValidationError> _validate(T? value) => [
-    for (final validator in _validators)
+    for (final validator in [..._annotationValidators, ..._addedValidators])
       if (value != null || validator.acceptsNull) ...validator.validate(value),
   ];
+}
+
+/// A Field's subscription to a node whose next value change clears its applied
+/// errors.
+final class _ClearOnWatch {
+  _ClearOnWatch(this._node, void Function() onChange)
+    : _key = valueKeyOf(_node) {
+    _listener = () {
+      final next = valueKeyOf(_node);
+      if (sameValueKey(_key, next)) return;
+      _key = next;
+      onChange();
+    };
+    _node.addListener(_listener);
+  }
+
+  final FormidableNode _node;
+  List<Object?> _key;
+  late final void Function() _listener;
+
+  void release() => _node.removeListener(_listener);
 }

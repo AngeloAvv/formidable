@@ -1,3 +1,10 @@
+## 0.3.0
+
+- `didChange(value, touched: true)` writes and touches in a single notification, through `FormidableField.setValue(value, touched: true)`. `clear` and a rejected parse still notify twice.
+- Field Widgets honor the container lock through `state.enabled`: a Field below a disabled Form, Nested Form, Field Array or Dynamic Form is not interactive, and the widgets need no change.
+- `errorText` reads only the errors of the Field, so a Field that is `pending` shows no Validation Message while a check runs.
+- Requires `formidable` 0.3.0.
+
 ## 0.2.0
 
 - **Breaking changes**

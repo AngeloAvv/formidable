@@ -13,6 +13,10 @@ abstract interface class FormidablePipeline {
   /// and notifies once. Form Effects do not run.
   void settle();
 
+  /// Runs [action], which changes many nodes, and notifies the listeners of the
+  /// Form once afterwards instead of once per node. Form Effects do not run.
+  void notifyOnce(void Function() action);
+
   /// The Fields of the Form in Schema declaration order, the order of the
   /// keyboard "next" navigation.
   List<FormidableField<Object?>> get focusOrder;

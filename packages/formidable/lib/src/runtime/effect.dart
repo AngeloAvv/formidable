@@ -24,6 +24,17 @@ abstract class FormidableEffect<F extends FormidableForm<Object?>> {
   /// Read Fields through [FormidableField.value] and
   /// [FormidableField.defined]: their `state` (errors included) is only updated
   /// after every Effect has run.
+  ///
+  /// An Effect can run while a Field is Unset, and reading [FormidableField.value]
+  /// of an Unset Field throws. Check `defined` first, then read `value`:
+  /// [FormidableField.valueOrNull] cannot tell Unset from null on a nullable
+  /// Field.
+  ///
+  /// ```dart
+  /// if (form.country.defined && form.country.value == 'IT') {
+  ///   form.province.clear();
+  /// }
+  /// ```
   void apply(F form, FormidableEffectContext context);
 }
 

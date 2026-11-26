@@ -56,6 +56,18 @@ class _ColorPicker extends FormidableFieldWidget<Color?, Color?> {
   }) : super(builder: (context, control) => _Swatches(control: control));
 }
 
+/// A Form around [field], so that the test can submit it.
+class _ColorForm extends FormidableForm<Color?> {
+  _ColorForm(this.field) {
+    attach<_ColorForm>([field]);
+  }
+
+  final FormidableField<Color?> field;
+
+  @override
+  Color? buildOutput() => field.output;
+}
+
 Widget _app(Widget child) => MaterialApp(home: Scaffold(body: child));
 
 void main() {
@@ -359,7 +371,7 @@ void main() {
       await tester.pump();
       expect(find.byKey(const Key('error')), findsNothing);
 
-      color.markSubmitted();
+      unawaited(_ColorForm(color).submit());
       await tester.pump();
       expect(find.byKey(const Key('error')), findsOneWidget);
     });

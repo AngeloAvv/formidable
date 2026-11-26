@@ -127,7 +127,7 @@ void main() {
         CheckoutFormScope.value(
           form: form,
           child: CheckoutFormSelector<String?>(
-            selector: (state) => state.meta.value?.billing.street,
+            selector: (state) => state.meta.valueOrNull?.billing.street,
             builder: (context, street) => Text('street:$street'),
           ),
         ),

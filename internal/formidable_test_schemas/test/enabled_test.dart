@@ -52,7 +52,7 @@ void main() {
         (result as FormidableSubmitValid<Account>).value.username,
         'angelo',
       );
-      expect(form.value?.username, 'angelo');
+      expect(form.valueOrNull?.username, 'angelo');
     });
 
     test(

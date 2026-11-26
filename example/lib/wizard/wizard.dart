@@ -71,8 +71,8 @@ String describeStep(int step) =>
 
 /// The review shown on the last step.
 String describeBooking(BookingForm form) =>
-    '${form.traveler.name.value}, ${form.journey.from.value} to '
-    '${form.journey.to.value}, ${form.journey.passengers.value} passengers';
+    '${form.traveler.name.valueOrNull}, ${form.journey.from.valueOrNull} to '
+    '${form.journey.to.valueOrNull}, ${form.journey.passengers.valueOrNull} passengers';
 
 /// What the wizard says once the whole Form is valid.
 String describeConfirmation(Booking booking) =>

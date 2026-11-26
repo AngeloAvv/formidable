@@ -15,25 +15,29 @@ final class FormidableFormMeta<S> {
   /// Creates the metadata of a Form.
   ///
   /// [buildValue] makes the Schema instance. It is called at most once, on the
-  /// first read of [value], and only when the Form is valid, not pending and
+  /// first read of [value] or [valueOrNull], and only when the Form is valid, not pending and
   /// set.
   FormidableFormMeta({
     required this.status,
     this.dirty = false,
     this.pending = false,
     this.defined = true,
+    this.enabled = true,
     List<FormidableValidationError> errors = const [],
     S? Function()? buildValue,
   }) : errors = List.unmodifiable(errors),
        _buildValue = buildValue;
 
-  /// Whether the Form, with every Field below it, has errors.
+  /// [FormidableStatus.invalid] when the Form or any Field below it has
+  /// errors, even if other checks are still running; [FormidableStatus.pending]
+  /// when there are none but a check is running; [FormidableStatus.valid]
+  /// otherwise.
   final FormidableStatus status;
 
-  /// Whether the Form, with every Field below it, has no errors. It is
-  /// derived from [status], so it is true while the Form is [pending] (nothing
-  /// failed yet) and it does not look at whether the Form is [defined]. The
-  /// Schema [value] is built only when the Form is valid and not pending.
+  /// Whether the Form can be submitted now: no errors below it and no check
+  /// running. It is `status == FormidableStatus.valid`, so it is false while
+  /// the Form is [pending], and it does not look at whether the Form is
+  /// [defined]. The Schema [value] is built only when the Form is valid.
   bool get valid => status == FormidableStatus.valid;
 
   /// Whether any Field differs from its initial state.
@@ -46,6 +50,11 @@ final class FormidableFormMeta<S> {
   /// Form that is Unset.
   final bool defined;
 
+  /// Whether the Form takes part in its parent: its own flag (`enable()` and
+  /// `disable()`) and every Form or Field Array above it. While it is false,
+  /// every Field below it is disabled as well, whatever its own flag says.
+  final bool enabled;
+
   /// Errors that belong to the Form as a whole, not to a Field.
   final List<FormidableValidationError> errors;
 
@@ -53,13 +62,33 @@ final class FormidableFormMeta<S> {
   S? _value;
   bool _built = false;
 
+  /// The Schema instance, only while the Form is valid, not pending and set.
+  ///
+  /// Throws a [StateError] otherwise: an invalid Form has no value. Read
+  /// [valid] first, get the value from `submit()`, or read [valueOrNull].
+  S get value {
+    final value = valueOrNull;
+    if (value == null) {
+      throw StateError(
+        defined
+            ? 'The Form is not valid, so it has no value: check `valid` before '
+                  'reading `value`, take the value from `submit()`, or read '
+                  '`valueOrNull`.'
+            : 'The Form is an Unset optional Nested Form, so it has no value: '
+                  'check `defined` before reading `value`, or read '
+                  '`valueOrNull`.',
+      );
+    }
+    return value;
+  }
+
   /// The Schema instance while the Form is valid, not pending and set, null
   /// otherwise.
   ///
   /// It is lazy: the Schema constructor runs on the first read, never when the
   /// state is published, and the result is cached. It does not take part in
   /// equality, because a Schema is not required to define `==`.
-  S? get value {
+  S? get valueOrNull {
     if (!_built) {
       final build = _buildValue;
       _buildValue = null;
@@ -81,16 +110,23 @@ final class FormidableFormMeta<S> {
       other.dirty == dirty &&
       other.pending == pending &&
       other.defined == defined &&
+      other.enabled == enabled &&
       _sameErrors(other.errors, errors);
 
   @override
-  int get hashCode =>
-      Object.hash(status, dirty, pending, defined, Object.hashAll(errors));
+  int get hashCode => Object.hash(
+    status,
+    dirty,
+    pending,
+    defined,
+    enabled,
+    Object.hashAll(errors),
+  );
 
   @override
   String toString() =>
       'FormidableFormMeta(status: $status, dirty: $dirty, '
-      'pending: $pending, defined: $defined, errors: $errors)';
+      'pending: $pending, defined: $defined, enabled: $enabled, errors: $errors)';
 
   static bool _sameErrors(
     List<FormidableValidationError> a,
@@ -120,7 +156,7 @@ class FormidableFormState {
   /// The metadata of the Form: [FormidableFormMeta.status],
   /// [FormidableFormMeta.dirty], [FormidableFormMeta.pending],
   /// [FormidableFormMeta.defined], [FormidableFormMeta.errors] and
-  /// [FormidableFormMeta.value]. A generated state narrows it to the Schema.
+  /// [FormidableFormMeta.value] and [FormidableFormMeta.valueOrNull]. A generated state narrows it to the Schema.
   final FormidableFormMeta<Object?> meta;
 
   @override

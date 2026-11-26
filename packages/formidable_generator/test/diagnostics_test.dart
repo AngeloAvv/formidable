@@ -670,7 +670,7 @@ class SignUp {
         final result = await _build(
           scopeBuilder,
           schema,
-          pubspec: 'name: app\ndependencies:\n  formidable_flutter: ^0.2.0\n',
+          pubspec: 'name: app\ndependencies:\n  formidable_flutter: ^0.3.0\n',
         );
 
         expect(result.succeeded, isTrue);
@@ -684,7 +684,7 @@ class SignUp {
       final result = await _build(
         scopeBuilder,
         schema,
-        pubspec: 'name: app\ndependencies:\n  formidable: ^0.2.0\n',
+        pubspec: 'name: app\ndependencies:\n  formidable: ^0.3.0\n',
       );
 
       expect(result.succeeded, isTrue);
@@ -903,8 +903,13 @@ class SignUp {
       'reset',
       'commit',
       'clear',
+      'enable',
+      'disable',
+      'touch',
+      'untouch',
       'batch',
       'value',
+      'valueOrNull',
       'submit',
       'state',
       'applyErrors',
@@ -934,7 +939,12 @@ class SignUp {
         expect(result.succeeded, isFalse);
         expect(
           result.errors.join('\n'),
-          allOf(contains('"$name"'), contains('SignUp'), contains('Form')),
+          allOf(
+            contains('"$name"'),
+            contains('SignUp'),
+            contains('Form'),
+            contains('Rename the field'),
+          ),
         );
       });
     }

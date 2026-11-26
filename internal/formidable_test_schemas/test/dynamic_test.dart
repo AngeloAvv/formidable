@@ -23,7 +23,7 @@ void main() {
     test('starts with an empty map', () {
       final form = SurveyForm()..title.setValue('Pets');
 
-      expect(form.value!.answers, isEmpty);
+      expect(form.value.answers, isEmpty);
     });
 
     test('rejects a second Field under the same key', () {
@@ -41,7 +41,7 @@ void main() {
       form.answers.register<String?>('b');
       form.answers.register<String?>('a');
 
-      expect(form.value!.answers.keys, ['b', 'a']);
+      expect(form.value.answers.keys, ['b', 'a']);
     });
 
     test(
@@ -52,7 +52,7 @@ void main() {
         form.answers.register<String?>('nickname');
         form.answers.register<int>('legs', defaultValue: 4);
 
-        expect(form.value!.answers, {'nickname': null, 'legs': 4});
+        expect(form.value.answers, {'nickname': null, 'legs': 4});
       },
     );
   });
@@ -91,19 +91,22 @@ void main() {
       );
     });
 
-    test('the state reads valid, dirty and pending from what is registered', () {
-      final form = SurveyForm();
-      expect(form.answers.state.valid, isTrue);
-      expect(form.answers.state.dirty, isFalse);
-      expect(form.answers.state.pending, isFalse);
+    test(
+      'the state reads valid, dirty and pending from what is registered',
+      () {
+        final form = SurveyForm();
+        expect(form.answers.state.valid, isTrue);
+        expect(form.answers.state.dirty, isFalse);
+        expect(form.answers.state.pending, isFalse);
 
-      final age = form.answers.register<int>('age');
-      expect(form.answers.state.valid, isFalse);
+        final age = form.answers.register<int>('age');
+        expect(form.answers.state.valid, isFalse);
 
-      age.setValue(7);
-      expect(form.answers.state.valid, isTrue);
-      expect(form.answers.state.dirty, isTrue);
-    });
+        age.setValue(7);
+        expect(form.answers.state.valid, isTrue);
+        expect(form.answers.state.dirty, isTrue);
+      },
+    );
 
     test('fails when nothing is registered under the key', () {
       final form = SurveyForm();
@@ -142,7 +145,7 @@ void main() {
       form.answers.remove('age');
 
       expect(form.answers.contains('age'), isFalse);
-      expect(form.value!.answers, {'legs': 4});
+      expect(form.value.answers, {'legs': 4});
     });
 
     test('lets the key be registered again', () {
@@ -179,7 +182,7 @@ void main() {
       final form = SurveyForm()..title.setValue('Pets');
 
       final age = form.answers.register<int>('age');
-      expect(form.value, isNull);
+      expect(form.valueOrNull, isNull);
       expect(age.state.errors, [isA<FormidableRequiredError>()]);
 
       age.setValue(7);
@@ -267,15 +270,15 @@ void main() {
       home.street.setValue('Via Roma');
 
       expect(form.answers.form<PlaceForm>('home'), same(home));
-      expect(form.value!.answers['home'], isA<Place>());
-      expect((form.value!.answers['home']! as Place).street, 'Via Roma');
+      expect(form.value.answers['home'], isA<Place>());
+      expect((form.value.answers['home']! as Place).street, 'Via Roma');
     });
 
     test('an invalid Nested Form makes the Form invalid', () {
       final form = SurveyForm()..title.setValue('Pets');
       final home = form.answers.registerForm('home', PlaceForm());
 
-      expect(form.value, isNull);
+      expect(form.valueOrNull, isNull);
       home.street.setValue('Via Roma');
       expect(form.value, isNotNull);
     });
@@ -287,7 +290,7 @@ void main() {
         PlaceForm()..markOptional(initiallyDefined: false),
       );
 
-      expect(form.value!.answers, {'home': null});
+      expect(form.value.answers, {'home': null});
     });
 
     test('lists the Fields of a Nested Form in the submit errors', () async {
@@ -436,7 +439,7 @@ void main() {
 
         expect(age.value, 7);
         expect(form.state.meta.dirty, isFalse);
-        expect(form.value!.answers, {'age': 7});
+        expect(form.value.answers, {'age': 7});
       },
     );
 

@@ -353,24 +353,26 @@ void main() {
   });
 
   group('Form value and submit', () {
-    test('value is null while a check is pending and set once it passes', () {
+    test('value throws while a check is pending and is set once it passes', () {
       fakeAsync((async) {
         final (:form, :usernames, :emails) = _create(
           username: 'alice',
           email: 'a@b.c',
         );
 
-        expect(form.state.meta.status, FormidableStatus.valid);
-        expect(form.value, isNull);
+        expect(form.state.meta.status, FormidableStatus.pending);
+        expect(form.state.meta.valid, isFalse);
+        expect(() => form.value, throwsStateError);
+        expect(form.valueOrNull, isNull);
 
         async.elapse(_debounce);
-        expect(form.value, isNull);
+        expect(form.valueOrNull, isNull);
 
         usernames.answer('alice', taken: false);
         emails.answer('a@b.c', taken: false);
         async.flushMicrotasks();
 
-        expect(form.value?.username, 'alice');
+        expect(form.valueOrNull?.username, 'alice');
       });
     });
 

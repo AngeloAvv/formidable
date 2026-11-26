@@ -40,6 +40,11 @@ final form = PersonForm();
 form.phones.add();                              // an empty TelephoneForm
 form.phones.add(const Telephone(number: '555'));    // prefilled
 form.phones.insert(0, const Telephone(number: '111'));
+
+// add and insert return the new item: its Nested Form, or its Field.
+final phone = form.phones.add();
+// Its widget is not built yet: focus it after the next frame.
+WidgetsBinding.instance.addPostFrameCallback((_) => phone.number.focus());
 form.phones.move(0, 2);                         // keeps the item and its state
 form.phones.removeAt(1);
 form.phones.remove(form.phones.items.first);
@@ -50,6 +55,8 @@ form.phones.items.first.node.number.setValue('555'); // a typed handle
 ```
 
 Every item is a `FormidableFieldArrayItem` with its generated Form in `node`. Each item is a full Nested Form: its Validators, Normalizers, Form Effects and Form Validators run for its own Fields, and a Form Validator of the parent can address a Field of an item.
+
+`add` and `insert` return the node of the item they created (the generated Form of a Schema item, or the Field of a `@FieldArray()` of Fields), not the `FormidableFieldArrayItem` that wraps it, so you can focus, touch or fill the new row right away.
 
 `PersonForm()` starts with no items, `PersonForm(phones: [...])` and `PersonForm.from(person)` start with one item per entry, and `patch(phones: [...])` and `replace(person)` replace the items as one change.
 
@@ -77,16 +84,17 @@ An **empty array is Unset**, and the rules of [required and optional Fields](/sc
 | `final List<Telephone> phones = const [];` | Optional: valid, the output is the default. |
 | `@Required() final List<Telephone>? phones;` | Required. |
 
-Validators of the array run only while it has items, like the Validators of a Field run only while it has a value. The state of the array (`form.phones.state`) has `ids`, `length`, `errors` (the errors of the array itself, not of its items), `touched`, `dirty` and `submitted`. The errors of the items are errors of their own Fields.
+Validators of the array run only while it has items, like the Validators of a Field run only while it has a value. The state of the array (`form.phones.state`) has `ids`, `length`, `errors` (the errors of the array itself, not of its items), `status`, `valid`, `pending`, `touched`, `dirty`, `enabled` and `submitted`. `valid` is false while an item has a check running, as for a Field. The errors of the items are errors of their own Fields.
 
 `submit()` collects both in one map, `errors` of `FormidableSubmitInvalid`, in tree order: `errors[form.members]` holds the errors of the array itself and comes before the errors of the Fields of its items, each keyed by its own handle.
 
 ## Behavior shared with Nested Forms
 
-- **Dirty, reset and commit.** Adding, removing or moving an item makes the Form dirty. `reset()` puts back the items the array had (the same Forms, each reset) and drops the new ones; `commit()` makes the current items the new initial state.
+- **Dirty, reset and commit.** Adding, removing or moving an item makes the Form dirty. `reset()` puts back the items the array had (the same Forms, each reset) and drops the new ones; `commit()` makes the current items the new initial state. `reset(to:)` on the Form that holds the array replaces the items from the Schema instance and makes them the new initial state.
+- **Enable, disable, touch and untouch.** `form.phones.disable()` disables every item, and items added while it is disabled are disabled too, see [disabling a whole Form](/form/submit#disabling-a-whole-form). `form.phones.touch()` touches only the array itself, which is where an error such as a minimum number of items shows, and `untouch()` goes through the array and every item. `form.touch()` on the Form reaches the items as well.
 - **Submit and focus.** `submit()` makes every item touched and submitted and focuses the first invalid Field in tree order. See [focus and keyboard actions](/widgets/focus).
 - **Async Validators.** The Fields of an item can have [Async Validators](/validation/async). The parent Form takes the instances once and gives them to every item it creates, so a new item checks its Fields like any other. The array waits for them on `submit()`, and removing an item cancels its pending checks. `@AsyncValidator` on the list itself is a build error: put it on a Field of the items.
-- **Notifications and state.** The state of the array, `form.state.phones`, is a `FormidableFieldArrayState<TelephoneFormState>`: the `ids` of the items, the typed state of every item in `items` (a `FormidableFieldState<String>` for an array of Fields), the errors of the array itself, `touched`, `dirty` and `submitted`. A listener of the array (`addListener`) is called when that state changes, for example when an item is added or moved, and also when anything inside an item changes, its value included. Imperative code can follow the array through its [streams](/form/state#streams): `valueChanges` emits when an item is added, removed, moved or edited, and not when something is merely touched.
+- **Notifications and state.** The state of the array, `form.state.phones`, is a `FormidableFieldArrayState<TelephoneFormState>`: the `ids` of the items, the typed state of every item in `items` (a `FormidableFieldState<String>` for an array of Fields), the errors of the array itself, `status`, `touched`, `dirty`, `enabled` and `submitted`. A listener of the array (`addListener`) is called when that state changes, for example when an item is added or moved, and also when anything inside an item changes, its value included. Imperative code can follow the array through its [streams](/form/state#streams): `valueChanges` emits when an item is added, removed, moved or edited, and not when something is merely touched.
 - **Disposal.** Removing an item disposes it, unless `reset()` could still bring it back. Disposing the parent disposes every item.
 
 ## Lists, sets and maps of primitive values

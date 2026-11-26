@@ -75,7 +75,7 @@ void main() {
 
       expect(form.home.state.meta.status, FormidableStatus.invalid);
       expect(form.state.meta.status, FormidableStatus.invalid);
-      expect(form.value, isNull);
+      expect(form.valueOrNull, isNull);
     });
 
     test(
@@ -112,11 +112,11 @@ void main() {
       final form = ContactForm()
         ..name.setValue('Angelo')
         ..home.street.setValue('Via Roma');
-      expect(form.value, isNull);
+      expect(form.valueOrNull, isNull);
 
       form.billing.street.setValue('Via Milano');
 
-      expect(form.value!.home.street, 'Via Roma');
+      expect(form.value.home.street, 'Via Roma');
     });
   });
 
@@ -131,7 +131,7 @@ void main() {
 
         expect(form.work.defined, isFalse);
         expect(form.work.state.meta.status, FormidableStatus.valid);
-        expect(form.work.value, isNull);
+        expect(form.work.valueOrNull, isNull);
         final result = await form.submit() as FormidableSubmitValid<Contact>;
         expect(result.value.work, isNull);
       },
@@ -314,8 +314,8 @@ void main() {
       form.record.title.setValue('b');
 
       expect(form.record.id.value, 7);
-      expect(form.value!.record.id, 7);
-      expect(form.value!.record.title, 'b');
+      expect(form.value.record.id, 7);
+      expect(form.value.record.title, 'b');
     });
   });
 

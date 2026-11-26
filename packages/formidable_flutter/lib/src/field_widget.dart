@@ -193,25 +193,31 @@ class FormidableFieldWidgetState<T, V>
   /// that the first interaction counts.
   void didChange(V? value, {bool touched = false}) {
     final codec = _codec;
+    // Writing and touching in one setValue call is a single notification;
+    // clear and reject have no such parameter, so they touch afterwards.
+    var needsTouch = touched;
     if (value == null) {
       if (codec == null && null is T) {
-        _field.setValue(null as T);
+        _field.setValue(null as T, touched: touched);
+        needsTouch = false;
       } else {
         _field.clear();
       }
     } else if (codec == null) {
-      _field.setValue(value as T);
+      _field.setValue(value as T, touched: touched);
+      needsTouch = false;
     } else {
       switch (codec.parse(value)) {
         case FormidableParsedValue<T>(:final value):
-          _field.setValue(value);
+          _field.setValue(value, touched: touched);
+          needsTouch = false;
         case FormidableParsedUnset<T>():
           _field.clear();
         case FormidableParseFailure<T>(:final error):
           _field.reject(error);
       }
     }
-    if (touched) touch();
+    if (needsTouch) touch();
   }
 
   /// The user removed the value: the Field becomes Unset. With [touched] it also

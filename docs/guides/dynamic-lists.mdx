@@ -123,7 +123,12 @@ Every row reaches the Fields of its item through `item.node`, a generated `StopF
 
 ## 3. Add, remove and reorder
 
-The array has the methods you would expect. `move` keeps the item and everything the user typed in it. `add()` creates an empty item; `add(const Stop(place: 'Rome'))` creates a prefilled one.
+The array has the methods you would expect. `move` keeps the item and everything the user typed in it. `add()` creates an empty item; `add(const Stop(place: 'Rome'))` creates a prefilled one. Both return the new item (here a `StopForm`), and `insert(index, ...)` returns it too. To put the cursor in the new row, focus it after the next frame: the row's widget registers itself with the Field when it is built, and `focus()` does nothing before that.
+
+```dart
+final stop = form.stops.add();
+WidgetsBinding.instance.addPostFrameCallback((_) => stop.place.focus());
+```
 
 ```dart
 // example/lib/trip/trip_material.dart

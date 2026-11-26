@@ -35,7 +35,7 @@ The `builder` receives the **control**, the state object of the widget. It rebui
 | `defined` | Whether the Field holds a value. This tells Unset from a chosen null. |
 | `state` | The `FormidableFieldState<T>` snapshot: errors, touched, dirty, submitted, pending. |
 | `errorText` | The Validation Message to show, or null. It follows the [error display policy](/form/submit) and the [message lookup](/validation/messages). |
-| `enabled` | Whether the Field accepts input. A disabled Field is not part of the Form. |
+| `enabled` | Whether the Field accepts input. A disabled Field is not part of the Form. It is `state.enabled`, so it is false too while a Form, Nested Form, Field Array or Dynamic Form above the Field is disabled, and the widget needs no change for it. |
 | `pending` | Whether an Async Validator is still checking the Field. |
 | `focusNode` | The focus node of the widget. Give it to the widget that takes focus. |
 | `textInputAction`, `onEditingComplete()` | The keyboard action and what it does, for [focus navigation](/widgets/focus). |
@@ -44,7 +44,7 @@ and takes what the user did:
 
 | Method | What it does |
 | --- | --- |
-| `didChange(value, {touched})` | Writes the value through the Codec and the Field pipeline (Normalizers, Validators). With `touched: true` it also marks the Field touched. |
+| `didChange(value, {touched})` | Writes the value through the Codec and the Field pipeline (Normalizers, Validators). With `touched: true` it also marks the Field touched. When the value is accepted, that is one change and the Field notifies once, like `field.setValue(value, touched: true)`; when the value makes the Field Unset or the Codec rejects it, touching is a second notification. |
 | `clear({touched})` | Puts the Field back to Unset. |
 | `touch()` | Marks the Field touched, for an interaction that changed nothing, such as a cancelled dialog. |
 

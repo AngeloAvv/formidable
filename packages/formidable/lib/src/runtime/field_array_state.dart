@@ -1,6 +1,7 @@
 import '../validation/validation_error.dart';
 import 'field_state.dart';
 import 'form_state.dart';
+import 'status.dart';
 
 /// An immutable snapshot of a Field Array.
 ///
@@ -19,6 +20,7 @@ final class FormidableFieldArrayState<S> {
     this.touched = false,
     this.dirty = false,
     this.submitted = false,
+    this.enabled = true,
     Object? Function()? outputOrNull,
   }) : assert(ids.length == items.length),
        ids = List.unmodifiable(ids),
@@ -48,6 +50,11 @@ final class FormidableFieldArrayState<S> {
   /// Whether the Form was submitted since the array was created.
   final bool submitted;
 
+  /// Whether the array takes part in the Form: its own flag (`enable()` and
+  /// `disable()`) and every container above it. While it is false, every item
+  /// is disabled as well, whatever its own flag says.
+  final bool enabled;
+
   /// The list of the values of the items, built from the states in [items] (so
   /// it never reads an array that has moved on), or the default of the array
   /// while it is empty, or null. The static type of the list is the type of an
@@ -55,17 +62,39 @@ final class FormidableFieldArrayState<S> {
   /// Schema value from, and it does not take part in equality.
   Object? get outputOrNull => _outputOrNull?.call();
 
-  /// Whether the array and every item in it have no errors. It is derived from
-  /// [errors] and from the states in [items].
-  bool get valid =>
-      errors.isEmpty &&
-      items.every(
-        (item) => switch (item) {
-          FormidableFieldState<Object?>(:final valid) => valid,
-          FormidableFormState(:final meta) => meta.valid,
-          _ => true,
-        },
-      );
+  /// Whether the array or any item in it is waiting for a check. It is
+  /// derived from the states in [items].
+  bool get pending => items.any(
+    (item) => switch (item) {
+      FormidableFieldState<Object?>(:final pending) => pending,
+      FormidableFormState(:final meta) => meta.pending,
+      _ => false,
+    },
+  );
+
+  /// [FormidableStatus.invalid] when the array or any item has errors, even if
+  /// a check is still running; [FormidableStatus.pending] when there are none
+  /// but a check is running; [FormidableStatus.valid] otherwise. It is derived
+  /// from [errors] and from the states in [items].
+  FormidableStatus get status {
+    final failed =
+        errors.isNotEmpty ||
+        items.any(
+          (item) => switch (item) {
+            FormidableFieldState<Object?>(:final errors) => errors.isNotEmpty,
+            FormidableFormState(:final meta) =>
+              meta.status == FormidableStatus.invalid,
+            _ => false,
+          },
+        );
+    if (failed) return FormidableStatus.invalid;
+    return pending ? FormidableStatus.pending : FormidableStatus.valid;
+  }
+
+  /// Whether the array can be submitted now: no errors in it or in any item,
+  /// and no check running. It is `status == FormidableStatus.valid`, so it is
+  /// false while the array is [pending].
+  bool get valid => status == FormidableStatus.valid;
 
   /// How many items the array has.
   int get length => ids.length;
@@ -79,6 +108,7 @@ final class FormidableFieldArrayState<S> {
       other.touched == touched &&
       other.dirty == dirty &&
       other.submitted == submitted &&
+      other.enabled == enabled &&
       _same(other.ids, ids) &&
       _same(other.items, items) &&
       _same(other.errors, errors);
@@ -88,6 +118,7 @@ final class FormidableFieldArrayState<S> {
     touched,
     dirty,
     submitted,
+    enabled,
     Object.hashAll(ids),
     Object.hashAll(items),
     Object.hashAll(errors),
@@ -97,7 +128,7 @@ final class FormidableFieldArrayState<S> {
   String toString() =>
       'FormidableFieldArrayState(ids: $ids, items: $items, '
       'touched: $touched, dirty: $dirty, submitted: $submitted, '
-      'errors: $errors)';
+      'enabled: $enabled, errors: $errors)';
 
   static bool _same(List<Object?> a, List<Object?> b) {
     if (a.length != b.length) return false;

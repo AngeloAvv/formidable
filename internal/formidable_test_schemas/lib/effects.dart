@@ -48,7 +48,7 @@ class DeriveLabel extends FormidableEffect<AddressForm> {
   @override
   void apply(AddressForm form, FormidableEffectContext context) {
     form.label.setValue(
-      '${form.country.value ?? ''}/${form.province.value ?? '-'}',
+      '${form.country.valueOrNull ?? ''}/${form.province.valueOrNull ?? '-'}',
     );
   }
 }
@@ -117,8 +117,8 @@ class PingEffect extends FormidableEffect<EffectLoopForm> {
 
   @override
   void apply(EffectLoopForm form, FormidableEffectContext context) {
-    if (form.armed.value == true) {
-      form.ping.setValue((form.pong.value ?? 0) + 1);
+    if (form.armed.valueOrNull == true) {
+      form.ping.setValue((form.pong.valueOrNull ?? 0) + 1);
     }
   }
 }

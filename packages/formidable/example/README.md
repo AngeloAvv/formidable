@@ -20,7 +20,7 @@ import 'package:formidable_core_example/sign_up.dart';
 
 final form = SignUpForm();
 
-form.valueChanges.listen((state) => print(state.email.value));
+form.valueChanges.listen((state) => print(state.email.valueOrNull));
 form.statusChanges.listen((status) => print('status: $status'));
 
 form.email.setValue('ada@example.com');

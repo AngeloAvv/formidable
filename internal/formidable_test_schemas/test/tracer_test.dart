@@ -66,7 +66,7 @@ void main() {
 
         expect(prefilled.username.value, 'angelo');
         expect(omitted.username.defined, isFalse);
-        expect(omitted.username.value, isNull);
+        expect(omitted.username.valueOrNull, isNull);
       });
     });
 

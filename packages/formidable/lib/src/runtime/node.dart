@@ -32,8 +32,31 @@ abstract interface class FormidableNode {
   void collectErrors(Map<FormidableNode, List<FormidableValidationError>> into);
 
   /// Marks every Field at or below this node as touched and submitted. Called
-  /// by the Form when `submit()` starts.
+  /// by the Form when `submit()` starts; `submit()` is the only public way to
+  /// submit.
+  @internal
   void markSubmitted();
+
+  /// Tells the node whether a container above it (a Form, a Nested Form, a
+  /// Field Array or a Dynamic Form) is disabled. A locked node takes no part
+  /// in validation, exactly like a node disabled on its own, but its own
+  /// enabled flag is left alone, so lifting the lock restores what it was.
+  ///
+  /// It only records the lock and marks the node stale: the container that
+  /// pushes it settles the Form once afterwards, so the whole change is one
+  /// notification.
+  @internal
+  void applyLock(bool locked);
+
+  /// Marks every Field at or below this node as touched. The public entry
+  /// point is `touch()` on the Form.
+  @internal
+  void touchTree();
+
+  /// Clears touched on every Field at or below this node. Values and dirty
+  /// state do not change. The public entry point is `untouch()`.
+  @internal
+  void untouchTree();
 
   /// Gives the node the pipeline of its Form. Writes to the node run through
   /// it. Called once by the Form.

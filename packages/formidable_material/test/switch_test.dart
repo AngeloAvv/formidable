@@ -73,5 +73,27 @@ void main() {
 
       expect(form.notifications.value, isTrue);
     });
+
+    testWidgets('becomes non-interactive when the Form is disabled', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        app((form) => FormidableMaterialSwitch(field: form.notifications)),
+      );
+      expect(tester.widget<Switch>(find.byType(Switch)).onChanged, isNotNull);
+
+      form.disable();
+      await tester.pump();
+
+      expect(tester.widget<Switch>(find.byType(Switch)).onChanged, isNull);
+      await tester.tap(find.byType(Switch), warnIfMissed: false);
+      await tester.pump();
+      expect(form.notifications.defined, isFalse);
+
+      form.enable();
+      await tester.pump();
+
+      expect(tester.widget<Switch>(find.byType(Switch)).onChanged, isNotNull);
+    });
   });
 }

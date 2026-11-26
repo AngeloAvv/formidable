@@ -69,14 +69,18 @@ While a check waits for its debounce or for the service, the Field is pending:
 ```dart
 form.username.state.pending; // true while it runs
 form.state.meta.pending;     // true while any Field is pending
-form.value;                  // null while the Form is pending
+form.state.meta.status;      // FormidableStatus.pending
+form.state.meta.valid;       // false while the Form is pending
+form.valueOrNull;            // null while the Form is pending
 ```
 
-Pending is part of the Field state and of the Form state, so Field and Form builders rebuild when it changes. A pending Field has no result for the running check yet, so show progress instead of a verdict.
+Pending is part of the Field state and of the Form state, so Field and Form builders rebuild when it changes. A pending node has no result for the running check yet, so show progress instead of a verdict.
+
+`status` has three values. It is `invalid` as soon as there is one error, even if another check is still running, `pending` when there are no errors and a check runs, and `valid` when there are no errors and nothing runs. `valid` means "can be submitted now", so it is false while pending: a button on `state.meta.valid` stays off until the check passes, and a pending Field never shows a Validation Message, because a running check has produced no error. The same rule holds for a Field Array and a Dynamic Form, and a pending child makes its parent pending, never invalid. `form.value` throws while the Form is pending, as it does for an invalid one. See [Submit patterns](/guides/submit-patterns#show-progress-while-a-check-runs) for a button that shows a spinner.
 
 ## Cancellation
 
-Going back to Unset cancels the check, as does a value that stops passing the synchronous Validators, disabling the Field, and disposing the Form. A Dart future cannot be interrupted, so cancelling means that its answer is ignored. A Field is never stuck in pending.
+Going back to Unset cancels the check, as does a value that stops passing the synchronous Validators, disabling the Field (or the Form, a Nested Form or a Field Array above it), and disposing the Form. A Dart future cannot be interrupted, so cancelling means that its answer is ignored. A Field is never stuck in pending.
 
 ## Submit waits
 
@@ -111,7 +115,7 @@ class PostalCodeMatchesCity
 
   @override
   Future<List<FormidableFieldError>> validate(ShippingForm form) async =>
-      await geo.matches(form.postalCode.value!, form.city.value!)
+      await geo.matches(form.postalCode.value, form.city.value)
       ? const []
       : [FormidableFieldError(form.city, const CityMismatchError())];
 }
@@ -128,7 +132,7 @@ class Shipping {
 
 It takes a `postalCodeMatchesCity:` parameter in the generated constructors, and follows the same lifecycle:
 
-- It runs only while every dependency has a value and has no error of its own, and none of them is waiting for its own Async Validator.
+- It runs only while every dependency has a value and has no error of its own, and none of them is waiting for its own Async Validator. That is why `value` is safe inside `validate`.
 - It is debounced as a whole: a change to any dependency restarts the timer. Only the latest result counts.
 - Every dependency is pending while it runs, and so is the Form.
 - A dependency going back to Unset or becoming invalid cancels it, and its errors go away.
